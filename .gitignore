@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Data files (if sensitive, otherwise we might want to track these)
+# server/wines.json
+# server/cellars.json
+# server/wine-references.json
+# server/wine-instances.json
+
+# Node modules (if we add frontend build tools later)
+node_modules/
+npm-debug.log*
