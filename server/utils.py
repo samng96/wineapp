@@ -12,6 +12,10 @@ WINE_INSTANCES_FILE = 'wine-instances.json'
 
 def init_data_files():
     """Initialize data files with empty arrays if they don't exist"""
+    # Skip initialization during tests (tests handle their own data files)
+    if os.environ.get('TESTING') == '1':
+        return
+    
     for file in [CELLARS_FILE, WINE_REFERENCES_FILE, WINE_INSTANCES_FILE]:
         if not os.path.exists(file):
             with open(file, 'w') as f:

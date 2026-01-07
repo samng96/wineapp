@@ -1,6 +1,6 @@
-# WineApp API Tests
+# WineApp Server API Tests
 
-This directory contains comprehensive API tests for the WineApp server.
+This directory contains comprehensive API tests for the WineApp server. The tests are located in `server/tests/` since they test server-side functionality.
 
 ## Test Structure
 
@@ -13,22 +13,22 @@ This directory contains comprehensive API tests for the WineApp server.
 
 ### Run all tests:
 ```bash
-python3 -m pytest tests/ -v
+python3 -m pytest server/tests/ -v
 ```
 
 ### Run specific test file:
 ```bash
-python3 -m pytest tests/test_cellars.py -v
+python3 -m pytest server/tests/test_cellars.py -v
 ```
 
 ### Run a specific test:
 ```bash
-python3 -m pytest tests/test_cellars.py::test_create_cellar -v
+python3 -m pytest server/tests/test_cellars.py::test_create_cellar -v
 ```
 
 ### Run with coverage:
 ```bash
-python3 -m pytest tests/ --cov=server --cov-report=html
+python3 -m pytest server/tests/ --cov=server --cov-report=html
 ```
 
 ## Test Coverage
