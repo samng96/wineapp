@@ -46,12 +46,38 @@ def create_cellar():
     """Create a new cellar"""
     data = request.json
     
+    shelves = data.get('shelves', [])
+    
+    # Validate shelves format: each shelf should be [Positions, IsDouble]
+    for shelf in shelves:
+        if not isinstance(shelf, list) or len(shelf) != 2:
+            return jsonify({'error': 'Invalid shelf format. Each shelf must be [Positions, IsDouble]'}), 400
+        if not isinstance(shelf[0], int) or shelf[0] <= 0:
+            return jsonify({'error': 'Positions must be a positive integer'}), 400
+        if not isinstance(shelf[1], bool):
+            return jsonify({'error': 'IsDouble must be a boolean'}), 400
+    
+    # Initialize winePositions object for each shelf
+    wine_positions = {}
+    for i, shelf in enumerate(shelves):
+        positions, is_double = shelf
+        if is_double:
+            wine_positions[str(i)] = {
+                'front': [None] * positions,
+                'back': [None] * positions
+            }
+        else:
+            wine_positions[str(i)] = {
+                'single': [None] * positions
+            }
+    
     cellar = {
         'id': generate_id(),
         'name': data.get('name', 'Unnamed Cellar'),
         'temperature': data.get('temperature'),
         'capacity': data.get('capacity'),
-        'rows': data.get('rows', [])
+        'shelves': shelves,
+        'winePositions': wine_positions
     }
     
     cellar = add_version_and_timestamps(cellar, is_new=True)
@@ -86,13 +112,56 @@ def update_cellar(cellar_id: str):
         cellar['temperature'] = data['temperature']
     if 'capacity' in data:
         cellar['capacity'] = data['capacity']
-    if 'rows' in data:
-        cellar['rows'] = data['rows']
+    if 'shelves' in data:
+        shelves = data['shelves']
+        
+        # Validate shelves format
+        for shelf in shelves:
+            if not isinstance(shelf, list) or len(shelf) != 2:
+                return jsonify({'error': 'Invalid shelf format. Each shelf must be [Positions, IsDouble]'}), 400
+            if not isinstance(shelf[0], int) or shelf[0] <= 0:
+                return jsonify({'error': 'Positions must be a positive integer'}), 400
+            if not isinstance(shelf[1], bool):
+                return jsonify({'error': 'IsDouble must be a boolean'}), 400
+        
+        # Update shelves and reinitialize winePositions if needed
+        # TODO: Handle repositioning of existing wines when shelves change
+        cellar['shelves'] = shelves
+        
+        # Reinitialize winePositions for new shelf structure
+        wine_positions = {}
+        for i, shelf in enumerate(shelves):
+            positions, is_double = shelf
+            shelf_key = str(i)
+            
+            # Preserve existing positions if shelf index exists and structure matches
+            if shelf_key in cellar.get('winePositions', {}):
+                existing = cellar['winePositions'][shelf_key]
+                if is_double and 'front' in existing and 'back' in existing:
+                    # Keep existing positions, pad or truncate as needed
+                    front = existing['front'][:positions] + [None] * max(0, positions - len(existing['front']))
+                    back = existing['back'][:positions] + [None] * max(0, positions - len(existing['back']))
+                    wine_positions[shelf_key] = {'front': front, 'back': back}
+                elif not is_double and 'single' in existing:
+                    single = existing['single'][:positions] + [None] * max(0, positions - len(existing['single']))
+                    wine_positions[shelf_key] = {'single': single}
+                else:
+                    # Structure changed, reinitialize
+                    if is_double:
+                        wine_positions[shelf_key] = {'front': [None] * positions, 'back': [None] * positions}
+                    else:
+                        wine_positions[shelf_key] = {'single': [None] * positions}
+            else:
+                # New shelf, initialize
+                if is_double:
+                    wine_positions[shelf_key] = {'front': [None] * positions, 'back': [None] * positions}
+                else:
+                    wine_positions[shelf_key] = {'single': [None] * positions}
+        
+        cellar['winePositions'] = wine_positions
     
     cellar = add_version_and_timestamps(cellar, is_new=False)
     
-    # This is such a hacky way to update the cellars, but it's the best we've got for now. 
-    # When we get to databases, this will be much easier.
     cellars = load_cellars()
     for i, c in enumerate(cellars):
         if c['id'] == cellar_id:
@@ -128,7 +197,7 @@ def delete_cellar(cellar_id: str):
 
 @cellars_bp.route('/cellars/<cellar_id>/layout', methods=['GET'])
 def get_cellar_layout(cellar_id: str):
-    """Get graphical layout of cellar rows and wine positions"""
+    """Get graphical layout of cellar shelves and wine positions"""
     from wine_references import load_wine_references
     from wine_instances import find_wine_instance_by_id
     
@@ -145,8 +214,10 @@ def get_cellar_layout(cellar_id: str):
     
     # Enhance layout with wine information
     layout = cellar.copy()
-    for row in layout['rows']:
-        for side, positions in row.get('winePositions', {}).items():
+    wine_positions = layout.get('winePositions', {})
+    
+    for shelf_index, positions_dict in wine_positions.items():
+        for side, positions in positions_dict.items():
             for i, instance_id in enumerate(positions):
                 if instance_id:
                     instance = find_wine_instance_by_id(instance_id)

@@ -136,8 +136,14 @@ def test_consume_wine_instance(client, sample_wine_instance, created_wine_refere
     ref_data = json.loads(ref_response.data)
     assert ref_data['instanceCount'] == 0
 
-def test_update_wine_instance_location(client, sample_wine_instance, created_wine_reference):
+def test_update_wine_instance_location(client, sample_wine_instance, created_wine_reference, sample_cellar):
     """Test updating wine instance location"""
+    # Create a cellar first
+    cellar_response = client.post('/cellars',
+                                 json=sample_cellar,
+                                 content_type='application/json')
+    cellar_id = json.loads(cellar_response.data)['id']
+    
     # Create an instance first
     sample_wine_instance['referenceId'] = created_wine_reference['id']
     create_response = client.post('/wine-instances',
@@ -148,8 +154,8 @@ def test_update_wine_instance_location(client, sample_wine_instance, created_win
     # Update location
     new_location = {
         'type': 'cellar',
-        'cellarId': 'cellar-123',
-        'rowId': 'row-1',
+        'cellarId': cellar_id,
+        'shelfIndex': 0,
         'side': 'front',
         'position': 5
     }
@@ -176,8 +182,14 @@ def test_get_unshelved(client, sample_wine_instance, created_wine_reference):
     assert len(data) == 1
     assert data[0]['location']['type'] == 'unshelved'
 
-def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_reference):
+def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_reference, sample_cellar):
     """Test assigning unshelved wine to a cellar"""
+    # Create a cellar first
+    cellar_response = client.post('/cellars',
+                                 json=sample_cellar,
+                                 content_type='application/json')
+    cellar_id = json.loads(cellar_response.data)['id']
+    
     # Create an unshelved instance
     sample_wine_instance['referenceId'] = created_wine_reference['id']
     sample_wine_instance['location'] = {'type': 'unshelved'}
@@ -189,8 +201,8 @@ def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_r
     # Assign to cellar
     new_location = {
         'type': 'cellar',
-        'cellarId': 'cellar-123',
-        'rowId': 'row-1',
+        'cellarId': cellar_id,
+        'shelfIndex': 0,
         'side': 'front',
         'position': 5
     }

@@ -8,8 +8,12 @@ WineApp is a personal wine inventory management system that allows users to trac
 ### 1. Cellar Management
 #### 1.1 Add Cellar
 The user should be able to add multiple cellars to their app. A cellar needs to have:
-- Rows
-    - Each row must be able to specify how many bottles per row, and whether the row is just one-sided or if there is front and back
+- Shelves
+    - Each shelf is defined as `[Positions, IsDouble]` where:
+      - `Positions` is a number representing how many bottle positions the shelf has
+      - `IsDouble` is a boolean (true/false) indicating whether the shelf is double-sided (front/back) or single-sided
+    - Example: `[50, true]` means 50 positions per side with front/back (total 100 positions)
+    - Example: `[30, false]` means 30 positions on a single side
 - Cellar would ideally be able to also specify metadata like:
     - Temperature
     - Capacity
@@ -18,7 +22,7 @@ The user should be able to add multiple cellars to their app. A cellar needs to 
 The user should be able to delete a cellar if they no longer have it. Any wines in the cellar deleted will be added to an unshelved list, which is also where all newly scanned wines will go.
 
 #### 1.3 View Cellar
-The user should be able to view their cellar graphically. The view should show each row, and the label for each wine on each row. Clicking on individual wines will bring up the wine view for the selected wine.
+The user should be able to view their cellar graphically. The view should show each shelf, and the label for each wine on each shelf. Clicking on individual wines will bring up the wine view for the selected wine.
 
 ### 2. Wine Management
 #### 2.1 Add Wine
@@ -41,7 +45,7 @@ Reference:
     - Label Image (URL to blob storage location)
 Instance
 - ID to the reference
-- Location (where stored) - this should allow the user to pull up the location in the cellar (which cellar, which row)
+- Location (where stored) - this should allow the user to pull up the location in the cellar (which cellar, which shelf)
 - Drink by date
 - Price
 - Purchase date
@@ -141,7 +145,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - Integration with wine lookup services (InVintory, TotalWine, or similar)
   - Image processing for label recognition
 - Data model supporting:
-  - Cellar management (multiple cellars with row-based organization)
+  - Cellar management (multiple cellars with shelf-based organization)
   - Wine Reference/Instance pattern (singleton references, multiple instances)
   - Unshelved wine tracking
   - Consumed wine tracking (soft delete with filter capability)
@@ -159,7 +163,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - Background sync when connection is restored
 - Responsive design for desktop and mobile
 - Graphical cellar visualization
-  - Visual representation of cellar rows
+  - Visual representation of cellar shelves
   - Interactive wine labels in cellar view
   - Click-to-view wine details
 - Search and filter UI components
@@ -184,11 +188,18 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - Tracks consumption status
   - Version tracking for conflict resolution
 - **Cellar**
-  - Contains multiple rows
-  - Each row has capacity and side configuration (one-sided vs front/back)
+  - Contains an array of shelves
+  - Each shelf is defined as `[Positions, IsDouble]`:
+    - `Positions`: number of bottle positions per side
+    - `IsDouble`: boolean indicating if shelf is double-sided (front/back) or single-sided
   - Tracks metadata (temperature, capacity)
-  - Maps wine instances to specific locations (cellar + row + position)
+  - Maps wine instances to specific locations (cellar + shelf index + side + position)
   - Version tracking for conflict resolution
+- **Shelf**
+  - Defined as a tuple: `[Positions, IsDouble]`
+  - `Positions`: number representing bottle positions per side
+  - `IsDouble`: boolean (true = front/back, false = single side)
+  - Each position maps to a **Wine Instance** (or null if empty)
 - **Unshelved List**
   - Temporary storage for wines not yet assigned to a cellar
   - Includes newly scanned wines and wines from deleted cellars
@@ -202,44 +213,109 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
 ### Cellar Endpoints
 - `GET /cellars` - Get all cellars
 - `POST /cellars` - Create a new cellar
-- `GET /cellars/<id>` - Get a specific cellar with row layout
+  - Request body: `{ "name": "string", "temperature": number, "capacity": number, "shelves": [[Positions, IsDouble], ...] }`
+    - `shelves`: Array of tuples where each tuple is `[Positions, IsDouble]`
+      - `Positions`: number (bottle positions per side)
+      - `IsDouble`: boolean (true = front/back, false = single side)
+    - Example: `"shelves": [[50, true], [30, false]]` creates two shelves: one double-sided with 50 positions per side, one single-sided with 30 positions
+  - Returns: Created cellar object with ID, version, timestamps, and initialized `winePositions` object
+- `GET /cellars/<id>` - Get a specific cellar with shelf layout
+  - Returns: Cellar object with all shelves and their configurations
 - `PUT /cellars/<id>` - Update cellar metadata
-- `DELETE /cellars/<id>` - Delete a cellar (moves wines to unshelved)
-- `GET /cellars/<id>/layout` - Get graphical layout of cellar rows and wine positions
+  - Request body: `{ "name": "string", "temperature": number, "capacity": number, "shelves": [[Positions, IsDouble], ...] }`
+    - `shelves`: Array of tuples `[Positions, IsDouble]` (same format as POST)
+    - Note: Modifying shelves may require repositioning existing wine instances
+  - Returns: Updated cellar object with incremented version
+- `DELETE /cellars/<id>` - Delete a cellar (moves all wine instances to unshelved)
+  - Returns: Success message
+- `GET /cellars/<id>/layout` - Get graphical layout of cellar shelves and wine positions
+  - Returns: Enhanced cellar object with wine instance details populated in shelf positions
 
 ### Wine Reference Endpoints
 - `GET /wine-references` - Get all wine references
+  - Returns: Array of wine reference objects
 - `POST /wine-references` - Create a new wine reference
+  - Request body: `{ "name": "string", "type": "Red|White|Rosé|Sparkling", "vintage": number, "producer": "string", "varietals": [...], "region": "string", "country": "string", "rating": number, "tastingNotes": "string", "labelImageUrl": "string" }`
+  - Returns: Created wine reference with ID, version, timestamps, and instanceCount=0
+  - Validates uniqueness: name + vintage + producer must be unique (returns 409 if duplicate)
 - `GET /wine-references/<id>` - Get a specific wine reference with all instances
+  - Returns: Wine reference object with an "instances" array containing all related wine instances
 - `PUT /wine-references/<id>` - Update wine reference metadata
-- `DELETE /wine-references/<id>` - Hard delete a wine reference and all instances
+  - Request body: Partial wine reference object with fields to update
+  - Returns: Updated wine reference with incremented version
+- `DELETE /wine-references/<id>` - Hard delete a wine reference and all its instances
+  - Returns: Success message
+  - Cascades deletion to all wine instances linked to this reference
 - `GET /wine-references/search?q=<query>` - Search wine references by relevance
+  - Query params: `q` - Search query string
+  - Returns: Array of wine references matching the search, ordered by relevance
+  - Searches across: name, varietal, vintage, region, producer, country
 - `GET /wine-references/filter?type=<type>&vintage=<year>&country=<country>&varietal=<varietal>&producer=<producer>&rating=<rating>&consumed=<true|false>&priceMin=<min>&priceMax=<max>&dateFrom=<date>&dateTo=<date>` - Filter wine references
+  - Query params: Multiple optional filter parameters
+  - Returns: Array of wine references matching all specified filters
+  - Note: `consumed` filter applies to instances, not references
 
 ### Wine Instance Endpoints
 - `GET /wine-instances` - Get all wine instances
+  - Query params: `?consumed=true|false` - Filter by consumption status
+  - Returns: Array of wine instance objects
 - `POST /wine-instances` - Create a new wine instance (link to reference)
+  - Request body: `{ "referenceId": "string", "location": {...}, "price": number, "purchaseDate": "YYYY-MM-DD", "drinkByDate": "YYYY-MM-DD" }`
+  - Returns: Created wine instance with ID, version, and timestamps
+  - Automatically updates the wine reference's instanceCount
 - `GET /wine-instances/<id>` - Get a specific wine instance
+  - Returns: Wine instance object
 - `PUT /wine-instances/<id>` - Update wine instance (location, dates, price)
+  - Request body: `{ "location": {...}, "price": number, "purchaseDate": "YYYY-MM-DD", "drinkByDate": "YYYY-MM-DD" }`
+  - Returns: Updated wine instance with incremented version
 - `DELETE /wine-instances/<id>` - Hard delete a wine instance
+  - Returns: Success message
+  - Automatically updates the wine reference's instanceCount
 - `POST /wine-instances/<id>/consume` - Mark instance as consumed (soft delete)
-- `PUT /wine-instances/<id>/location` - Update instance location (cellar, row, position)
+  - Returns: Updated wine instance with consumed=true and consumedDate set
+  - Automatically moves instance location to unshelved
+  - Automatically updates the wine reference's instanceCount
+- `PUT /wine-instances/<id>/location` - Update instance location (cellar, shelf, position)
+  - Request body: `{ "location": { "type": "cellar|unshelved", "cellarId": "string", "shelfIndex": number, "side": "front|back|single", "position": number } }`
+    - `shelfIndex`: zero-based index into the cellar's `shelves` array
+    - `side`: "front" or "back" if shelf IsDouble=true, "single" if IsDouble=false
+    - `position`: zero-based index within the side's position array
+  - Returns: Updated wine instance with new location
+  - Validates that the shelf index exists and position is within bounds
 
 ### Scanning Endpoints
 - `POST /scan/label` - Upload wine label image for recognition
-  - Returns: Wine data from external API (InVintory/TotalWine)
-  - May return multiple matches for user selection
+  - Request body: Form data with image file or base64 encoded image
+  - Returns: Array of potential wine matches from external API (InVintory/TotalWine)
+  - Each match includes: name, producer, vintage, type, and other metadata
+  - May return empty array if no matches found
 - `POST /scan/label/confirm` - Confirm scanned wine and create reference/instance
+  - Request body: `{ "matchIndex": number, "referenceData": {...}, "instanceData": {...} }`
+  - Returns: Created wine reference and wine instance objects
+  - If reference already exists (by name+vintage+producer), links instance to existing reference
 
 ### Image Storage Endpoints
 - `POST /images/upload` - Upload wine label image to blob storage
-  - Returns: URL to stored image in blob storage
+  - Request body: Form data with image file
+  - Returns: `{ "imageUrl": "https://blob-storage.example.com/wine-labels/image-id.jpg", "imageId": "image-id" }`
+  - Stores image in cloud blob storage (AWS S3, Azure Blob Storage, etc.)
 - `GET /images/<image-id>` - Retrieve image from blob storage (or direct blob storage URL)
+  - Returns: Image file with appropriate content-type header
+  - Alternative: Returns redirect to direct blob storage URL
 - `DELETE /images/<image-id>` - Delete image from blob storage
+  - Returns: Success message
+  - Note: Should also update any wine references using this image
 
 ### Unshelved Endpoints
 - `GET /unshelved` - Get all unshelved wine instances
-- `POST /unshelved/<instance-id>/assign` - Assign unshelved wine to a cellar location
+  - Returns: Array of wine instances where location.type = "unshelved" and consumed = false
+- `POST /unshelved/<instance-id>/assign` - Assign unshelved wine to a cellar shelf location
+  - Request body: `{ "location": { "type": "cellar", "cellarId": "string", "shelfIndex": number, "side": "front|back|single", "position": number } }`
+    - `shelfIndex`: zero-based index into the cellar's `shelves` array
+    - `side`: "front" or "back" if shelf IsDouble=true, "single" if IsDouble=false
+    - `position`: zero-based index within the side's position array
+  - Returns: Updated wine instance with new location
+  - Validates that the shelf index exists, position is within bounds, and position is available (not already occupied)
 
 ### Synchronization Endpoints
 - `POST /sync/check` - Check for updates since last sync
@@ -266,30 +342,32 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   "name": "Main Cellar",
   "temperature": 55,
   "capacity": 500,
-  "rows": [
-    {
-      "id": "row-1",
-      "bottlesPerSide": 50,
-      "sides": "front-back",
-      "winePositions": {
-        "front": ["instance-id-1", "instance-id-2", null, ...],
-        "back": ["instance-id-3", null, ...]
-      }
-    },
-    {
-      "id": "row-2",
-      "bottlesPerSide": 30,
-      "sides": "single",
-      "winePositions": {
-        "single": ["instance-id-4", null, ...]
-      }
-    }
+  "shelves": [
+    [50, true],
+    [30, false]
   ],
+  "winePositions": {
+    "0": {
+      "front": ["instance-id-1", "instance-id-2", null, ...],
+      "back": ["instance-id-3", null, ...]
+    },
+    "1": {
+      "single": ["instance-id-4", null, ...]
+    }
+  },
   "version": 5,
   "createdAt": "2024-01-15T10:30:00Z",
   "updatedAt": "2024-01-15T10:30:00Z"
 }
 ```
+
+**Shelf Structure:**
+- `shelves` is an array of tuples: `[Positions, IsDouble]`
+  - `Positions`: number of bottle positions per side
+  - `IsDouble`: boolean (true = front/back sides, false = single side)
+- `winePositions` is an object keyed by shelf index (as string)
+  - Each shelf index maps to an object with `"front"`/`"back"` (if IsDouble=true) or `"single"` (if IsDouble=false)
+  - Each position array contains wine instance IDs or `null` for empty positions
 
 ### Wine Reference Object
 ```json
@@ -320,7 +398,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   "location": {
     "type": "cellar|unshelved",
     "cellarId": "cellar-id-1",
-    "rowId": "row-1",
+    "shelfIndex": 0,
     "side": "front",
     "position": 5
   },

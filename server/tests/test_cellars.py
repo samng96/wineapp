@@ -94,7 +94,8 @@ def test_get_cellar_layout(client, sample_cellar):
     response = client.get(f'/cellars/{cellar_id}/layout')
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert 'rows' in data
+    assert 'shelves' in data
+    assert 'winePositions' in data
     assert data['id'] == cellar_id
 
 def test_create_cellar_minimal_data(client):
@@ -106,4 +107,5 @@ def test_create_cellar_minimal_data(client):
     assert response.status_code == 201
     data = json.loads(response.data)
     assert data['name'] == 'Minimal Cellar'
-    assert data.get('rows') == []
+    assert data.get('shelves') == []
+    assert 'winePositions' in data

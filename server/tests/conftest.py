@@ -84,16 +84,9 @@ def sample_cellar():
         'name': 'Test Cellar',
         'temperature': 55,
         'capacity': 100,
-        'rows': [
-            {
-                'id': 'row-1',
-                'bottlesPerSide': 50,
-                'sides': 'front-back',
-                'winePositions': {
-                    'front': [None] * 50,
-                    'back': [None] * 50
-                }
-            }
+        'shelves': [
+            [50, True],  # 50 positions per side, double-sided (front/back)
+            [30, False]  # 30 positions, single-sided
         ]
     }
 
