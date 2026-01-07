@@ -1,6 +1,6 @@
 """Cellar management endpoints and helper functions"""
 from flask import Blueprint, jsonify, request
-from typing import Dict, List, Optional
+from typing import List, Optional
 import json
 import os
 from utils import (
@@ -15,16 +15,9 @@ from wine_instances import load_wine_instances, save_wine_instances, load_wine_i
 cellars_bp = Blueprint('cellars', __name__)
 
 # Helper functions
-# Right now, load_cellars loads from our server's local files and then returns an in-memory list of cellars 
+# Right now, load_cellars loads from our server's local files and then returns an in-memory list of Cellar model objects
 # so that other APIs can use it. In the future, we'll want to update this to use a database.
-def load_cellars() -> List[Dict]:
-    """Load cellars from JSON file as dictionaries"""
-    if os.path.exists(CELLARS_FILE):
-        with open(CELLARS_FILE, 'r') as f:
-            return json.load(f)
-    return []
-
-def load_cellars_as_models() -> List[Cellar]:
+def load_cellars() -> List[Cellar]:
     """Load cellars from JSON file as Cellar model objects with WineInstance objects resolved"""
     if os.path.exists(CELLARS_FILE):
         with open(CELLARS_FILE, 'r') as f:
@@ -36,24 +29,15 @@ def load_cellars_as_models() -> List[Cellar]:
     return []
 
 # Right now, save_cellars saves to the server's local files. In the future, we'll want to update this to use a database.
-def save_cellars(cellars: List[Dict]):
-    """Save cellars to JSON file (accepts dictionaries)"""
-    with open(CELLARS_FILE, 'w') as f:
-        json.dump(cellars, f, indent=2)
-
-def save_cellars_from_models(cellars: List[Cellar]):
+def save_cellars(cellars: List[Cellar]):
     """Save cellars to JSON file (accepts Cellar model objects)"""
     data = [c.to_dict() for c in cellars]
-    save_cellars(data)
+    with open(CELLARS_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
 
-def find_cellar_by_id(cellar_id: str) -> Optional[Dict]:
-    """Find a cellar by ID (returns dictionary)"""
-    cellars = load_cellars()
-    return next((c for c in cellars if c['id'] == cellar_id), None)
-
-def find_cellar_by_id_as_model(cellar_id: str) -> Optional[Cellar]:
+def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
     """Find a cellar by ID (returns Cellar model object)"""
-    cellars = load_cellars_as_models()
+    cellars = load_cellars()
     return next((c for c in cellars if c.id == cellar_id), None)
 
 # Endpoints
@@ -61,7 +45,7 @@ def find_cellar_by_id_as_model(cellar_id: str) -> Optional[Cellar]:
 def get_cellars():
     """Get all cellars"""
     cellars = load_cellars()
-    return jsonify(cellars)
+    return jsonify([c.to_dict() for c in cellars])
 
 @cellars_bp.route('/cellars', methods=['POST'])
 def create_cellar():
@@ -97,7 +81,7 @@ def create_cellar():
     
     # Save to file
     cellars = load_cellars()
-    cellars.append(cellar.to_dict())
+    cellars.append(cellar)
     save_cellars(cellars)
     
     return jsonify(cellar.to_dict()), 201
@@ -108,12 +92,12 @@ def get_cellar(cellar_id: str):
     cellar = find_cellar_by_id(cellar_id)
     if not cellar:
         return jsonify({'error': 'Cellar not found'}), 404
-    return jsonify(cellar)
+    return jsonify(cellar.to_dict())
 
 @cellars_bp.route('/cellars/<cellar_id>', methods=['PUT'])
 def update_cellar(cellar_id: str):
     """Update a cellar"""
-    cellar_model = find_cellar_by_id_as_model(cellar_id)
+    cellar_model = find_cellar_by_id(cellar_id)
     if not cellar_model:
         return jsonify({'error': 'Cellar not found'}), 404
     
@@ -198,8 +182,8 @@ def update_cellar(cellar_id: str):
     # Save to file
     cellars = load_cellars()
     for i, c in enumerate(cellars):
-        if c['id'] == cellar_id:
-            cellars[i] = cellar_model.to_dict()
+        if c.id == cellar_id:
+            cellars[i] = cellar_model
             break
     save_cellars(cellars)
     
@@ -213,18 +197,23 @@ def delete_cellar(cellar_id: str):
         return jsonify({'error': 'Cellar not found'}), 404
     
     # Move all wine instances in this cellar to unshelved
-    instances = load_wine_instances()
+    instances = load_wine_instances_as_models()
     for instance in instances:
-        if (instance.get('location', {}).get('type') == 'cellar' and 
-            instance.get('location', {}).get('cellarId') == cellar_id):
-            instance['location'] = {'type': 'unshelved'}
-            instance = add_version_and_timestamps(instance, is_new=False)
+        if (instance.location.get('type') == 'cellar' and 
+            instance.location.get('cellarId') == cellar_id):
+            instance.location = {'type': 'unshelved'}
+            instance_dict = instance.to_dict()
+            instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
+            instance.version = instance_dict['version']
+            instance.updated_at = instance_dict['updatedAt']
     
-    save_wine_instances(instances)
+    # Save instances
+    from wine_instances import save_wine_instances_from_models
+    save_wine_instances_from_models(instances)
     
     # Delete the cellar
     cellars = load_cellars()
-    cellars = [c for c in cellars if c['id'] != cellar_id]
+    cellars = [c for c in cellars if c.id != cellar_id]
     save_cellars(cellars)
     
     return jsonify({'message': 'Cellar deleted'}), 200
@@ -232,35 +221,31 @@ def delete_cellar(cellar_id: str):
 @cellars_bp.route('/cellars/<cellar_id>/layout', methods=['GET'])
 def get_cellar_layout(cellar_id: str):
     """Get graphical layout of cellar shelves and wine positions"""
-    from wine_references import load_wine_references
-    from wine_instances import find_wine_instance_by_id
+    from wine_instances import load_wine_instances_as_models
     
     cellar = find_cellar_by_id(cellar_id)
     if not cellar:
         return jsonify({'error': 'Cellar not found'}), 404
     
-    # Load instances to populate positions with wine data
-    instances = load_wine_instances()
-    references = load_wine_references()
-    
-    # Create a reference lookup
-    ref_lookup = {r['id']: r for r in references}
-    
-    # Enhance layout with wine information
-    layout = cellar.copy()
+    # Get cellar as dict for layout
+    layout = cellar.to_dict()
     wine_positions = layout.get('winePositions', {})
     
+    # Load instances for reference data
+    instances = load_wine_instances_as_models()
+    instance_lookup = {inst.id: inst for inst in instances}
+    
+    # Enhance layout with wine information
     for shelf_index, positions_dict in wine_positions.items():
         for side, positions in positions_dict.items():
             for i, instance_id in enumerate(positions):
                 if instance_id:
-                    instance = find_wine_instance_by_id(instance_id)
+                    instance = instance_lookup.get(instance_id)
                     if instance:
-                        ref = ref_lookup.get(instance['referenceId'])
                         positions[i] = {
                             'instanceId': instance_id,
-                            'wineReference': ref,
-                            'instance': instance
+                            'wineReference': instance.reference.to_dict(),
+                            'instance': instance.to_dict()
                         }
     
     return jsonify(layout)

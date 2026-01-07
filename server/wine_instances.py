@@ -196,7 +196,7 @@ def consume_wine_instance(instance_id: str):
     # Remove from cellar position if it was in a cellar
     old_location = instance_model.location
     if old_location.get('type') == 'cellar':
-        from cellars import find_cellar_by_id_as_model, save_cellars, load_cellars
+        from cellars import find_cellar_by_id, save_cellars, load_cellars
         
         cellar_id = old_location.get('cellarId')
         shelf_index = old_location.get('shelfIndex')
@@ -204,14 +204,14 @@ def consume_wine_instance(instance_id: str):
         position = old_location.get('position')
         
         if cellar_id and shelf_index is not None and side and position is not None:
-            cellar = find_cellar_by_id_as_model(cellar_id)
+            cellar = find_cellar_by_id(cellar_id)
             if cellar:
                 cellar.remove_wine_from_position(shelf_index, side, position)
                 # Save cellar
                 cellars = load_cellars()
                 for i, c in enumerate(cellars):
-                    if c['id'] == cellar_id:
-                        cellars[i] = cellar.to_dict()
+                    if c.id == cellar_id:
+                        cellars[i] = cellar
                         break
                 save_cellars(cellars)
     
@@ -250,7 +250,7 @@ def update_wine_instance_location(instance_id: str):
     
     # If moving to a cellar, validate the position using Cellar model
     if new_location.get('type') == 'cellar':
-        from cellars import find_cellar_by_id_as_model, save_cellars, load_cellars
+        from cellars import find_cellar_by_id, save_cellars, load_cellars
         
         cellar_id = new_location.get('cellarId')
         shelf_index = new_location.get('shelfIndex')
@@ -260,7 +260,7 @@ def update_wine_instance_location(instance_id: str):
         if cellar_id is None or shelf_index is None or side is None or position is None:
             return jsonify({'error': 'Cellar location requires cellarId, shelfIndex, side, and position'}), 400
         
-        cellar = find_cellar_by_id_as_model(cellar_id)
+        cellar = find_cellar_by_id(cellar_id)
         if not cellar:
             return jsonify({'error': 'Cellar not found'}), 404
         
@@ -297,8 +297,8 @@ def update_wine_instance_location(instance_id: str):
         # Save cellar
         cellars = load_cellars()
         for i, c in enumerate(cellars):
-            if c['id'] == cellar_id:
-                cellars[i] = cellar.to_dict()
+            if c.id == cellar_id:
+                cellars[i] = cellar
                 break
         save_cellars(cellars)
     
@@ -343,7 +343,7 @@ def assign_unshelved_to_cellar(instance_id: str):
     if new_location.get('type') != 'cellar':
         return jsonify({'error': 'Location type must be "cellar" for assignment'}), 400
     
-    from cellars import find_cellar_by_id_as_model, save_cellars, load_cellars
+    from cellars import find_cellar_by_id, save_cellars, load_cellars
     
     cellar_id = new_location.get('cellarId')
     shelf_index = new_location.get('shelfIndex')
@@ -353,7 +353,7 @@ def assign_unshelved_to_cellar(instance_id: str):
     if cellar_id is None or shelf_index is None or side is None or position is None:
         return jsonify({'error': 'Cellar location requires cellarId, shelfIndex, side, and position'}), 400
     
-    cellar = find_cellar_by_id_as_model(cellar_id)
+    cellar = find_cellar_by_id(cellar_id)
     if not cellar:
         return jsonify({'error': 'Cellar not found'}), 404
     
@@ -371,8 +371,8 @@ def assign_unshelved_to_cellar(instance_id: str):
     # Save cellar
     cellars = load_cellars()
     for i, c in enumerate(cellars):
-        if c['id'] == cellar_id:
-            cellars[i] = cellar.to_dict()
+        if c.id == cellar_id:
+            cellars[i] = cellar
             break
     save_cellars(cellars)
     
