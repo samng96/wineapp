@@ -1,0 +1,12 @@
+[
+  {
+    "id": "42baf57d-d065-4928-89ec-185383e2d790",
+    "name": "Test Cellar",
+    "temperature": 55,
+    "capacity": 100,
+    "rows": [],
+    "version": 1,
+    "createdAt": "2026-01-07T00:04:28.211940Z",
+    "updatedAt": "2026-01-07T00:04:28.211948Z"
+  }
+]

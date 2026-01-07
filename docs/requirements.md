@@ -199,9 +199,6 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
 
 ## API Endpoints (Current & Planned)
 
-### Current
-- `GET /wines` - Retrieve all wines (legacy, to be updated)
-
 ### Cellar Endpoints
 - `GET /cellars` - Get all cellars
 - `POST /cellars` - Create a new cellar
