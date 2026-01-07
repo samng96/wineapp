@@ -176,7 +176,6 @@ class WineReference:
     rating: Optional[int] = None  # 1-5
     tasting_notes: Optional[str] = None
     label_image_url: Optional[str] = None  # URL to blob storage
-    instance_count: int = 0  # Calculated from active instances
     version: int = 1
     created_at: Optional[str] = None
     updated_at: Optional[str] = None

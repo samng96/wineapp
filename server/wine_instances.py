@@ -11,7 +11,7 @@ from server.utils import (
 )
 from server.models import WineInstance, WineReference
 from server.storage import serialize_wine_instance, deserialize_wine_instance
-from server.cellars import find_cellar_by_id, save_cellars, load_cellars
+from server.cellars import find_cellar_by_id, save_cellars, load_cellars, update_and_save_cellar
 
 wine_instances_bp = Blueprint('wine_instances', __name__)
 
@@ -64,25 +64,26 @@ def find_wine_instance_by_id_as_model(instance_id: str) -> Optional[WineInstance
     return next((i for i in instances if i.id == instance_id), None)
 
 
+def _update_and_save_wine_instance(instance: WineInstance):
+    """Helper function to update and save a wine instance in the JSON file"""
+    instances = load_wine_instances()
+    for i, inst in enumerate(instances):
+        if inst['id'] == instance.id:
+            instances[i] = serialize_wine_instance(instance)
+            break
+    save_wine_instances(instances)
+
+
 def _location_dict_to_tuple(location_dict: Dict, cellars: List) -> Optional[Tuple]:
-    """Convert location dictionary to tuple (Cellar, Shelf, int, bool) or None"""
+    """Convert API request location dictionary to tuple (Cellar, Shelf, int, bool) or None
+    
+    Handles API request format: {type: "cellar", cellarId, shelfIndex, side: "front"|"back"|"single", position}
+    Converts side string to isFront boolean for internal tuple format.
+    """
     if not location_dict or location_dict.get('type') == 'unshelved':
         return None
     
-    # Handle new format with isFront
-    if 'cellarId' in location_dict and 'shelfIndex' in location_dict:
-        cellar_id = location_dict.get('cellarId')
-        shelf_index = location_dict.get('shelfIndex')
-        position = location_dict.get('position')
-        is_front = location_dict.get('isFront')
-        
-        if cellar_id and shelf_index is not None and position is not None and is_front is not None:
-            cellar = find_cellar_by_id(cellar_id)
-            if cellar and 0 <= shelf_index < len(cellar.shelves):
-                shelf = cellar.shelves[shelf_index]
-                return (cellar, shelf, position, is_front)
-    
-    # Handle old format with side (for backward compatibility)
+    # Handle API request format with side
     if location_dict.get('type') == 'cellar':
         cellar_id = location_dict.get('cellarId')
         shelf_index = location_dict.get('shelfIndex')
@@ -101,29 +102,6 @@ def _location_dict_to_tuple(location_dict: Dict, cellars: List) -> Optional[Tupl
                 return (cellar, shelf, position, is_front)
     
     return None
-
-
-def update_instance_count(reference_id: str):
-    """Update the instance count for a wine reference"""
-    import json
-    import os
-    
-    if os.path.exists(WINE_REFERENCES_FILE):
-        with open(WINE_REFERENCES_FILE, 'r') as f:
-            references = json.load(f)
-    else:
-        return
-    
-    instances = load_wine_instances()
-    
-    for ref in references:
-        if ref['id'] == reference_id:
-            active_instances = [i for i in instances 
-                              if i['referenceId'] == reference_id and not i.get('consumed', False)]
-            ref['instanceCount'] = len(active_instances)
-            with open(WINE_REFERENCES_FILE, 'w') as f:
-                json.dump(references, f, indent=2)
-            break
 
 
 # Endpoints
@@ -186,12 +164,7 @@ def create_wine_instance():
             try:
                 cellar.assign_wine_to_position(shelf_index, side, position, instance)
                 # Save cellar
-                cellars = load_cellars()
-                for i, c in enumerate(cellars):
-                    if c.id == cellar.id:
-                        cellars[i] = cellar
-                        break
-                save_cellars(cellars)
+                update_and_save_cellar(cellar)
             except ValueError as e:
                 return jsonify({'error': str(e)}), 400
     
@@ -205,9 +178,6 @@ def create_wine_instance():
     instances = load_wine_instances()
     instances.append(serialize_wine_instance(instance))
     save_wine_instances(instances)
-    
-    # Update instance count
-    update_instance_count(data.get('referenceId'))
     
     return jsonify(serialize_wine_instance(instance)), 201
 
@@ -244,12 +214,7 @@ def update_wine_instance(instance_id: str):
     instance.updated_at = get_current_timestamp()
     
     # Save to file
-    instances = load_wine_instances()
-    for i, inst in enumerate(instances):
-        if inst['id'] == instance_id:
-            instances[i] = serialize_wine_instance(instance)
-            break
-    save_wine_instances(instances)
+    _update_and_save_wine_instance(instance)
     
     return jsonify(serialize_wine_instance(instance))
 
@@ -280,20 +245,12 @@ def delete_wine_instance(instance_id: str):
         if shelf_index is not None:
             cellar.remove_wine_from_position(shelf_index, side, position)
             # Save cellar
-            cellars = load_cellars()
-            for i, c in enumerate(cellars):
-                if c.id == cellar.id:
-                    cellars[i] = cellar
-                    break
-            save_cellars(cellars)
+            update_and_save_cellar(cellar)
     
     # Delete from file
     instances = load_wine_instances()
     instances = [i for i in instances if i['id'] != instance_id]
     save_wine_instances(instances)
-    
-    # Update instance count (use reference.id from WineReference object)
-    update_instance_count(instance.reference.id)
     
     return jsonify({'message': 'Wine instance deleted'}), 200
 
@@ -327,12 +284,7 @@ def consume_wine_instance(instance_id: str):
         if shelf_index is not None:
             cellar.remove_wine_from_position(shelf_index, side, position)
             # Save cellar
-            cellars = load_cellars()
-            for i, c in enumerate(cellars):
-                if c.id == cellar.id:
-                    cellars[i] = cellar
-                    break
-            save_cellars(cellars)
+            update_and_save_cellar(cellar)
     
     # Clear location since it's no longer in the cellar
     instance.location = None
@@ -341,15 +293,7 @@ def consume_wine_instance(instance_id: str):
     instance.version += 1
     instance.updated_at = get_current_timestamp()
     
-    instances = load_wine_instances()
-    for i, inst in enumerate(instances):
-        if inst['id'] == instance_id:
-            instances[i] = serialize_wine_instance(instance)
-            break
-    save_wine_instances(instances)
-    
-    # Update instance count (use reference.id from WineReference object)
-    update_instance_count(instance.reference.id)
+    _update_and_save_wine_instance(instance)
     
     return jsonify(serialize_wine_instance(instance))
 
@@ -385,32 +329,8 @@ def update_wine_instance_location(instance_id: str):
         # Validate position using Cellar model methods
         if not cellar.is_position_valid(shelf_index, side, position):
             return jsonify({'error': 'Invalid position'}), 400
-        
-        # Check if position is available
         if not cellar.is_position_available(shelf_index, side, position):
-            # Allow same instance to stay in place
-            old_location = instance.location
-            if (old_location is not None and 
-                old_location[0].id == cellar_id and
-                old_location[2] == position):
-                # Check if same shelf and side
-                old_shelf = old_location[1]
-                old_is_front = old_location[3]
-                if shelf_index < len(cellar.shelves) and cellar.shelves[shelf_index] is old_shelf:
-                    if shelf.is_double:
-                        if (side == 'front' and old_is_front) or (side == 'back' and not old_is_front):
-                            pass  # Same position, allow it
-                        else:
-                            return jsonify({'error': 'Position already occupied'}), 400
-                    else:
-                        if side == 'single':
-                            pass  # Same position, allow it
-                        else:
-                            return jsonify({'error': 'Position already occupied'}), 400
-                else:
-                    return jsonify({'error': 'Position already occupied'}), 400
-            else:
-                return jsonify({'error': 'Position already occupied'}), 400
+            return jsonify({'error': 'Position already occupied'}), 400
         
         # Get shelf and convert side to isFront
         shelf = cellar.shelves[shelf_index]
@@ -439,6 +359,8 @@ def update_wine_instance_location(instance_id: str):
                 
                 if old_shelf_index is not None:
                     cellar.remove_wine_from_position(old_shelf_index, old_side, old_position)
+                else:
+                    return jsonify({'error': 'Old shelf not found'}), 404 # This should never happen, but just in case.
         
         # Assign to new position (pass WineInstance object, not ID)
         cellar.assign_wine_to_position(shelf_index, side, position, instance)
@@ -447,12 +369,7 @@ def update_wine_instance_location(instance_id: str):
         new_location_tuple = (cellar, shelf, position, is_front)
         
         # Save cellar
-        cellars = load_cellars()
-        for i, c in enumerate(cellars):
-            if c.id == cellar_id:
-                cellars[i] = cellar
-                break
-        save_cellars(cellars)
+        update_and_save_cellar(cellar)
     
     instance.location = new_location_tuple
     
@@ -460,12 +377,7 @@ def update_wine_instance_location(instance_id: str):
     instance.version += 1
     instance.updated_at = get_current_timestamp()
     
-    instances = load_wine_instances()
-    for i, inst in enumerate(instances):
-        if inst['id'] == instance_id:
-            instances[i] = serialize_wine_instance(instance)
-            break
-    save_wine_instances(instances)
+    _update_and_save_wine_instance(instance)
     
     return jsonify(serialize_wine_instance(instance))
 
@@ -532,12 +444,7 @@ def assign_unshelved_to_cellar(instance_id: str):
     new_location_tuple = (cellar, shelf, position, is_front)
     
     # Save cellar
-    cellars = load_cellars()
-    for i, c in enumerate(cellars):
-        if c.id == cellar_id:
-            cellars[i] = cellar
-            break
-    save_cellars(cellars)
+    update_and_save_cellar(cellar)
     
     instance.location = new_location_tuple
     
@@ -545,11 +452,6 @@ def assign_unshelved_to_cellar(instance_id: str):
     instance.version += 1
     instance.updated_at = get_current_timestamp()
     
-    instances = load_wine_instances()
-    for i, inst in enumerate(instances):
-        if inst['id'] == instance_id:
-            instances[i] = serialize_wine_instance(instance)
-            break
-    save_wine_instances(instances)
+    _update_and_save_wine_instance(instance)
     
     return jsonify(serialize_wine_instance(instance))

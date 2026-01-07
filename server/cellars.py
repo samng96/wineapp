@@ -25,8 +25,8 @@ def load_cellars() -> List[Cellar]:
             cellars_temp = [deserialize_cellar(c, {}) for c in data]  # Empty dict for now
             
             # Load wine instances with cellars for location resolution
-            from server.wine_instances import load_wine_instances_as_models
-            wine_instances_list = load_wine_instances_as_models(cellars=cellars_temp)
+            from server.wine_instances import load_wine_instances
+            wine_instances_list = load_wine_instances(cellars=cellars_temp)
             wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
             
             # Now reload cellars with resolved wine instances
@@ -45,6 +45,16 @@ def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
     """Find a cellar by ID (returns Cellar model object)"""
     cellars = load_cellars()
     return next((c for c in cellars if c.id == cellar_id), None)
+
+
+def update_and_save_cellar(cellar: Cellar):
+    """Helper function to update and save a cellar in the JSON file"""
+    cellars = load_cellars()
+    for i, c in enumerate(cellars):
+        if c.id == cellar.id:
+            cellars[i] = cellar
+            break
+    save_cellars(cellars)
 
 
 # Endpoints
@@ -131,12 +141,7 @@ def update_cellar(cellar_id: str):
     cellar.updated_at = get_current_timestamp()
     
     # Save to file
-    cellars = load_cellars()
-    for i, c in enumerate(cellars):
-        if c.id == cellar_id:
-            cellars[i] = cellar
-            break
-    save_cellars(cellars)
+    update_and_save_cellar(cellar)
     
     return jsonify(serialize_cellar(cellar))
 
@@ -149,9 +154,9 @@ def delete_cellar(cellar_id: str):
         return jsonify({'error': 'Cellar not found'}), 404
     
     # Move all wine instances in this cellar to unshelved
-    from server.wine_instances import load_wine_instances_as_models, save_wine_instances_from_models
+    from server.wine_instances import load_wine_instances, save_wine_instances
     
-    all_instances = load_wine_instances_as_models(cellars=[cellar])
+    all_instances = load_wine_instances(cellars=[cellar])
     for instance in all_instances:
         if instance.location is not None:
             cellar_obj, shelf, position, is_front = instance.location
@@ -161,7 +166,7 @@ def delete_cellar(cellar_id: str):
                 instance.updated_at = get_current_timestamp()
     
     # Save instances
-    save_wine_instances_from_models(all_instances)
+    save_wine_instances(all_instances)
     
     # Delete the cellar
     cellars = load_cellars()

@@ -124,7 +124,6 @@ def serialize_wine_reference(reference: WineReference) -> Dict[str, Any]:
         'rating': reference.rating,
         'tastingNotes': reference.tasting_notes,
         'labelImageUrl': reference.label_image_url,
-        'instanceCount': reference.instance_count,
         'version': reference.version,
         'createdAt': reference.created_at,
         'updatedAt': reference.updated_at
@@ -145,7 +144,6 @@ def deserialize_wine_reference(data: Dict[str, Any]) -> WineReference:
         rating=data.get('rating'),
         tasting_notes=data.get('tastingNotes'),
         label_image_url=data.get('labelImageUrl'),
-        instance_count=data.get('instanceCount', 0),
         version=data.get('version', 1),
         created_at=data.get('createdAt'),
         updated_at=data.get('updatedAt')

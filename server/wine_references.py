@@ -86,8 +86,7 @@ def create_wine_reference():
         country=data.get('country'),
         rating=data.get('rating'),
         tasting_notes=data.get('tastingNotes'),
-        label_image_url=data.get('labelImageUrl'),
-        instance_count=0
+        label_image_url=data.get('labelImageUrl')
     )
     
     # Check if reference already exists (name + vintage + producer)
@@ -123,7 +122,7 @@ def get_wine_reference(reference_id: str):
     # Get all instances for this reference
     from server.wine_instances import load_wine_instances
     instances = load_wine_instances()
-    reference_instances = [i for i in instances if i['referenceId'] == reference_id]
+    reference_instances = [serialize_wine_instance(i) for i in instances if i.reference.id == reference_id]
     
     response = serialize_wine_reference(reference)
     response['instances'] = reference_instances
