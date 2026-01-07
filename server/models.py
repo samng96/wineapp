@@ -1,5 +1,5 @@
 """Data models and type definitions for WineApp"""
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Optional, Dict, Any, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -150,9 +150,8 @@ class Cellar:
     updated_at: Optional[str] = None
     
     def __post_init__(self):
-        """Calculate capacity from shelves if not provided"""
-        if self.capacity is None:
-            self.capacity = sum(shelf.positions * (2 if shelf.is_double else 1) for shelf in self.shelves)
+        # We assume capacity is never provided, so we need to calculate it here.
+        self.capacity = sum(shelf.positions * (2 if shelf.is_double else 1) for shelf in self.shelves)
     
     """Used for serialization to/from JSON"""
     def to_dict(self) -> Dict[str, Any]:
@@ -336,7 +335,7 @@ class WineInstance:
     """Represents a wine instance (physical bottle)"""
     id: str
     reference: 'WineReference'  # WineReference object (not ID)
-    location: Dict[str, Any]  # {type: "cellar|unshelved", cellarId?, shelfIndex?, side?, position?}
+    location: Optional[Tuple['Cellar', 'Shelf', int, bool]] = None  # (Cellar, Shelf, Position, IsFront) or None for unshelved
     price: Optional[float] = None
     purchase_date: Optional[str] = None
     drink_by_date: Optional[str] = None
@@ -349,10 +348,30 @@ class WineInstance:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary format for JSON serialization"""
+        # Serialize location
+        location_dict = None
+        if self.location is not None:
+            cellar, shelf, position, is_front = self.location
+            # Find shelf index in cellar
+            shelf_index = None
+            for i, s in enumerate(cellar.shelves):
+                if s is shelf:
+                    shelf_index = i
+                    break
+            if shelf_index is None:
+                raise ValueError(f"Shelf not found in cellar {cellar.id}")
+            
+            location_dict = {
+                'cellarId': cellar.id,
+                'shelfIndex': shelf_index,
+                'position': position,
+                'isFront': is_front
+            }
+        
         return {
             'id': self.id,
             'referenceId': self.reference.id,  # Get ID from WineReference object
-            'location': self.location,
+            'location': location_dict,
             'price': self.price,
             'purchaseDate': self.purchase_date,
             'drinkByDate': self.drink_by_date,
@@ -365,17 +384,42 @@ class WineInstance:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'WineInstance':
-        """Create WineInstance from dictionary, looking up WineReference from global registry"""
+    def from_dict(cls, data: Dict[str, Any], cellars: Optional[List['Cellar']] = None) -> 'WineInstance':
+        """
+        Create WineInstance from dictionary, looking up WineReference from global registry
+        cellars: Optional list of Cellar objects for resolving location (if None, location will be None)
+        """
         reference_id = data['referenceId']
         reference = get_wine_reference(reference_id)
         if not reference:
             raise ValueError(f"WineReference with ID '{reference_id}' not found in registry")
         
+        # Deserialize location
+        location = None
+        location_data = data.get('location')
+        if location_data and cellars:
+            cellar_id = location_data.get('cellarId')
+            shelf_index = location_data.get('shelfIndex')
+            position = location_data.get('position')
+            is_front = location_data.get('isFront')
+            
+            if cellar_id is not None and shelf_index is not None and position is not None and is_front is not None:
+                # Find cellar
+                cellar = next((c for c in cellars if c.id == cellar_id), None)
+                if not cellar:
+                    raise ValueError(f"Cellar with ID '{cellar_id}' not found")
+                
+                # Get shelf
+                if shelf_index < 0 or shelf_index >= len(cellar.shelves):
+                    raise ValueError(f"Shelf index {shelf_index} out of range for cellar {cellar_id}")
+                shelf = cellar.shelves[shelf_index]
+                
+                location = (cellar, shelf, position, is_front)
+        
         return cls(
             id=data['id'],
             reference=reference,  # Store WineReference object
-            location=data.get('location', {'type': 'unshelved'}),
+            location=location,
             price=data.get('price'),
             purchase_date=data.get('purchaseDate'),
             drink_by_date=data.get('drinkByDate'),
@@ -389,19 +433,34 @@ class WineInstance:
     
     def _is_in_cellar(self) -> bool:
         """Check if instance is in a cellar (internal method)"""
-        return self.location.get('type') == 'cellar'
+        return self.location is not None
     
     def _is_unshelved(self) -> bool:
         """Check if instance is unshelved (internal method)"""
-        return self.location.get('type') == 'unshelved'
+        return self.location is None
     
     def get_cellar_location(self) -> Optional[Dict[str, Any]]:
         """Get cellar location details if in a cellar"""
-        if self._is_in_cellar():
-            return {
-                'cellarId': self.location.get('cellarId'),
-                'shelfIndex': self.location.get('shelfIndex'),
-                'side': self.location.get('side'),
-                'position': self.location.get('position')
-            }
+        if self.location is not None:
+            cellar, shelf, position, is_front = self.location
+            # Find shelf index
+            shelf_index = None
+            for i, s in enumerate(cellar.shelves):
+                if s is shelf:
+                    shelf_index = i
+                    break
+            
+            if shelf_index is not None:
+                # Convert is_front to side string
+                if shelf.is_double:
+                    side = 'front' if is_front else 'back'
+                else:
+                    side = 'single'
+                
+                return {
+                    'cellarId': cellar.id,
+                    'shelfIndex': shelf_index,
+                    'side': side,
+                    'position': position
+                }
         return None

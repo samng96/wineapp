@@ -129,7 +129,7 @@ def test_consume_wine_instance(client, sample_wine_instance, created_wine_refere
     data = json.loads(response.data)
     assert data['consumed'] == True
     assert data['consumedDate'] is not None
-    assert data['location']['type'] == 'unshelved'
+    assert data['location'] is None  # Unshelved instances have None location
     
     # Verify instance count was updated
     ref_response = client.get(f"/wine-references/{created_wine_reference['id']}")
@@ -164,7 +164,12 @@ def test_update_wine_instance_location(client, sample_wine_instance, created_win
                          content_type='application/json')
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert data['location'] == new_location
+    # Location is serialized as {cellarId, shelfIndex, position, isFront}
+    assert data['location'] is not None
+    assert data['location']['cellarId'] == cellar_id
+    assert data['location']['shelfIndex'] == 0
+    assert data['location']['position'] == 5
+    assert data['location']['isFront'] == True
 
 def test_get_unshelved(client, sample_wine_instance, created_wine_reference):
     """Test getting unshelved wine instances"""
@@ -180,7 +185,7 @@ def test_get_unshelved(client, sample_wine_instance, created_wine_reference):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert len(data) == 1
-    assert data[0]['location']['type'] == 'unshelved'
+    assert data[0]['location'] is None  # Unshelved instances have None location
 
 def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_reference, sample_cellar):
     """Test assigning unshelved wine to a cellar"""
@@ -211,4 +216,9 @@ def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_r
                           content_type='application/json')
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert data['location'] == new_location
+    # Location is serialized as {cellarId, shelfIndex, position, isFront}
+    assert data['location'] is not None
+    assert data['location']['cellarId'] == cellar_id
+    assert data['location']['shelfIndex'] == 0
+    assert data['location']['position'] == 5
+    assert data['location']['isFront'] == True

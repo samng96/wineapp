@@ -22,10 +22,18 @@ def load_cellars() -> List[Cellar]:
     if os.path.exists(CELLARS_FILE):
         with open(CELLARS_FILE, 'r') as f:
             data = json.load(f)
-            # Load wine instances to resolve IDs
-            wine_instances_list = load_wine_instances_as_models()
+            # Load cellars first without wine instances to break circular dependency
+            # Then load wine instances with cellars, then resolve wine instances in cellars
+            cellars_temp = [Cellar.from_dict(c, {}) for c in data]  # Empty dict for now
+            
+            # Load wine instances with cellars for location resolution
+            from wine_instances import load_wine_instances_as_models
+            wine_instances_list = load_wine_instances_as_models(cellars=cellars_temp)
             wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
+            
+            # Now reload cellars with resolved wine instances
             return [Cellar.from_dict(c, wine_instances_dict) for c in data]
+            """We need to fix this later when we move to a real database, but for the time being this is fine."""
     return []
 
 # Right now, save_cellars saves to the server's local files. In the future, we'll want to update this to use a database.
@@ -66,8 +74,7 @@ def create_cellar():
         id=generate_id(),
         name=data.get('name', 'Unnamed Cellar'),
         shelves=shelves,
-        temperature=data.get('temperature'),
-        capacity=data.get('capacity')  # Will be calculated if None
+        temperature=data.get('temperature')
     )
     
     # Add version and timestamps
@@ -199,13 +206,14 @@ def delete_cellar(cellar_id: str):
     # Move all wine instances in this cellar to unshelved
     instances = load_wine_instances_as_models()
     for instance in instances:
-        if (instance.location.get('type') == 'cellar' and 
-            instance.location.get('cellarId') == cellar_id):
-            instance.location = {'type': 'unshelved'}
-            instance_dict = instance.to_dict()
-            instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
-            instance.version = instance_dict['version']
-            instance.updated_at = instance_dict['updatedAt']
+        if instance.location is not None:
+            cellar, shelf, position, is_front = instance.location
+            if cellar.id == cellar_id:
+                instance.location = None  # Set to None for unshelved
+                instance_dict = instance.to_dict()
+                instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
+                instance.version = instance_dict['version']
+                instance.updated_at = instance_dict['updatedAt']
     
     # Save instances
     from wine_instances import save_wine_instances_from_models
