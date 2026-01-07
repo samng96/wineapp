@@ -168,15 +168,16 @@ def update_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['DELETE'])
 def delete_wine_instance(instance_id: str):
     """Hard delete a wine instance"""
-    instance = find_wine_instance_by_id(instance_id)
-    if not instance:
+    instance_model = find_wine_instance_by_id_as_model(instance_id)
+    if not instance_model:
         return jsonify({'error': 'Wine instance not found'}), 404
     
-    reference_id = instance['referenceId']
+    reference_id = instance_model.reference.id
     
-    instances = load_wine_instances()
-    instances = [i for i in instances if i['id'] != instance_id]
-    save_wine_instances(instances)
+    instances = load_wine_instances_as_models()
+    instances = [i for i in instances if i.id != instance_id]
+    from wine_instances import save_wine_instances_from_models
+    save_wine_instances_from_models(instances)
     
     # Update instance count
     update_instance_count(reference_id)
