@@ -10,26 +10,45 @@ from utils import (
     add_version_and_timestamps,
     get_current_timestamp
 )
+from models import WineInstance, WineReference
 
 wine_instances_bp = Blueprint('wine_instances', __name__)
 
 # Helper functions
 def load_wine_instances() -> List[Dict]:
-    """Load wine instances from JSON file"""
+    """Load wine instances from JSON file as dictionaries"""
     if os.path.exists(WINE_INSTANCES_FILE):
         with open(WINE_INSTANCES_FILE, 'r') as f:
             return json.load(f)
     return []
 
+def load_wine_instances_as_models() -> List[WineInstance]:
+    """Load wine instances from JSON file as WineInstance model objects"""
+    if os.path.exists(WINE_INSTANCES_FILE):
+        with open(WINE_INSTANCES_FILE, 'r') as f:
+            data = json.load(f)
+            return [WineInstance.from_dict(i) for i in data]
+    return []
+
 def save_wine_instances(instances: List[Dict]):
-    """Save wine instances to JSON file"""
+    """Save wine instances to JSON file (accepts dictionaries)"""
     with open(WINE_INSTANCES_FILE, 'w') as f:
         json.dump(instances, f, indent=2)
 
+def save_wine_instances_from_models(instances: List[WineInstance]):
+    """Save wine instances to JSON file (accepts WineInstance model objects)"""
+    data = [i.to_dict() for i in instances]
+    save_wine_instances(data)
+
 def find_wine_instance_by_id(instance_id: str) -> Optional[Dict]:
-    """Find a wine instance by ID"""
+    """Find a wine instance by ID (returns dictionary)"""
     instances = load_wine_instances()
     return next((i for i in instances if i['id'] == instance_id), None)
+
+def find_wine_instance_by_id_as_model(instance_id: str) -> Optional[WineInstance]:
+    """Find a wine instance by ID (returns WineInstance model object)"""
+    instances = load_wine_instances_as_models()
+    return next((i for i in instances if i.id == instance_id), None)
 
 def update_instance_count(reference_id: str):
     """Update the instance count for a wine reference"""
@@ -64,37 +83,46 @@ def get_wine_instances():
 @wine_instances_bp.route('/wine-instances', methods=['POST'])
 def create_wine_instance():
     """Create a new wine instance"""
-    from wine_references import find_wine_reference_by_id
+    from wine_references import find_wine_reference_by_id_as_model
     
     data = request.json
     
     # Verify reference exists
-    reference = find_wine_reference_by_id(data.get('referenceId'))
+    reference = find_wine_reference_by_id_as_model(data.get('referenceId'))
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
-    instance = {
-        'id': generate_id(),
-        'referenceId': data.get('referenceId'),
-        'location': data.get('location', {'type': 'unshelved'}),
-        'price': data.get('price'),
-        'purchaseDate': data.get('purchaseDate'),
-        'drinkByDate': data.get('drinkByDate'),
-        'consumed': False,
-        'consumedDate': None,
-        'storedDate': get_current_timestamp()
-    }
+    # Create WineInstance model object (use reference object, not ID)
+    instance = WineInstance(
+        id=generate_id(),
+        reference=reference,  # Use WineReference object
+        location=data.get('location', {'type': 'unshelved'}),
+        price=data.get('price'),
+        purchase_date=data.get('purchaseDate'),
+        drink_by_date=data.get('drinkByDate'),
+        consumed=False,
+        consumed_date=None,
+        stored_date=get_current_timestamp()
+    )
     
-    instance = add_version_and_timestamps(instance, is_new=True)
+    # Add version and timestamps
+    instance_dict = instance.to_dict()
+    instance_dict = add_version_and_timestamps(instance_dict, is_new=True)
     
+    # Update model
+    instance.version = instance_dict['version']
+    instance.created_at = instance_dict['createdAt']
+    instance.updated_at = instance_dict['updatedAt']
+    
+    # Save to file
     instances = load_wine_instances()
-    instances.append(instance)
+    instances.append(instance.to_dict())
     save_wine_instances(instances)
     
     # Update instance count
     update_instance_count(data.get('referenceId'))
     
-    return jsonify(instance), 201
+    return jsonify(instance.to_dict()), 201
 
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['GET'])
 def get_wine_instance(instance_id: str):
@@ -107,27 +135,35 @@ def get_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['PUT'])
 def update_wine_instance(instance_id: str):
     """Update a wine instance"""
-    instance = find_wine_instance_by_id(instance_id)
-    if not instance:
+    instance_model = find_wine_instance_by_id_as_model(instance_id)
+    if not instance_model:
         return jsonify({'error': 'Wine instance not found'}), 404
     
     data = request.json
     
     # Update fields
-    for field in ['location', 'price', 'purchaseDate', 'drinkByDate']:
-        if field in data:
-            instance[field] = data[field]
+    if 'location' in data:
+        instance_model.location = data['location']
+    if 'price' in data:
+        instance_model.price = data['price']
+    if 'purchaseDate' in data:
+        instance_model.purchase_date = data['purchaseDate']
+    if 'drinkByDate' in data:
+        instance_model.drink_by_date = data['drinkByDate']
     
-    instance = add_version_and_timestamps(instance, is_new=False)
+    instance_dict = instance_model.to_dict()
+    instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
+    instance_model.version = instance_dict['version']
+    instance_model.updated_at = instance_dict['updatedAt']
     
     instances = load_wine_instances()
     for i, inst in enumerate(instances):
         if inst['id'] == instance_id:
-            instances[i] = instance
+            instances[i] = instance_model.to_dict()
             break
     save_wine_instances(instances)
     
-    return jsonify(instance)
+    return jsonify(instance_model.to_dict())
 
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['DELETE'])
 def delete_wine_instance(instance_id: str):
@@ -150,17 +186,17 @@ def delete_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>/consume', methods=['POST'])
 def consume_wine_instance(instance_id: str):
     """Mark a wine instance as consumed (soft delete)"""
-    instance = find_wine_instance_by_id(instance_id)
-    if not instance:
+    instance_model = find_wine_instance_by_id_as_model(instance_id)
+    if not instance_model:
         return jsonify({'error': 'Wine instance not found'}), 404
     
-    instance['consumed'] = True
-    instance['consumedDate'] = get_current_timestamp()
+    instance_model.consumed = True
+    instance_model.consumed_date = get_current_timestamp()
     
     # Remove from cellar position if it was in a cellar
-    old_location = instance.get('location', {})
+    old_location = instance_model.location
     if old_location.get('type') == 'cellar':
-        from cellars import find_cellar_by_id, save_cellars, load_cellars
+        from cellars import find_cellar_by_id_as_model, save_cellars, load_cellars
         
         cellar_id = old_location.get('cellarId')
         shelf_index = old_location.get('shelfIndex')
@@ -168,44 +204,42 @@ def consume_wine_instance(instance_id: str):
         position = old_location.get('position')
         
         if cellar_id and shelf_index is not None and side and position is not None:
-            cellar = find_cellar_by_id(cellar_id)
+            cellar = find_cellar_by_id_as_model(cellar_id)
             if cellar:
-                wine_positions = cellar.get('winePositions', {})
-                shelf_key = str(shelf_index)
-                if shelf_key in wine_positions:
-                    shelf_positions = wine_positions[shelf_key].get(side, [])
-                    if position < len(shelf_positions) and shelf_positions[position] == instance_id:
-                        shelf_positions[position] = None
-                        cellar['winePositions'] = wine_positions
-                        cellars = load_cellars()
-                        for i, c in enumerate(cellars):
-                            if c['id'] == cellar_id:
-                                cellars[i] = cellar
-                                break
-                        save_cellars(cellars)
+                cellar.remove_wine_from_position(shelf_index, side, position)
+                # Save cellar
+                cellars = load_cellars()
+                for i, c in enumerate(cellars):
+                    if c['id'] == cellar_id:
+                        cellars[i] = cellar.to_dict()
+                        break
+                save_cellars(cellars)
     
     # Clear location since it's no longer in the cellar
-    instance['location'] = {'type': 'unshelved'}
+    instance_model.location = {'type': 'unshelved'}
     
-    instance = add_version_and_timestamps(instance, is_new=False)
+    instance_dict = instance_model.to_dict()
+    instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
+    instance_model.version = instance_dict['version']
+    instance_model.updated_at = instance_dict['updatedAt']
     
     instances = load_wine_instances()
     for i, inst in enumerate(instances):
         if inst['id'] == instance_id:
-            instances[i] = instance
+            instances[i] = instance_model.to_dict()
             break
     save_wine_instances(instances)
     
-    # Update instance count
-    update_instance_count(instance['referenceId'])
+    # Update instance count (use reference.id from WineReference object)
+    update_instance_count(instance_model.reference.id)
     
-    return jsonify(instance)
+    return jsonify(instance_model.to_dict())
 
 @wine_instances_bp.route('/wine-instances/<instance_id>/location', methods=['PUT'])
 def update_wine_instance_location(instance_id: str):
     """Update wine instance location"""
-    instance = find_wine_instance_by_id(instance_id)
-    if not instance:
+    instance_model = find_wine_instance_by_id_as_model(instance_id)
+    if not instance_model:
         return jsonify({'error': 'Wine instance not found'}), 404
     
     data = request.json
@@ -214,9 +248,9 @@ def update_wine_instance_location(instance_id: str):
     
     new_location = data['location']
     
-    # If moving to a cellar, validate the position
+    # If moving to a cellar, validate the position using Cellar model
     if new_location.get('type') == 'cellar':
-        from cellars import find_cellar_by_id, save_cellars, load_cellars
+        from cellars import find_cellar_by_id_as_model, save_cellars, load_cellars
         
         cellar_id = new_location.get('cellarId')
         shelf_index = new_location.get('shelfIndex')
@@ -226,83 +260,62 @@ def update_wine_instance_location(instance_id: str):
         if cellar_id is None or shelf_index is None or side is None or position is None:
             return jsonify({'error': 'Cellar location requires cellarId, shelfIndex, side, and position'}), 400
         
-        cellar = find_cellar_by_id(cellar_id)
+        cellar = find_cellar_by_id_as_model(cellar_id)
         if not cellar:
             return jsonify({'error': 'Cellar not found'}), 404
         
-        shelves = cellar.get('shelves', [])
-        if shelf_index < 0 or shelf_index >= len(shelves):
-            return jsonify({'error': 'Invalid shelf index'}), 400
+        # Validate position using Cellar model methods
+        if not cellar.is_position_valid(shelf_index, side, position):
+            return jsonify({'error': 'Invalid position'}), 400
         
-        positions, is_double = shelves[shelf_index]
-        
-        # Validate side
-        if is_double:
-            if side not in ['front', 'back']:
-                return jsonify({'error': 'Side must be "front" or "back" for double-sided shelf'}), 400
-        else:
-            if side != 'single':
-                return jsonify({'error': 'Side must be "single" for single-sided shelf'}), 400
-        
-        # Validate position
-        if position < 0 or position >= positions:
-            return jsonify({'error': 'Position out of bounds'}), 400
-        
-        # Check if position is already occupied
-        wine_positions = cellar.get('winePositions', {})
-        shelf_key = str(shelf_index)
-        if shelf_key in wine_positions:
-            shelf_positions = wine_positions[shelf_key].get(side, [])
-            if position < len(shelf_positions) and shelf_positions[position] is not None:
-                existing_id = shelf_positions[position]
-                if existing_id != instance_id:  # Allow same instance to stay in place
-                    return jsonify({'error': 'Position already occupied'}), 400
+        # Check if position is available
+        if not cellar.is_position_available(shelf_index, side, position):
+            # Allow same instance to stay in place
+            old_location = instance_model.location
+            if (old_location.get('type') == 'cellar' and 
+                old_location.get('cellarId') == cellar_id and
+                old_location.get('shelfIndex') == shelf_index and
+                old_location.get('side') == side and
+                old_location.get('position') == position):
+                pass  # Same position, allow it
+            else:
+                return jsonify({'error': 'Position already occupied'}), 400
         
         # Remove from old position if moving from another cellar location
-        old_location = instance.get('location', {})
+        old_location = instance_model.location
         if old_location.get('type') == 'cellar' and old_location.get('cellarId') == cellar_id:
             old_shelf_index = old_location.get('shelfIndex')
             old_side = old_location.get('side')
             old_position = old_location.get('position')
             
-            if (old_shelf_index is not None and old_side and old_position is not None and
-                str(old_shelf_index) in wine_positions):
-                old_shelf_positions = wine_positions[str(old_shelf_index)].get(old_side, [])
-                if old_position < len(old_shelf_positions) and old_shelf_positions[old_position] == instance_id:
-                    old_shelf_positions[old_position] = None
+            if (old_shelf_index is not None and old_side and old_position is not None):
+                cellar.remove_wine_from_position(old_shelf_index, old_side, old_position)
         
-        # Add to new position
-        if shelf_key not in wine_positions:
-            if is_double:
-                wine_positions[shelf_key] = {'front': [None] * positions, 'back': [None] * positions}
-            else:
-                wine_positions[shelf_key] = {'single': [None] * positions}
+        # Assign to new position (pass WineInstance object, not ID)
+        cellar.assign_wine_to_position(shelf_index, side, position, instance_model)
         
-        shelf_positions = wine_positions[shelf_key].get(side, [])
-        # Ensure array is large enough
-        while len(shelf_positions) <= position:
-            shelf_positions.append(None)
-        shelf_positions[position] = instance_id
-        
-        cellar['winePositions'] = wine_positions
+        # Save cellar
         cellars = load_cellars()
         for i, c in enumerate(cellars):
             if c['id'] == cellar_id:
-                cellars[i] = cellar
+                cellars[i] = cellar.to_dict()
                 break
         save_cellars(cellars)
     
-    instance['location'] = new_location
-    instance = add_version_and_timestamps(instance, is_new=False)
+    instance_model.location = new_location
+    instance_dict = instance_model.to_dict()
+    instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
+    instance_model.version = instance_dict['version']
+    instance_model.updated_at = instance_dict['updatedAt']
     
     instances = load_wine_instances()
     for i, inst in enumerate(instances):
         if inst['id'] == instance_id:
-            instances[i] = instance
+            instances[i] = instance_model.to_dict()
             break
     save_wine_instances(instances)
     
-    return jsonify(instance)
+    return jsonify(instance_model.to_dict())
 
 # Unshelved endpoints
 @wine_instances_bp.route('/unshelved', methods=['GET'])
@@ -316,8 +329,8 @@ def get_unshelved():
 @wine_instances_bp.route('/unshelved/<instance_id>/assign', methods=['POST'])
 def assign_unshelved_to_cellar(instance_id: str):
     """Assign unshelved wine to a cellar shelf location"""
-    instance = find_wine_instance_by_id(instance_id)
-    if not instance:
+    instance_model = find_wine_instance_by_id_as_model(instance_id)
+    if not instance_model:
         return jsonify({'error': 'Wine instance not found'}), 404
     
     data = request.json
@@ -330,7 +343,7 @@ def assign_unshelved_to_cellar(instance_id: str):
     if new_location.get('type') != 'cellar':
         return jsonify({'error': 'Location type must be "cellar" for assignment'}), 400
     
-    from cellars import find_cellar_by_id, save_cellars, load_cellars
+    from cellars import find_cellar_by_id_as_model, save_cellars, load_cellars
     
     cellar_id = new_location.get('cellarId')
     shelf_index = new_location.get('shelfIndex')
@@ -340,65 +353,40 @@ def assign_unshelved_to_cellar(instance_id: str):
     if cellar_id is None or shelf_index is None or side is None or position is None:
         return jsonify({'error': 'Cellar location requires cellarId, shelfIndex, side, and position'}), 400
     
-    cellar = find_cellar_by_id(cellar_id)
+    cellar = find_cellar_by_id_as_model(cellar_id)
     if not cellar:
         return jsonify({'error': 'Cellar not found'}), 404
     
-    shelves = cellar.get('shelves', [])
-    if shelf_index < 0 or shelf_index >= len(shelves):
-        return jsonify({'error': 'Invalid shelf index'}), 400
-    
-    positions, is_double = shelves[shelf_index]
-    
-    # Validate side
-    if is_double:
-        if side not in ['front', 'back']:
-            return jsonify({'error': 'Side must be "front" or "back" for double-sided shelf'}), 400
-    else:
-        if side != 'single':
-            return jsonify({'error': 'Side must be "single" for single-sided shelf'}), 400
-    
-    # Validate position
-    if position < 0 or position >= positions:
-        return jsonify({'error': 'Position out of bounds'}), 400
+    # Validate position using Cellar model methods
+    if not cellar.is_position_valid(shelf_index, side, position):
+        return jsonify({'error': 'Invalid position'}), 400
     
     # Check if position is available
-    wine_positions = cellar.get('winePositions', {})
-    shelf_key = str(shelf_index)
-    
-    if shelf_key not in wine_positions:
-        if is_double:
-            wine_positions[shelf_key] = {'front': [None] * positions, 'back': [None] * positions}
-        else:
-            wine_positions[shelf_key] = {'single': [None] * positions}
-    
-    shelf_positions = wine_positions[shelf_key].get(side, [])
-    # Ensure array is large enough
-    while len(shelf_positions) <= position:
-        shelf_positions.append(None)
-    
-    if shelf_positions[position] is not None:
+    if not cellar.is_position_available(shelf_index, side, position):
         return jsonify({'error': 'Position already occupied'}), 400
     
-    # Assign to position
-    shelf_positions[position] = instance_id
+    # Assign to position using Cellar model method (pass WineInstance object, not ID)
+    cellar.assign_wine_to_position(shelf_index, side, position, instance_model)
     
-    cellar['winePositions'] = wine_positions
+    # Save cellar
     cellars = load_cellars()
     for i, c in enumerate(cellars):
         if c['id'] == cellar_id:
-            cellars[i] = cellar
+            cellars[i] = cellar.to_dict()
             break
     save_cellars(cellars)
     
-    instance['location'] = new_location
-    instance = add_version_and_timestamps(instance, is_new=False)
+    instance_model.location = new_location
+    instance_dict = instance_model.to_dict()
+    instance_dict = add_version_and_timestamps(instance_dict, is_new=False)
+    instance_model.version = instance_dict['version']
+    instance_model.updated_at = instance_dict['updatedAt']
     
     instances = load_wine_instances()
     for i, inst in enumerate(instances):
         if inst['id'] == instance_id:
-            instances[i] = instance
+            instances[i] = instance_model.to_dict()
             break
     save_wine_instances(instances)
     
-    return jsonify(instance)
+    return jsonify(instance_model.to_dict())

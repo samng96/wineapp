@@ -14,6 +14,7 @@ sys.path.insert(0, server_dir)
 os.environ['TESTING'] = '1'
 
 from app import app
+from models import clear_wine_references_registry
 
 # Get the project root directory for cleanup
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -46,6 +47,9 @@ def cleanup_root_json_files():
 @pytest.fixture
 def client():
     """Create a test client"""
+    # Clear wine references registry for test isolation
+    clear_wine_references_registry()
+    
     # Create temporary directory for test data files
     test_dir = tempfile.mkdtemp()
     
@@ -67,6 +71,9 @@ def client():
     # Cleanup: restore original directory and remove test directory
     os.chdir(original_dir)
     shutil.rmtree(test_dir)
+    
+    # Clear registry again after test
+    clear_wine_references_registry()
     
     # Clean up any JSON files that might have been created in project root
     for filename in json_files_to_clean:

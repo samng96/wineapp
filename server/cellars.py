@@ -9,7 +9,8 @@ from utils import (
     add_version_and_timestamps,
     get_current_timestamp
 )
-from wine_instances import load_wine_instances, save_wine_instances
+from models import Cellar, Shelf, WineInstance
+from wine_instances import load_wine_instances, save_wine_instances, load_wine_instances_as_models
 
 cellars_bp = Blueprint('cellars', __name__)
 
@@ -17,22 +18,43 @@ cellars_bp = Blueprint('cellars', __name__)
 # Right now, load_cellars loads from our server's local files and then returns an in-memory list of cellars 
 # so that other APIs can use it. In the future, we'll want to update this to use a database.
 def load_cellars() -> List[Dict]:
-    """Load cellars from JSON file"""
+    """Load cellars from JSON file as dictionaries"""
     if os.path.exists(CELLARS_FILE):
         with open(CELLARS_FILE, 'r') as f:
             return json.load(f)
     return []
 
+def load_cellars_as_models() -> List[Cellar]:
+    """Load cellars from JSON file as Cellar model objects with WineInstance objects resolved"""
+    if os.path.exists(CELLARS_FILE):
+        with open(CELLARS_FILE, 'r') as f:
+            data = json.load(f)
+            # Load wine instances to resolve IDs
+            wine_instances_list = load_wine_instances_as_models()
+            wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
+            return [Cellar.from_dict(c, wine_instances_dict) for c in data]
+    return []
+
 # Right now, save_cellars saves to the server's local files. In the future, we'll want to update this to use a database.
 def save_cellars(cellars: List[Dict]):
-    """Save cellars to JSON file"""
+    """Save cellars to JSON file (accepts dictionaries)"""
     with open(CELLARS_FILE, 'w') as f:
         json.dump(cellars, f, indent=2)
 
+def save_cellars_from_models(cellars: List[Cellar]):
+    """Save cellars to JSON file (accepts Cellar model objects)"""
+    data = [c.to_dict() for c in cellars]
+    save_cellars(data)
+
 def find_cellar_by_id(cellar_id: str) -> Optional[Dict]:
-    """Find a cellar by ID"""
+    """Find a cellar by ID (returns dictionary)"""
     cellars = load_cellars()
     return next((c for c in cellars if c['id'] == cellar_id), None)
+
+def find_cellar_by_id_as_model(cellar_id: str) -> Optional[Cellar]:
+    """Find a cellar by ID (returns Cellar model object)"""
+    cellars = load_cellars_as_models()
+    return next((c for c in cellars if c.id == cellar_id), None)
 
 # Endpoints
 @cellars_bp.route('/cellars', methods=['GET'])
@@ -46,47 +68,39 @@ def create_cellar():
     """Create a new cellar"""
     data = request.json
     
-    shelves = data.get('shelves', [])
+    shelves_data = data.get('shelves', [])
     
-    # Validate shelves format: each shelf should be [Positions, IsDouble]
-    for shelf in shelves:
-        if not isinstance(shelf, list) or len(shelf) != 2:
-            return jsonify({'error': 'Invalid shelf format. Each shelf must be [Positions, IsDouble]'}), 400
-        if not isinstance(shelf[0], int) or shelf[0] <= 0:
-            return jsonify({'error': 'Positions must be a positive integer'}), 400
-        if not isinstance(shelf[1], bool):
-            return jsonify({'error': 'IsDouble must be a boolean'}), 400
+    # Validate and convert shelves to Shelf objects
+    try:
+        shelves = [Shelf.from_tuple(s) for s in shelves_data]
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     
-    # Initialize winePositions object for each shelf
-    wine_positions = {}
-    for i, shelf in enumerate(shelves):
-        positions, is_double = shelf
-        if is_double:
-            wine_positions[str(i)] = {
-                'front': [None] * positions,
-                'back': [None] * positions
-            }
-        else:
-            wine_positions[str(i)] = {
-                'single': [None] * positions
-            }
+    # Create Cellar model object
+    # Capacity will be calculated automatically in __post_init__ if not provided
+    cellar = Cellar(
+        id=generate_id(),
+        name=data.get('name', 'Unnamed Cellar'),
+        shelves=shelves,
+        temperature=data.get('temperature'),
+        capacity=data.get('capacity')  # Will be calculated if None
+    )
     
-    cellar = {
-        'id': generate_id(),
-        'name': data.get('name', 'Unnamed Cellar'),
-        'temperature': data.get('temperature'),
-        'capacity': data.get('capacity'),
-        'shelves': shelves,
-        'winePositions': wine_positions
-    }
+    # Add version and timestamps
+    cellar_dict = cellar.to_dict()
+    cellar_dict = add_version_and_timestamps(cellar_dict, is_new=True)
     
-    cellar = add_version_and_timestamps(cellar, is_new=True)
+    # Update model with timestamps
+    cellar.created_at = cellar_dict['createdAt']
+    cellar.updated_at = cellar_dict['updatedAt']
+    cellar.version = cellar_dict['version']
     
+    # Save to file
     cellars = load_cellars()
-    cellars.append(cellar)
+    cellars.append(cellar.to_dict())
     save_cellars(cellars)
     
-    return jsonify(cellar), 201
+    return jsonify(cellar.to_dict()), 201
 
 @cellars_bp.route('/cellars/<cellar_id>', methods=['GET'])
 def get_cellar(cellar_id: str):
@@ -99,77 +113,97 @@ def get_cellar(cellar_id: str):
 @cellars_bp.route('/cellars/<cellar_id>', methods=['PUT'])
 def update_cellar(cellar_id: str):
     """Update a cellar"""
-    cellar = find_cellar_by_id(cellar_id)
-    if not cellar:
+    cellar_model = find_cellar_by_id_as_model(cellar_id)
+    if not cellar_model:
         return jsonify({'error': 'Cellar not found'}), 404
     
     data = request.json
     
     # Update fields
     if 'name' in data:
-        cellar['name'] = data['name']
+        cellar_model.name = data['name']
     if 'temperature' in data:
-        cellar['temperature'] = data['temperature']
+        cellar_model.temperature = data['temperature']
     if 'capacity' in data:
-        cellar['capacity'] = data['capacity']
+        cellar_model.capacity = data['capacity']
     if 'shelves' in data:
-        shelves = data['shelves']
+        shelves_data = data['shelves']
         
-        # Validate shelves format
-        for shelf in shelves:
-            if not isinstance(shelf, list) or len(shelf) != 2:
-                return jsonify({'error': 'Invalid shelf format. Each shelf must be [Positions, IsDouble]'}), 400
-            if not isinstance(shelf[0], int) or shelf[0] <= 0:
-                return jsonify({'error': 'Positions must be a positive integer'}), 400
-            if not isinstance(shelf[1], bool):
-                return jsonify({'error': 'IsDouble must be a boolean'}), 400
-        
-        # Update shelves and reinitialize winePositions if needed
-        # TODO: Handle repositioning of existing wines when shelves change
-        cellar['shelves'] = shelves
-        
-        # Reinitialize winePositions for new shelf structure
-        wine_positions = {}
-        for i, shelf in enumerate(shelves):
-            positions, is_double = shelf
-            shelf_key = str(i)
+        # Validate and convert shelves
+        try:
+            # Preserve wine positions from existing shelves
+            old_shelves = cellar_model.shelves
+            new_shelves = []
             
-            # Preserve existing positions if shelf index exists and structure matches
-            if shelf_key in cellar.get('winePositions', {}):
-                existing = cellar['winePositions'][shelf_key]
-                if is_double and 'front' in existing and 'back' in existing:
-                    # Keep existing positions, pad or truncate as needed
-                    front = existing['front'][:positions] + [None] * max(0, positions - len(existing['front']))
-                    back = existing['back'][:positions] + [None] * max(0, positions - len(existing['back']))
-                    wine_positions[shelf_key] = {'front': front, 'back': back}
-                elif not is_double and 'single' in existing:
-                    single = existing['single'][:positions] + [None] * max(0, positions - len(existing['single']))
-                    wine_positions[shelf_key] = {'single': single}
-                else:
-                    # Structure changed, reinitialize
-                    if is_double:
-                        wine_positions[shelf_key] = {'front': [None] * positions, 'back': [None] * positions}
-                    else:
-                        wine_positions[shelf_key] = {'single': [None] * positions}
-            else:
-                # New shelf, initialize
+            # Load wine instances for resolving IDs if needed
+            wine_instances_list = load_wine_instances_as_models()
+            wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
+            
+            for i, shelf_tuple in enumerate(shelves_data):
+                # Try to preserve wine positions from old shelf at same index
+                positions, is_double = shelf_tuple[0], shelf_tuple[1]
+                
+                # Get old shelf's wine positions as dict format for serialization
+                old_wine_positions_ids = {}
+                if i < len(old_shelves):
+                    old_shelf = old_shelves[i]
+                    old_wine_positions_ids = old_shelf.get_wine_positions_dict()
+                
+                # Create new shelf with preserved wine positions if compatible
+                # Convert old positions to match new shelf structure
                 if is_double:
-                    wine_positions[shelf_key] = {'front': [None] * positions, 'back': [None] * positions}
+                    # Need front/back structure
+                    if 'front' in old_wine_positions_ids and 'back' in old_wine_positions_ids:
+                        # Preserve and adjust size
+                        front_ids = old_wine_positions_ids['front'][:positions]
+                        back_ids = old_wine_positions_ids['back'][:positions]
+                        while len(front_ids) < positions:
+                            front_ids.append(None)
+                        while len(back_ids) < positions:
+                            back_ids.append(None)
+                        wine_positions_ids = {'front': front_ids[:positions], 'back': back_ids[:positions]}
+                    else:
+                        # Reinitialize - structure changed
+                        wine_positions_ids = {}
                 else:
-                    wine_positions[shelf_key] = {'single': [None] * positions}
+                    # Need single structure
+                    if 'single' in old_wine_positions_ids:
+                        # Preserve and adjust size
+                        single_ids = old_wine_positions_ids['single'][:positions]
+                        while len(single_ids) < positions:
+                            single_ids.append(None)
+                        wine_positions_ids = {'single': single_ids[:positions]}
+                    else:
+                        # Reinitialize - structure changed
+                        wine_positions_ids = {}
+                
+                new_shelf = Shelf.from_tuple(shelf_tuple, wine_positions_ids, wine_instances_dict)
+                new_shelves.append(new_shelf)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
         
-        cellar['winePositions'] = wine_positions
+        cellar_model.shelves = new_shelves
+        # Capacity will be recalculated automatically in __post_init__, but we need to trigger it
+        # Since __post_init__ only runs on creation, we'll recalculate manually
+        cellar_model.capacity = sum(shelf.positions * (2 if shelf.is_double else 1) for shelf in new_shelves)
     
-    cellar = add_version_and_timestamps(cellar, is_new=False)
+    # Add version and timestamps
+    cellar_dict = cellar_model.to_dict()
+    cellar_dict = add_version_and_timestamps(cellar_dict, is_new=False)
     
+    # Update model
+    cellar_model.version = cellar_dict['version']
+    cellar_model.updated_at = cellar_dict['updatedAt']
+    
+    # Save to file
     cellars = load_cellars()
     for i, c in enumerate(cellars):
         if c['id'] == cellar_id:
-            cellars[i] = cellar
+            cellars[i] = cellar_model.to_dict()
             break
     save_cellars(cellars)
     
-    return jsonify(cellar)
+    return jsonify(cellar_model.to_dict())
 
 @cellars_bp.route('/cellars/<cellar_id>', methods=['DELETE'])
 def delete_cellar(cellar_id: str):

@@ -3,6 +3,9 @@
 ## Overview
 WineApp is a personal wine inventory management system that allows users to track, organize, and manage their wine collection.
 
+## Conventions
+- Always follow the standard Python convention of naming where private methods are prefixed with underscore.
+
 ## Functional Requirements
 
 ### 1. Cellar Management
