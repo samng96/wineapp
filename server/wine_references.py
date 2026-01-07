@@ -10,21 +10,13 @@ from server.utils import (
     get_current_timestamp
 )
 from server.models import WineReference, register_wine_reference
-from server.storage import serialize_wine_reference, deserialize_wine_reference
+from server.storage import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
 
 wine_references_bp = Blueprint('wine_references', __name__)
 
 
 # Helper functions
-def load_wine_references() -> List[Dict]:
-    """Load wine references from JSON file as dictionaries"""
-    if os.path.exists(WINE_REFERENCES_FILE):
-        with open(WINE_REFERENCES_FILE, 'r') as f:
-            return json.load(f)
-    return []
-
-
-def load_wine_references_as_models() -> List[WineReference]:
+def load_wine_references() -> List[WineReference]:
     """Load wine references from JSON file as WineReference model objects"""
     if os.path.exists(WINE_REFERENCES_FILE):
         with open(WINE_REFERENCES_FILE, 'r') as f:
@@ -33,27 +25,16 @@ def load_wine_references_as_models() -> List[WineReference]:
     return []
 
 
-def save_wine_references(references: List[Dict]):
-    """Save wine references to JSON file (accepts dictionaries)"""
-    with open(WINE_REFERENCES_FILE, 'w') as f:
-        json.dump(references, f, indent=2)
-
-
-def save_wine_references_from_models(references: List[WineReference]):
+def save_wine_references(references: List[WineReference]):
     """Save wine references to JSON file (accepts WineReference model objects)"""
     data = [serialize_wine_reference(r) for r in references]
-    save_wine_references(data)
+    with open(WINE_REFERENCES_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
 
 
-def find_wine_reference_by_id(reference_id: str) -> Optional[Dict]:
-    """Find a wine reference by ID (returns dictionary)"""
-    references = load_wine_references()
-    return next((r for r in references if r['id'] == reference_id), None)
-
-
-def find_wine_reference_by_id_as_model(reference_id: str) -> Optional[WineReference]:
+def find_wine_reference_by_id(reference_id: str) -> Optional[WineReference]:
     """Find a wine reference by ID (returns WineReference model object)"""
-    from models import get_wine_reference
+    from server.models import get_wine_reference
     return get_wine_reference(reference_id)
 
 
@@ -61,7 +42,7 @@ def find_wine_reference_by_id_as_model(reference_id: str) -> Optional[WineRefere
 @wine_references_bp.route('/wine-references', methods=['GET'])
 def get_wine_references():
     """Get all wine references"""
-    references = load_wine_references_as_models()
+    references = load_wine_references()
     return jsonify([serialize_wine_reference(r) for r in references])
 
 
@@ -90,7 +71,7 @@ def create_wine_reference():
     )
     
     # Check if reference already exists (name + vintage + producer)
-    references = load_wine_references_as_models()
+    references = load_wine_references()
     existing = next((r for r in references if r.get_unique_key() == reference.get_unique_key()), None)
     
     if existing:
@@ -107,7 +88,7 @@ def create_wine_reference():
     
     # Save to file
     references.append(reference)
-    save_wine_references_from_models(references)
+    save_wine_references(references)
     
     return jsonify(serialize_wine_reference(reference)), 201
 
@@ -115,13 +96,15 @@ def create_wine_reference():
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['GET'])
 def get_wine_reference(reference_id: str):
     """Get a specific wine reference with all instances"""
-    reference = find_wine_reference_by_id_as_model(reference_id)
+    reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
     # Get all instances for this reference
     from server.wine_instances import load_wine_instances
-    instances = load_wine_instances()
+    from server.cellars import load_cellars
+    cellars = load_cellars()
+    instances = load_wine_instances(cellars=cellars)
     reference_instances = [serialize_wine_instance(i) for i in instances if i.reference.id == reference_id]
     
     response = serialize_wine_reference(reference)
@@ -133,7 +116,7 @@ def get_wine_reference(reference_id: str):
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['PUT'])
 def update_wine_reference(reference_id: str):
     """Update a wine reference"""
-    reference = find_wine_reference_by_id_as_model(reference_id)
+    reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
@@ -169,12 +152,12 @@ def update_wine_reference(reference_id: str):
     register_wine_reference(reference)
     
     # Save to file
-    references = load_wine_references_as_models()
+    references = load_wine_references()
     for i, r in enumerate(references):
         if r.id == reference_id:
             references[i] = reference
             break
-    save_wine_references_from_models(references)
+    save_wine_references(references)
     
     return jsonify(serialize_wine_reference(reference))
 
@@ -182,7 +165,7 @@ def update_wine_reference(reference_id: str):
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['DELETE'])
 def delete_wine_reference(reference_id: str):
     """Delete a wine reference"""
-    reference = find_wine_reference_by_id_as_model(reference_id)
+    reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
@@ -192,8 +175,8 @@ def delete_wine_reference(reference_id: str):
         del _wine_references_registry[reference_id]
     
     # Remove from file
-    references = load_wine_references_as_models()
+    references = load_wine_references()
     references = [r for r in references if r.id != reference_id]
-    save_wine_references_from_models(references)
+    save_wine_references(references)
     
     return jsonify({'message': 'Wine reference deleted'}), 200

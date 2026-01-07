@@ -17,15 +17,7 @@ wine_instances_bp = Blueprint('wine_instances', __name__)
 
 
 # Helper functions
-def load_wine_instances() -> List[Dict]:
-    """Load wine instances from JSON file as dictionaries"""
-    if os.path.exists(WINE_INSTANCES_FILE):
-        with open(WINE_INSTANCES_FILE, 'r') as f:
-            return json.load(f)
-    return []
-
-
-def load_wine_instances_as_models(cellars: Optional[List] = None) -> List[WineInstance]:
+def load_wine_instances(cellars: Optional[List] = None) -> List[WineInstance]:
     """Load wine instances from JSON file as WineInstance model objects
     
     Args:
@@ -39,37 +31,27 @@ def load_wine_instances_as_models(cellars: Optional[List] = None) -> List[WineIn
     return []
 
 
-def save_wine_instances(instances: List[Dict]):
-    """Save wine instances to JSON file (accepts dictionaries)"""
-    with open(WINE_INSTANCES_FILE, 'w') as f:
-        json.dump(instances, f, indent=2)
-
-
-def save_wine_instances_from_models(instances: List[WineInstance]):
+def save_wine_instances(instances: List[WineInstance]):
     """Save wine instances to JSON file (accepts WineInstance model objects)"""
     data = [serialize_wine_instance(i) for i in instances]
-    save_wine_instances(data)
+    with open(WINE_INSTANCES_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
 
 
-def find_wine_instance_by_id(instance_id: str) -> Optional[Dict]:
-    """Find a wine instance by ID (returns dictionary)"""
-    instances = load_wine_instances()
-    return next((i for i in instances if i['id'] == instance_id), None)
-
-
-def find_wine_instance_by_id_as_model(instance_id: str) -> Optional[WineInstance]:
+def find_wine_instance_by_id(instance_id: str) -> Optional[WineInstance]:
     """Find a wine instance by ID (returns WineInstance model object)"""
     cellars = load_cellars()
-    instances = load_wine_instances_as_models(cellars=cellars)
+    instances = load_wine_instances(cellars=cellars)
     return next((i for i in instances if i.id == instance_id), None)
 
 
 def _update_and_save_wine_instance(instance: WineInstance):
     """Helper function to update and save a wine instance in the JSON file"""
-    instances = load_wine_instances()
+    cellars = load_cellars()
+    instances = load_wine_instances(cellars=cellars)
     for i, inst in enumerate(instances):
-        if inst['id'] == instance.id:
-            instances[i] = serialize_wine_instance(instance)
+        if inst.id == instance.id:
+            instances[i] = instance
             break
     save_wine_instances(instances)
 
@@ -108,19 +90,20 @@ def _location_dict_to_tuple(location_dict: Dict, cellars: List) -> Optional[Tupl
 @wine_instances_bp.route('/wine-instances', methods=['GET'])
 def get_wine_instances():
     """Get all wine instances"""
-    instances = load_wine_instances()
-    return jsonify(instances)
+    cellars = load_cellars()
+    instances = load_wine_instances(cellars=cellars)
+    return jsonify([serialize_wine_instance(i) for i in instances])
 
 
 @wine_instances_bp.route('/wine-instances', methods=['POST'])
 def create_wine_instance():
     """Create a new wine instance"""
-    from server.wine_references import find_wine_reference_by_id_as_model
+    from server.wine_references import find_wine_reference_by_id
     
     data = request.json
     
     # Verify reference exists
-    reference = find_wine_reference_by_id_as_model(data.get('referenceId'))
+    reference = find_wine_reference_by_id(data.get('referenceId'))
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
@@ -175,8 +158,9 @@ def create_wine_instance():
     instance.updated_at = timestamp
     
     # Save to file
-    instances = load_wine_instances()
-    instances.append(serialize_wine_instance(instance))
+    cellars = load_cellars()
+    instances = load_wine_instances(cellars=cellars)
+    instances.append(instance)
     save_wine_instances(instances)
     
     return jsonify(serialize_wine_instance(instance)), 201
@@ -185,7 +169,7 @@ def create_wine_instance():
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['GET'])
 def get_wine_instance(instance_id: str):
     """Get a specific wine instance"""
-    instance = find_wine_instance_by_id_as_model(instance_id)
+    instance = find_wine_instance_by_id(instance_id)
     if not instance:
         return jsonify({'error': 'Wine instance not found'}), 404
     
@@ -195,7 +179,7 @@ def get_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['PUT'])
 def update_wine_instance(instance_id: str):
     """Update a wine instance"""
-    instance = find_wine_instance_by_id_as_model(instance_id)
+    instance = find_wine_instance_by_id(instance_id)
     if not instance:
         return jsonify({'error': 'Wine instance not found'}), 404
     
@@ -222,7 +206,7 @@ def update_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['DELETE'])
 def delete_wine_instance(instance_id: str):
     """Delete a wine instance"""
-    instance = find_wine_instance_by_id_as_model(instance_id)
+    instance = find_wine_instance_by_id(instance_id)
     if not instance:
         return jsonify({'error': 'Wine instance not found'}), 404
     
@@ -248,8 +232,9 @@ def delete_wine_instance(instance_id: str):
             update_and_save_cellar(cellar)
     
     # Delete from file
-    instances = load_wine_instances()
-    instances = [i for i in instances if i['id'] != instance_id]
+    cellars = load_cellars()
+    instances = load_wine_instances(cellars=cellars)
+    instances = [i for i in instances if i.id != instance_id]
     save_wine_instances(instances)
     
     return jsonify({'message': 'Wine instance deleted'}), 200
@@ -258,7 +243,7 @@ def delete_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>/consume', methods=['POST'])
 def consume_wine_instance(instance_id: str):
     """Mark a wine instance as consumed (soft delete)"""
-    instance = find_wine_instance_by_id_as_model(instance_id)
+    instance = find_wine_instance_by_id(instance_id)
     if not instance:
         return jsonify({'error': 'Wine instance not found'}), 404
     
@@ -301,7 +286,7 @@ def consume_wine_instance(instance_id: str):
 @wine_instances_bp.route('/wine-instances/<instance_id>/location', methods=['PUT'])
 def update_wine_instance_location(instance_id: str):
     """Update wine instance location"""
-    instance = find_wine_instance_by_id_as_model(instance_id)
+    instance = find_wine_instance_by_id(instance_id)
     if not instance:
         return jsonify({'error': 'Wine instance not found'}), 404
     
@@ -387,7 +372,7 @@ def update_wine_instance_location(instance_id: str):
 def get_unshelved():
     """Get all unshelved wine instances"""
     cellars = load_cellars()
-    instances = load_wine_instances_as_models(cellars=cellars)
+    instances = load_wine_instances(cellars=cellars)
     unshelved = [i for i in instances 
                  if i.location is None and not i.consumed]
     return jsonify([serialize_wine_instance(i) for i in unshelved])
@@ -396,7 +381,7 @@ def get_unshelved():
 @wine_instances_bp.route('/unshelved/<instance_id>/assign', methods=['POST'])
 def assign_unshelved_to_cellar(instance_id: str):
     """Assign unshelved wine to a cellar shelf location"""
-    instance = find_wine_instance_by_id_as_model(instance_id)
+    instance = find_wine_instance_by_id(instance_id)
     if not instance:
         return jsonify({'error': 'Wine instance not found'}), 404
     
