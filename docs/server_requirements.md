@@ -245,10 +245,6 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - Moves all wine instances in cellar to unshelved (sets location to `None`)
   - Updates version and timestamps on affected wine instances
   - Response: `200 OK` with `{message: "Cellar deleted"}`, or `404 Not Found`
-  
-- `GET /cellars/<cellar_id>/layout`
-  - Returns: Graphical layout of cellar with wine positions
-  - Response: `200 OK` with layout object (cellar dict with wine positions), or `404 Not Found`
 
 #### 3.2 Wine Reference Management
 - `GET /wine-references`
