@@ -1,43 +1,40 @@
-# WineApp Requirements
+# WineApp Server Requirements
 
 ## Overview
 WineApp is a personal wine inventory management system that allows users to track, organize, and manage their wine collection.
 
 ## Conventions
 - Always follow the standard Python convention of naming where private methods are prefixed with underscore.
+- Always create data classes for each of the data architectural elements
+- Always track version history for updates to each element type. This is so that in the future we can handle conflict resolution.
+- Always have a unique ID for each element type.
 
-## Functional Requirements
+## Data architecture
+1. Cellars
+Cellars have the following fields:
+- ID
+- Name
+- Capacity - this is calculated
+- Temperature - this is specified by the user
+- List of <Shelf> - this is specified by the user upon creation of the cellar.
 
-### 1. Cellar Management
-#### 1.1 Add Cellar
-The user should be able to add multiple cellars to their app. A cellar needs to have:
-- Shelves
-    - Each shelf is defined as `[Positions, IsDouble]` where:
-      - `Positions` is a number representing how many bottle positions the shelf has
-      - `IsDouble` is a boolean (true/false) indicating whether the shelf is double-sided (front/back) or single-sided
-    - Example: `[50, true]` means 50 positions per side with front/back (total 100 positions)
-    - Example: `[30, false]` means 30 positions on a single side
-- Cellar would ideally be able to also specify metadata like:
-    - Temperature
-    - Capacity
+2. Shelf
+A shelf has the following fields:
+- ID
+- Number of positions
+- Whether the shelf is a double shelf or not (boolean)
+- A dictionary of WineInstance objects. Can be empty if there's no wine there, or can be a specific instance. Serialized as the ID, but loaded as the object itself.
 
-#### 1.2 Delete Cellar
-The user should be able to delete a cellar if they no longer have it. Any wines in the cellar deleted will be added to an unshelved list, which is also where all newly scanned wines will go.
+Creating a shelf has 2 inputs: number of positions, and whether the shelf is a double shelf or not.
+- As a result, the dictionary of WineInstance objects in the shelf has two dimensions: row dimension is either 1 if it is not a double shelf, or 2 if it is. Second dimension is number of positions.
+- So for example, a shelf with num_positions:4 and isDouble:true will have a dictionary of WineInstance objects that is a 2D array with 2 rows and 4 columns.
 
-#### 1.3 View Cellar
-The user should be able to view their cellar graphically. The view should show each shelf, and the label for each wine on each shelf. Clicking on individual wines will bring up the wine view for the selected wine.
-
-### 2. Wine Management
-#### 2.1 Add Wine
-Users should be able to add new wines to their inventory. They should be able to do this by scanning the label of the wine, having the app look up the wine online (via InVintory or TotalWine or some other service) to auto-populate the wine's details.
-- When we add a wine, user should be able to determine if they've purchased the wine before; if so, we should refer to the same instance and have it keep tally of each purchase/consumption date.
-- This likely means we need a singleton that tracks each wine reference, and then a separate entity for instances.
-
-Reference:
+3. WineReference
+Wine References are singletons that are for each bottle type of wine. 
 - Required fields:
+    - ID
     - Name
     - Type (Red, White, Rosé, Sparkling, etc.)
-    - Vintage (year)
 - Optional fields:
     - Producer/Winery
     - Varietal(s)
@@ -46,52 +43,43 @@ Reference:
     - Rating (1-5 stars)
     - Tasting Notes
     - Label Image (URL to blob storage location)
-Instance
-- ID to the reference
-- Location (where stored) - this should allow the user to pull up the location in the cellar (which cellar, which shelf)
-- Drink by date
-- Price
-- Purchase date
 
-#### 1.2 View Wines
-Users should be able to view all wines in their inventory. When viewing a wine, the user should be able to:
-- See how many instances of the given wine they have
-- See where each instance is located (ie which cellar)
-- See when each instance was stored
-- Show key information at a glance (name, type, vintage, quantity)
+There should be a global registry of all the wine references that we have loaded into the system. We will try to de-dupe as much as possible.
 
-Users should also be able to see all the consumed wine of this reference type. This should be a togglable filter.
+4. WineInstance
+Wine Instances are single instances of each reference wine.
+- Required fields:
+    - ID. This is used to refer to an instance, and will be stored as a part of shelves' serialization.
+    - ID to the reference. This should be stored as an ID for serialization purposes, but should be loaded as an object based on the global WineReference registry. This is immutable.
+    - Vintage (year)
+    - Location - This should be a tuple of {cellarID, shelfIndex, positionIndex, isFront} where cellarID is the cellar, shelfIndex is the index of the shelf in the cellar, positionIndex is the position in the shelf, and isFront is whether or not it's front or back. These should also be loaded as objects for the Cellar and Shelf, and positionIndex/isFront can be loaded as their direct values.
+    - IsConsumed - a boolean value for whether or not this wine has been consumed
+- Optional fields
+    - Drink by date (client code should obtain this from Vivino)
+    - Price
+    - Purchase date
+    - Purchase location
+    - Consumption date - when the WineInstance is consumed, this will be set to the consumption date.
 
-#### 1.3 Edit Wine
-Users should be able to edit existing wine entries. It should be differentiable when they're editing the wine reference vs the wine instance. 
+## Functional Requirements
+### 0. Unshelved wines.
+This is a list of WineInstances.
 
-Update any field including quantity (when drinking/consuming). When consumed, the instance should be marked as consumed and should no longer occupy space in the cellar. It should still be tagged to the reference, and should still be searchable with the specific filter turned on.
+Any new wines being added will automatically be first added to the unshelved list. The user can then move anything from unshelved to a specific cellar. Anytime a cellar is deleted, WineInstances in that cellar automatically get moved to the unshelved wines list.
 
-#### 1.4 Delete Wine
-Users should be able to remove wines from their inventory. This is different than consuming - this removes the entry altogether (ie a hard delete). 
+### 1. Cellar Management API
+- Add Cellar - The user should be able to add multiple cellars to their app. 
+- Delete Cellar - The user should be able to delete a cellar if they no longer have it. Any wines in the cellar deleted will be added to an unshelved list, which is also where all newly scanned wines will go.
+- Get Cellars - The user should be able to list all their cellars
+- Get Cellar(id) - The user should be able to get a specific cellar by ID
 
-Include confirmation to prevent accidental deletion
+### 2. Wine Reference Management API
+- Wine References should be basic - the user should have standard CRUD operations on them.
 
-### 2. Search and Filter
-#### 2.1 Search
-- Users should be able to search wines by typing in a search box. That box will filter by relevance:
-    - Name
-    - Varietal
-    - Vintage
-    - Region
-    - Everything else
-
-#### 2.2 Filter
-- Users should be able to filter wines by:
-  - Type (Red, White, Rosé, etc.)
-  - Vintage range
-  - Rating
-  - Country/Region
-  - Whether consumed
-  - Varietals
-  - Producer
-  - Date range added to the cellar
-  - Price range
+### 3. Wine Instance Management API
+- Wine Instance management should be basic as well - the user should be able to have standard CRUD operations on them. Additionally:
+- Consume Wine - The user should be able to consume a wine - this will store the consumption date, and will mark the wine as consumed and will update the consumption date in the WineInstance.
+- Move Wine - The user should be able to move WineInstances around in their collection - either moving to unshelved, or moving to a specific location (ie {cellar/shelf/position/isFront combination}).
 
 ### 3. Data Persistence
 Wine data should be stored persistently on the server.
@@ -127,316 +115,343 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
 
 ## Technical Requirements
 
-### Backend (Server)
-- Flask REST API
-- CORS enabled for frontend communication
-- JSON file-based storage (initial implementation)
-  - Separate JSON files for: cellars, wine references, wine instances
-  - Migration path to DynamoDB for production scalability
-- **Synchronization and conflict resolution**
-  - Timestamp/version tracking for all entities (createdAt, updatedAt, version)
-  - Server-side conflict detection and resolution
-  - Automatic resolution for non-conflicting changes
-  - Conflict queue for user-resolvable conflicts
-  - Sync endpoints that support batch operations
-- Blob storage for wine label images
-  - Store label images in cloud blob storage (AWS S3, Azure Blob Storage, or similar)
-  - Wine references contain URL/link to blob storage location
-  - Support for image upload and retrieval
-- RESTful endpoints for CRUD operations
-- External API integration for wine label scanning
-  - Integration with wine lookup services (InVintory, TotalWine, or similar)
-  - Image processing for label recognition
-- Data model supporting:
-  - Cellar management (multiple cellars with shelf-based organization)
-  - Wine Reference/Instance pattern (singleton references, multiple instances)
-  - Unshelved wine tracking
-  - Consumed wine tracking (soft delete with filter capability)
-  - Label image storage and retrieval
-  - Version tracking and conflict resolution metadata
+### 1. Technology Stack
+- **Backend Framework**: Flask (Python)
+- **Data Storage**: JSON files (MVP), with migration path to DynamoDB
+- **API Format**: RESTful JSON API
+- **Version Control**: Git/GitHub
+- **Testing**: pytest
 
-### Frontend (Client)
-- Start with HTML/CSS/JavaScript
-- Should communicate with Flask API via REST calls
-- **Client-side caching and offline support**
-  - Local storage (IndexedDB or similar) for full data cache
-  - Cache all cellars, wine references, and wine instances locally
-  - Queue offline changes for sync when connection is restored
-  - Detect online/offline status and update UI accordingly
-  - Background sync when connection is restored
-- Responsive design for desktop and mobile
-- Graphical cellar visualization
-  - Visual representation of cellar shelves
-  - Interactive wine labels in cellar view
-  - Click-to-view wine details
-- Search and filter UI components
-- Image capture/upload for wine label scanning
-- **Conflict resolution UI**
-  - Display conflicts in a user-friendly interface
-  - Side-by-side comparison of conflicting versions
-  - Allow user to select preferred version or manually merge
-  - Clear messaging about what each version represents
-- Modern, user-friendly interface
-- Will add graphics and skinning later
+### 2. Data Models
 
-### Data Architecture
-- **Wine Reference** (Singleton pattern)
-  - One reference per unique wine (name + vintage + producer)
-  - Contains shared metadata (name, type, producer, varietal, region, country, rating, tasting notes)
-  - Contains label image URL pointing to blob storage location
-  - Version tracking for conflict resolution
-- **Wine Instance** (Multiple per reference)
-  - Links to wine reference via reference ID
-  - Contains instance-specific data (location, purchase date, price, drink by date)
-  - Tracks consumption status
-  - Version tracking for conflict resolution
-- **Cellar**
-  - Contains an array of shelves
-  - Each shelf is defined as `[Positions, IsDouble]`:
-    - `Positions`: number of bottle positions per side
-    - `IsDouble`: boolean indicating if shelf is double-sided (front/back) or single-sided
-  - Tracks metadata (temperature, capacity)
-  - Maps wine instances to specific locations (cellar + shelf index + side + position)
-  - Version tracking for conflict resolution
-- **Shelf**
-  - Defined as a tuple: `[Positions, IsDouble]`
-  - `Positions`: number representing bottle positions per side
-  - `IsDouble`: boolean (true = front/back, false = single side)
-  - Each position maps to a **Wine Instance** (or null if empty)
-- **Unshelved List**
-  - Temporary storage for wines not yet assigned to a cellar
-  - Includes newly scanned wines and wines from deleted cellars
-- **Sync Metadata**
-  - All entities include version numbers and timestamps (createdAt, updatedAt)
-  - Client tracks lastSyncTimestamp for incremental sync
-  - Conflict objects track both local and server versions for user resolution
+#### 2.1 Cellar Model
+- **Class**: `Cellar` (dataclass)
+- **Fields**:
+  - `id: str` (UUID)
+  - `name: str`
+  - `shelves: List[Shelf]`
+  - `temperature: Optional[int]`
+  - `capacity: int` (auto-calculated from shelves)
+  - `version: int` (for conflict resolution)
+  - `created_at: Optional[str]` (ISO 8601 timestamp)
+  - `updated_at: Optional[str]` (ISO 8601 timestamp)
+- **Methods**:
+  - `to_dict() -> Dict[str, Any]`: Serialize to JSON format (extracts IDs from objects when needed)
+  - `from_dict(data: Dict, wine_instances: Dict) -> Cellar`: Deserialize from JSON (resolves IDs to objects)
+  - `is_position_valid(shelf_index: int, side: str, position: int) -> bool`: Validate position
+  - `is_position_available(shelf_index: int, side: str, position: int) -> bool`: Check if position is free
+  - `assign_wine_to_position(shelf_index: int, side: str, position: int, instance: WineInstance)`: Assign wine instance object
+  - `remove_wine_from_position(shelf_index: int, side: str, position: int)`: Remove wine
+  - Private methods prefixed with `_`
+  - **Note**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when needed (e.g., `instance.id`)
 
-## API Endpoints (Current & Planned)
+#### 2.2 Shelf Model
+- **Class**: `Shelf` (dataclass)
+- **Fields**:
+  - `positions: int` (immutable after initialization)
+  - `is_double: bool` (immutable after initialization)
+  - `wine_positions: List[List[Optional[WineInstance]]]` (mutable 2D array)
+    - Row dimension: 1 if `is_double=False`, 2 if `is_double=True`
+    - Column dimension: `positions`
+- **Methods**:
+  - `to_tuple() -> List`: Serialize to `[positions, is_double]` format
+  - `from_tuple(shelf_data: List, wine_positions_ids: Dict, wine_instances: Dict) -> Shelf`: Deserialize
+  - `get_wine_at(side: str, position: int) -> Optional[WineInstance]`: Get wine instance object at position (returns object, not ID)
+  - `set_wine_at(side: str, position: int, instance: Optional[WineInstance])`: Set wine instance object at position
+  - Private methods prefixed with `_`
+  - **Note**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when needed (e.g., `instance.id`)
 
-### Cellar Endpoints
-- `GET /cellars` - Get all cellars
-- `POST /cellars` - Create a new cellar
-  - Request body: `{ "name": "string", "temperature": number, "capacity": number, "shelves": [[Positions, IsDouble], ...] }`
-    - `shelves`: Array of tuples where each tuple is `[Positions, IsDouble]`
-      - `Positions`: number (bottle positions per side)
-      - `IsDouble`: boolean (true = front/back, false = single side)
-    - Example: `"shelves": [[50, true], [30, false]]` creates two shelves: one double-sided with 50 positions per side, one single-sided with 30 positions
-  - Returns: Created cellar object with ID, version, timestamps, and initialized `winePositions` object
-- `GET /cellars/<id>` - Get a specific cellar with shelf layout
-  - Returns: Cellar object with all shelves and their configurations
-- `PUT /cellars/<id>` - Update cellar metadata
-  - Request body: `{ "name": "string", "temperature": number, "capacity": number, "shelves": [[Positions, IsDouble], ...] }`
-    - `shelves`: Array of tuples `[Positions, IsDouble]` (same format as POST)
-    - Note: Modifying shelves may require repositioning existing wine instances
-  - Returns: Updated cellar object with incremented version
-- `DELETE /cellars/<id>` - Delete a cellar (moves all wine instances to unshelved)
-  - Returns: Success message
-- `GET /cellars/<id>/layout` - Get graphical layout of cellar shelves and wine positions
-  - Returns: Enhanced cellar object with wine instance details populated in shelf positions
+#### 2.3 WineReference Model
+- **Class**: `WineReference` (dataclass)
+- **Global Registry**: `_wine_references_registry: Dict[str, WineReference]` (in-memory registry)
+- **Fields**:
+  - `id: str` (UUID)
+  - `name: str`
+  - `type: WineType` (enum: Red, White, Rose, Sparkling White, Sparkling Red, Other)
+  - `vintage: Optional[int]`
+  - `producer: Optional[str]`
+  - `varietals: Optional[List[str]]`
+  - `region: Optional[str]`
+  - `country: Optional[str]`
+  - `rating: Optional[int]` (1-5)
+  - `tasting_notes: Optional[str]`
+  - `label_image_url: Optional[str]` (URL to blob storage)
+  - `vivino_url: Optional[str]` (URL to Vivino link where we imported information)
+  - `version: int` (for conflict resolution)
+  - `created_at: Optional[str]` (ISO 8601 timestamp)
+  - `updated_at: Optional[str]` (ISO 8601 timestamp)
+- **Methods**:
+  - `to_dict() -> Dict[str, Any]`: Serialize to JSON format (includes `id` field from object)
+  - `from_dict(data: Dict) -> WineReference`: Deserialize and auto-register in global registry
+  - `get_unique_key() -> tuple`: Get unique key for deduplication (name, vintage, producer)
+- **Registry Functions**:
+  - `get_wine_reference(reference_id: str) -> Optional[WineReference]`: Get WineReference object from registry (returns object, not ID)
+  - `register_wine_reference(reference: WineReference)`: Register WineReference object in global registry
+  - `clear_wine_references_registry()`: Clear registry (for testing)
+  - **Note**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when needed (e.g., `reference.id`)
 
-### Wine Reference Endpoints
-- `GET /wine-references` - Get all wine references
-  - Returns: Array of wine reference objects
-- `POST /wine-references` - Create a new wine reference
-  - Request body: `{ "name": "string", "type": "Red|White|Rosé|Sparkling", "vintage": number, "producer": "string", "varietals": [...], "region": "string", "country": "string", "rating": number, "tastingNotes": "string", "labelImageUrl": "string" }`
-  - Returns: Created wine reference with ID, version, timestamps, and instanceCount=0
-  - Validates uniqueness: name + vintage + producer must be unique (returns 409 if duplicate)
-- `GET /wine-references/<id>` - Get a specific wine reference with all instances
-  - Returns: Wine reference object with an "instances" array containing all related wine instances
-- `PUT /wine-references/<id>` - Update wine reference metadata
-  - Request body: Partial wine reference object with fields to update
-  - Returns: Updated wine reference with incremented version
-- `DELETE /wine-references/<id>` - Hard delete a wine reference and all its instances
-  - Returns: Success message
-  - Cascades deletion to all wine instances linked to this reference
-- `GET /wine-references/search?q=<query>` - Search wine references by relevance
-  - Query params: `q` - Search query string
-  - Returns: Array of wine references matching the search, ordered by relevance
-  - Searches across: name, varietal, vintage, region, producer, country
-- `GET /wine-references/filter?type=<type>&vintage=<year>&country=<country>&varietal=<varietal>&producer=<producer>&rating=<rating>&consumed=<true|false>&priceMin=<min>&priceMax=<max>&dateFrom=<date>&dateTo=<date>` - Filter wine references
-  - Query params: Multiple optional filter parameters
-  - Returns: Array of wine references matching all specified filters
-  - Note: `consumed` filter applies to instances, not references
+#### 2.4 WineInstance Model
+- **Class**: `WineInstance` (dataclass)
+- **Fields**:
+  - `id: str` (UUID)
+  - `reference: WineReference` (object reference, not ID - loaded from global registry)
+  - `location: Optional[Tuple[Cellar, Shelf, int, bool]]` (Cellar object, Shelf object, position, isFront) or None for unshelved
+  - `price: Optional[float]`
+  - `purchase_date: Optional[str]` (ISO 8601 date)
+  - `drink_by_date: Optional[str]` (ISO 8601 date)
+  - `consumed: bool`
+  - `consumed_date: Optional[str]` (ISO 8601 timestamp)
+  - `stored_date: Optional[str]` (ISO 8601 timestamp)
+  - `version: int` (for conflict resolution)
+  - `created_at: Optional[str]` (ISO 8601 timestamp)
+  - `updated_at: Optional[str]` (ISO 8601 timestamp)
+- **Methods**:
+  - `to_dict() -> Dict[str, Any]`: Serialize location as `{cellarId, shelfIndex, position, isFront}` or None (extracts IDs from Cellar object via `cellar.id`, extracts shelfIndex from the list of shelves stored in the cellar object)
+  - `from_dict(data: Dict, cellars: Optional[List[Cellar]]) -> WineInstance`: Deserialize location by looking up Cellar and Shelf objects
+  - `_is_in_cellar() -> bool`: Check if in cellar (private)
+  - `_is_unshelved() -> bool`: Check if unshelved (private)
+  - `get_cellar_location() -> Optional[Dict]`: Get location details if in cellar (returns dict with IDs extracted from objects)
+  - **Note**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when needed (e.g., `cellar.id`, `reference.id`)
 
-### Wine Instance Endpoints
-- `GET /wine-instances` - Get all wine instances
-  - Query params: `?consumed=true|false` - Filter by consumption status
-  - Returns: Array of wine instance objects
-- `POST /wine-instances` - Create a new wine instance (link to reference)
-  - Request body: `{ "referenceId": "string", "location": {...}, "price": number, "purchaseDate": "YYYY-MM-DD", "drinkByDate": "YYYY-MM-DD" }`
-  - Returns: Created wine instance with ID, version, and timestamps
-  - Automatically updates the wine reference's instanceCount
-- `GET /wine-instances/<id>` - Get a specific wine instance
-  - Returns: Wine instance object
-- `PUT /wine-instances/<id>` - Update wine instance (location, dates, price)
-  - Request body: `{ "location": {...}, "price": number, "purchaseDate": "YYYY-MM-DD", "drinkByDate": "YYYY-MM-DD" }`
-  - Returns: Updated wine instance with incremented version
-- `DELETE /wine-instances/<id>` - Hard delete a wine instance
-  - Returns: Success message
-  - Automatically updates the wine reference's instanceCount
-- `POST /wine-instances/<id>/consume` - Mark instance as consumed (soft delete)
-  - Returns: Updated wine instance with consumed=true and consumedDate set
-  - Automatically moves instance location to unshelved
-  - Automatically updates the wine reference's instanceCount
-- `PUT /wine-instances/<id>/location` - Update instance location (cellar, shelf, position)
-  - Request body: `{ "location": { "type": "cellar|unshelved", "cellarId": "string", "shelfIndex": number, "side": "front|back|single", "position": number } }`
-    - `shelfIndex`: zero-based index into the cellar's `shelves` array
-    - `side`: "front" or "back" if shelf IsDouble=true, "single" if IsDouble=false
-    - `position`: zero-based index within the side's position array
-  - Returns: Updated wine instance with new location
-  - Validates that the shelf index exists and position is within bounds
+### 3. API Endpoints
 
-### Scanning Endpoints
-- `POST /scan/label` - Upload wine label image for recognition
-  - Request body: Form data with image file or base64 encoded image
-  - Returns: Array of potential wine matches from external API (InVintory/TotalWine)
-  - Each match includes: name, producer, vintage, type, and other metadata
-  - May return empty array if no matches found
-- `POST /scan/label/confirm` - Confirm scanned wine and create reference/instance
-  - Request body: `{ "matchIndex": number, "referenceData": {...}, "instanceData": {...} }`
-  - Returns: Created wine reference and wine instance objects
-  - If reference already exists (by name+vintage+producer), links instance to existing reference
+#### 3.1 Cellar Management
+- `GET /cellars`
+  - Returns: List of all cellars as JSON array
+  - Response: `200 OK` with JSON array of cellar objects
+  - Each cellar object includes: `id, name, temperature, capacity, shelves, winePositions, version, createdAt, updatedAt`
+  - `shelves`: Array of `[positions, isDouble]` tuples
+  - `winePositions`: Dict mapping shelf index to `{side: [instanceId, ...]}` format
+  
+- `GET /cellars/<cellar_id>`
+  - Returns: Single cellar by ID
+  - Response: `200 OK` with cellar object, or `404 Not Found` with `{error: "message"}`
+  
+- `POST /cellars`
+  - Request Body: `{name: str, temperature?: int, shelves: [[positions: int, isDouble: bool], ...]}`
+  - `shelves`: Array of shelf tuples `[positions, isDouble]`
+  - Returns: Created cellar with generated ID, auto-calculated capacity, version=1, timestamps
+  - Response: `201 Created` with cellar object
+  - Validation: Returns `400 Bad Request` if shelf format is invalid
+  
+- `PUT /cellars/<cellar_id>`
+  - Request Body: `{name?: str, temperature?: int, shelves?: [[positions, isDouble], ...]}`
+  - All fields optional - only provided fields are updated
+  - Returns: Updated cellar with incremented version, updated timestamp
+  - Response: `200 OK` with updated cellar object, or `404 Not Found`
+  - Note: Updating shelves preserves existing wine positions where possible
+  
+- `DELETE /cellars/<cellar_id>`
+  - Moves all wine instances in cellar to unshelved (sets location to `None`)
+  - Updates version and timestamps on affected wine instances
+  - Response: `200 OK` with `{message: "Cellar deleted"}`, or `404 Not Found`
+  
+- `GET /cellars/<cellar_id>/layout`
+  - Returns: Graphical layout of cellar with wine positions
+  - Response: `200 OK` with layout object (cellar dict with wine positions), or `404 Not Found`
 
-### Image Storage Endpoints
-- `POST /images/upload` - Upload wine label image to blob storage
-  - Request body: Form data with image file
-  - Returns: `{ "imageUrl": "https://blob-storage.example.com/wine-labels/image-id.jpg", "imageId": "image-id" }`
-  - Stores image in cloud blob storage (AWS S3, Azure Blob Storage, etc.)
-- `GET /images/<image-id>` - Retrieve image from blob storage (or direct blob storage URL)
-  - Returns: Image file with appropriate content-type header
-  - Alternative: Returns redirect to direct blob storage URL
-- `DELETE /images/<image-id>` - Delete image from blob storage
-  - Returns: Success message
-  - Note: Should also update any wine references using this image
+#### 3.2 Wine Reference Management
+- `GET /wine-references`
+  - Returns: List of all wine references as JSON array
+  - Response: `200 OK` with JSON array of wine reference objects
+  - Each reference includes: `id, name, type, vintage?, producer?, varietals?, region?, country?, rating?, tastingNotes?, labelImageUrl?, instanceCount, version, createdAt, updatedAt`
+  - Note: References are loaded from global registry
+  
+- `GET /wine-references/<reference_id>`
+  - Returns: Single wine reference by ID with all associated instances
+  - Response: `200 OK` with wine reference object plus `instances` array, or `404 Not Found`
+  - `instances`: Array of all wine instances (both active and consumed) for this reference
+  
+- `POST /wine-references`
+  - Request Body: Wine reference fields
+    - Required: `name: str, type: str` (e.g., "Red", "White", "Rosé", "Sparkling", etc.)
+    - Optional: `vintage?: int, producer?: str, varietals?: string[], region?: str, country?: str, rating?: int (1-5), tastingNotes?: str, labelImageUrl?: str`
+  - Returns: Created wine reference with generated ID, `instanceCount=0`, version=1, timestamps
+  - Response: `201 Created` with wine reference object
+  - Auto-registers in global registry
+  - Deduplication: Returns `409 Conflict` if reference with same `(name, vintage, producer)` already exists, includes existing reference in response
+  
+- `PUT /wine-references/<reference_id>`
+  - Request Body: Updated wine reference fields (all optional)
+    - Any field can be updated: `name?, type?, vintage?, producer?, varietals?, region?, country?, rating?, tastingNotes?, labelImageUrl?`
+  - Returns: Updated wine reference with incremented version, updated timestamp
+  - Response: `200 OK` with updated wine reference object, or `404 Not Found`
+  - Note: Updates are applied to the model object and global registry
+  
+- `DELETE /wine-references/<reference_id>`
+  - Hard delete (removes from system and registry)
+  - Response: `200 OK` with `{message: "Wine reference deleted"}`, or `404 Not Found`
+  - Note: Does not delete associated wine instances
 
-### Unshelved Endpoints
-- `GET /unshelved` - Get all unshelved wine instances
-  - Returns: Array of wine instances where location.type = "unshelved" and consumed = false
-- `POST /unshelved/<instance-id>/assign` - Assign unshelved wine to a cellar shelf location
-  - Request body: `{ "location": { "type": "cellar", "cellarId": "string", "shelfIndex": number, "side": "front|back|single", "position": number } }`
-    - `shelfIndex`: zero-based index into the cellar's `shelves` array
-    - `side`: "front" or "back" if shelf IsDouble=true, "single" if IsDouble=false
-    - `position`: zero-based index within the side's position array
-  - Returns: Updated wine instance with new location
-  - Validates that the shelf index exists, position is within bounds, and position is available (not already occupied)
+#### 3.3 Wine Instance Management
+- `GET /wine-instances`
+  - Returns: List of all wine instances as JSON array
+  - Response: `200 OK` with JSON array of wine instance objects
+  - Each instance includes: `id, referenceId, location?, price?, purchaseDate?, drinkByDate?, consumed, consumedDate?, storedDate?, version, createdAt, updatedAt`
+  - `location`: `{cellarId, shelfIndex, position, isFront}` or `null` for unshelved
+  
+- `GET /wine-instances/<instance_id>`
+  - Returns: Single wine instance by ID
+  - Response: `200 OK` with wine instance object, or `404 Not Found`
+  
+- `POST /wine-instances`
+  - Request Body: `{referenceId: str, location?: object, price?: float, purchaseDate?: str, drinkByDate?: str}`
+  - Location format (optional):
+    - For cellar: `{type: "cellar", cellarId: str, shelfIndex: int, side: "front"|"back"|"single", position: int}`
+    - For unshelved: `{type: "unshelved"}` or `null` or omitted
+  - Returns: Created wine instance with generated ID, `consumed=false`, `storedDate` set to current timestamp, version=1, timestamps
+  - Response: `201 Created` with wine instance object
+  - Auto-updates `instanceCount` on associated WineReference
+  - Validation: Returns `404 Not Found` if `referenceId` doesn't exist
+  - Note: Location is converted to tuple format `(Cellar, Shelf, position, isFront)` internally
+  
+- `PUT /wine-instances/<instance_id>`
+  - Request Body: Updated wine instance fields (all optional)
+    - Any field can be updated: `price?, purchaseDate?, drinkByDate?`
+    - Note: `referenceId` and `location` should be updated via specific endpoints
+  - Returns: Updated wine instance with incremented version, updated timestamp
+  - Response: `200 OK` with updated wine instance object, or `404 Not Found`
+  
+- `DELETE /wine-instances/<instance_id>`
+  - Hard delete (removes from system)
+  - Removes from cellar position if applicable (calls `cellar.remove_wine_from_position()`)
+  - Updates `instanceCount` on associated WineReference
+  - Response: `200 OK` with `{message: "Wine instance deleted"}`, or `404 Not Found`
+  
+- `POST /wine-instances/<instance_id>/consume`
+  - Marks wine instance as consumed
+  - Sets `consumed=true` and `consumedDate` to current timestamp
+  - Removes from cellar position if applicable (calls `cellar.remove_wine_from_position()`)
+  - Sets `location` to `None` (unshelved)
+  - Updates version and timestamp
+  - Updates `instanceCount` on associated WineReference
+  - Response: `200 OK` with updated wine instance object, or `404 Not Found`
+  
+- `PUT /wine-instances/<instance_id>/location`
+  - Request Body: `{location: object | null}`
+  - Location format:
+    - For cellar: `{type: "cellar", cellarId: str, shelfIndex: int, side: "front"|"back"|"single", position: int}`
+    - For unshelved: `null` or `{type: "unshelved"}`
+  - Moves wine instance to new location
+  - Validates position using `cellar.is_position_valid()`
+  - Checks availability using `cellar.is_position_available()` (allows same instance to stay in place)
+  - Removes from old position if moving within same cellar
+  - Assigns to new position using `cellar.assign_wine_to_position()` (passes WineInstance object)
+  - Converts location to tuple format internally: `(Cellar, Shelf, position, isFront)`
+  - Updates version and timestamp
+  - Response: `200 OK` with updated wine instance object
+  - Error responses:
+    - `400 Bad Request` if location format is invalid, position is invalid, or position is occupied
+    - `404 Not Found` if wine instance or cellar doesn't exist
 
-### Synchronization Endpoints
-- `POST /sync/check` - Check for updates since last sync
-  - Request body: `{ "lastSyncTimestamp": "2024-01-15T10:30:00Z" }`
-  - Returns: List of entities that have changed since last sync
-- `POST /sync/push` - Push local changes to server
-  - Request body: Array of create/update/delete operations
-  - Returns: Sync result with conflicts (if any)
-- `POST /sync/pull` - Pull latest changes from server
-  - Request body: `{ "lastSyncTimestamp": "2024-01-15T10:30:00Z", "entityTypes": ["cellars", "wine-references", "wine-instances"] }`
-  - Returns: All entities updated since last sync
-- `POST /sync/resolve-conflict` - Resolve a user-confirmed conflict
-  - Request body: `{ "entityType": "wine-reference", "entityId": "id", "resolution": "local|server|merged", "mergedData": {...} }`
-  - Returns: Confirmation of resolution
-- `GET /sync/conflicts` - Get all pending conflicts requiring user resolution
-  - Returns: List of conflicts with both versions
+#### 3.4 Unshelved Wines
+- `GET /unshelved`
+  - Returns: List of all unshelved wine instances (where `location` is `None` and `consumed` is `false`)
+  - Response: `200 OK` with JSON array of wine instance objects
+  - Note: Uses model objects internally, filters by `instance.location is None`
+  
+- `POST /unshelved/<instance_id>/assign`
+  - Request Body: `{location: {type: "cellar", cellarId: str, shelfIndex: int, side: "front"|"back"|"single", position: int}}`
+  - Assigns unshelved wine to a cellar position
+  - Validates position using `cellar.is_position_valid()`
+  - Checks availability using `cellar.is_position_available()`
+  - Assigns using `cellar.assign_wine_to_position()` (passes WineInstance object)
+  - Converts location to tuple format: `(Cellar, Shelf, position, isFront)`
+  - Updates version and timestamp
+  - Response: `200 OK` with updated wine instance object
+  - Error responses:
+    - `400 Bad Request` if location format is invalid, position is invalid, or position is occupied
+    - `404 Not Found` if wine instance or cellar doesn't exist
 
-## Data Model
+### 4. Data Persistence
 
-### Cellar Object
-```json
-{
-  "id": "unique-identifier",
-  "name": "Main Cellar",
-  "temperature": 55,
-  "capacity": 500,
-  "shelves": [
-    [50, true],
-    [30, false]
-  ],
-  "winePositions": {
-    "0": {
-      "front": ["instance-id-1", "instance-id-2", null, ...],
-      "back": ["instance-id-3", null, ...]
-    },
-    "1": {
-      "single": ["instance-id-4", null, ...]
-    }
-  },
-  "version": 5,
-  "createdAt": "2024-01-15T10:30:00Z",
-  "updatedAt": "2024-01-15T10:30:00Z"
-}
+#### 4.1 File Structure
+- `server/data/cellars.json`: Array of cellar objects
+- `server/data/wine-references.json`: Array of wine reference objects
+- `server/data/wine-instances.json`: Array of wine instance objects
+
+#### 4.2 Serialization Format
+- All dates/timestamps: ISO 8601 format strings
+- **General Rule**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when serializing to JSON (e.g., `cellar.id`, `reference.id`, `instance.id`)
+- Location serialization:
+  - In-memory: `(Cellar object, Shelf object, position: int, isFront: bool)` or `None`
+  - JSON (serialized): `{cellarId: str, shelfIndex: int, position: int, isFront: bool}` or `null`
+  - JSON (request format): `{type: "cellar", cellarId: str, shelfIndex: int, side: "front"|"back"|"single", position: int}` or `null`/`{type: "unshelved"}`
+  - IDs extracted from objects: `cellar.id` for `cellarId`, `shelf` found by index in `cellar.shelves`
+  - Conversion: Request `side` string converted to `isFront` boolean (front=true, back=false, single=true)
+- Shelf serialization:
+  - In-memory: `Shelf` object with `wine_positions` as 2D array of `WineInstance` objects
+  - JSON: `[positions, isDouble]` for shelf config, `{side: [instanceId, ...]}` for wine positions
+  - IDs extracted from objects: `instance.id` for each `instanceId` in wine positions
+- Reference serialization:
+  - In-memory: `WineInstance.reference` is a `WineReference` object
+  - JSON: `referenceId: str` extracted from `reference.id`
+
+#### 4.3 Loading Strategy
+- Load cellars first (without wine instances resolved)
+- Load wine instances with cellars for location resolution
+- Resolve wine instances in cellars after both are loaded
+- This breaks circular dependency between cellars and wine instances
+
+### 5. Version Tracking & Conflict Resolution (Future)
+
+#### 5.1 Version Fields
+- All entities have `version: int` field (incremented on each update)
+- All entities have `created_at` and `updated_at` timestamps
+- Used for conflict detection during synchronization
+
+#### 5.2 Conflict Resolution Strategy (Planned)
+- Server-side automatic resolution:
+  - Last-write-wins for non-critical fields (timestamp comparison)
+  - Merge strategies for additive changes
+  - Version-based conflict detection
+- User-facing resolution:
+  - Present conflicts in clear format
+  - Show local vs server versions side-by-side
+  - Allow user to choose or manually merge
+  - Queue unresolved conflicts
+
+### 6. Code Organization
+
+#### 6.1 File Structure
+```
+server/
+├── app.py                 # Main Flask application
+├── models.py              # Data model classes (Cellar, Shelf, WineReference, WineInstance)
+├── cellars.py             # Cellar management endpoints and logic
+├── wine_references.py     # Wine reference management endpoints and logic
+├── wine_instances.py      # Wine instance management endpoints and logic
+├── utils.py               # Utility functions (ID generation, timestamps, file paths)
+├── data/                  # JSON data files
+│   ├── cellars.json
+│   ├── wine-references.json
+│   └── wine-instances.json
+└── tests/                 # Test suite
+    ├── conftest.py
+    ├── test_cellars.py
+    ├── test_wine_references.py
+    └── test_wine_instances.py
 ```
 
-**Shelf Structure:**
-- `shelves` is an array of tuples: `[Positions, IsDouble]`
-  - `Positions`: number of bottle positions per side
-  - `IsDouble`: boolean (true = front/back sides, false = single side)
-- `winePositions` is an object keyed by shelf index (as string)
-  - Each shelf index maps to an object with `"front"`/`"back"` (if IsDouble=true) or `"single"` (if IsDouble=false)
-  - Each position array contains wine instance IDs or `null` for empty positions
+#### 6.2 Naming Conventions
+- Private methods: Prefix with underscore (`_method_name`)
+- Data models: PascalCase (`Cellar`, `WineReference`)
+- Functions: snake_case (`load_cellars`, `find_cellar_by_id`)
+- Constants: UPPER_SNAKE_CASE (`CELLARS_FILE`)
 
-### Wine Reference Object
-```json
-{
-  "id": "unique-reference-id",
-  "name": "Wine Name",
-  "type": "Red|White|Rosé|Sparkling",
-  "vintage": 2020,
-  "producer": "Winery Name",
-  "varietals": ["Cabernet Sauvignon", "Merlot"],
-  "region": "Napa Valley",
-  "country": "USA",
-  "rating": 4,
-  "tastingNotes": "Full-bodied with notes of blackberry...",
-  "labelImageUrl": "https://blob-storage.example.com/wine-labels/unique-reference-id.jpg",
-  "instanceCount": 3,
-  "version": 3,
-  "createdAt": "2024-01-15T10:30:00Z",
-  "updatedAt": "2024-01-15T10:30:00Z"
-}
-```
+### 7. Error Handling
+- All endpoints return appropriate HTTP status codes
+- Error responses include `{error: "message"}` format
+- Validation errors return `400 Bad Request`
+- Not found errors return `404 Not Found`
+- Server errors return `500 Internal Server Error`
 
-### Wine Instance Object
-```json
-{
-  "id": "unique-instance-id",
-  "referenceId": "unique-reference-id",
-  "location": {
-    "type": "cellar|unshelved",
-    "cellarId": "cellar-id-1",
-    "shelfIndex": 0,
-    "side": "front",
-    "position": 5
-  },
-  "price": 25.99,
-  "purchaseDate": "2024-01-15",
-  "drinkByDate": "2025-12-31",
-  "consumed": false,
-  "consumedDate": null,
-  "storedDate": "2024-01-15T10:30:00Z",
-  "version": 2,
-  "createdAt": "2024-01-15T10:30:00Z",
-  "updatedAt": "2024-01-15T10:30:00Z"
-}
-```
-
-### Conflict Object
-```json
-{
-  "id": "conflict-id",
-  "entityType": "wine-reference|wine-instance|cellar",
-  "entityId": "unique-entity-id",
-  "localVersion": {
-    "version": 3,
-    "data": { /* local version of the entity */ },
-    "updatedAt": "2024-01-15T11:00:00Z"
-  },
-  "serverVersion": {
-    "version": 4,
-    "data": { /* server version of the entity */ },
-    "updatedAt": "2024-01-15T11:30:00Z"
-  },
-  "conflictFields": ["name", "rating"],
-  "createdAt": "2024-01-15T11:35:00Z"
-}
-```
+### 8. Testing Requirements
+- Unit tests for all data models
+- Integration tests for all API endpoints
+- Test fixtures for sample data
+- Test isolation (cleanup between tests)
+- Test coverage target: >80%
 
 ## Future Enhancements (Out of Scope for MVP)
 - User authentication
