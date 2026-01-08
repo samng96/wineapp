@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WineApp</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- Home View (default) -->
+            <div id="home-view" class="view active">
+                <div class="splash-screen">
+                    <h1>Wine App</h1>
+                </div>
+            </div>
+
+            <!-- Cellar Management View -->
+            <div id="cellar-view" class="view">
+                <div class="view-header">
+                    <h2>Cellars</h2>
+                    <button id="add-cellar-btn" class="icon-btn" title="Add Cellar">+</button>
+                </div>
+                <div id="cellar-list" class="list-container">
+                    <!-- Cellars will be populated here -->
+                </div>
+            </div>
+
+            <!-- Wines View -->
+            <div id="wines-view" class="view">
+                <div class="view-header">
+                    <h2>Wines</h2>
+                </div>
+                <div id="wines-list" class="list-container">
+                    <!-- Wines will be populated here -->
+                </div>
+            </div>
+
+            <!-- Unshelved View -->
+            <div id="unshelved-view" class="view">
+                <div class="view-header">
+                    <h2>Unshelved Wines</h2>
+                </div>
+                <div id="unshelved-list" class="list-container">
+                    <!-- Unshelved wines will be populated here -->
+                </div>
+            </div>
+
+            <!-- Search View -->
+            <div id="search-view" class="view">
+                <div class="view-header">
+                    <h2>Search</h2>
+                </div>
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search wines...">
+                </div>
+                <div id="search-results" class="list-container">
+                    <!-- Search results will be populated here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav id="bottom-nav">
+            <button class="nav-btn" data-view="cellar" title="Cellar">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Cellar</span>
+            </button>
+            <button class="nav-btn" data-view="photo" title="Add Wines">
+                <span class="nav-icon">📷</span>
+                <span class="nav-label">Photo</span>
+            </button>
+            <button class="nav-btn" data-view="wines" title="Wines">
+                <span class="nav-icon">🍷</span>
+                <span class="nav-label">Wines</span>
+            </button>
+            <button class="nav-btn" data-view="unshelved" title="Unshelved">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Unshelved</span>
+            </button>
+            <div class="nav-search">
+                <input type="text" id="nav-search-input" placeholder="Search...">
+            </div>
+            <button class="nav-btn" id="menu-btn" title="Menu">
+                <span class="nav-icon">⋯</span>
+                <span class="nav-label">Menu</span>
+            </button>
+        </nav>
+
+        <!-- Menu Overlay -->
+        <div id="menu-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <button class="overlay-close" id="close-menu-btn">×</button>
+                <h3>Menu</h3>
+                <ul class="menu-list">
+                    <li><button class="menu-item" data-action="settings">Settings</button></li>
+                    <li><button class="menu-item" data-action="profile">User Profile</button></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
