@@ -8,6 +8,19 @@
 </head>
 <body>
     <div id="app">
+        <!-- Debug Panel -->
+        <div id="debug-panel" class="debug-panel">
+            <div class="debug-header">
+                <h3>Debug Console</h3>
+                <div class="debug-controls">
+                    <button id="debug-clear-btn" class="debug-btn" title="Clear">Clear</button>
+                    <button id="debug-toggle-btn" class="debug-btn" title="Toggle">−</button>
+                </div>
+            </div>
+            <div id="debug-content" class="debug-content">
+                <!-- Debug messages will appear here -->
+            </div>
+        </div>
         <!-- Main Content Area -->
         <main id="main-content">
             <!-- Home View (default) -->
@@ -64,7 +77,7 @@
 
         <!-- Bottom Navigation Bar -->
         <nav id="bottom-nav">
-            <button class="nav-btn" data-view="cellar" title="Cellar">
+            <button class="nav-btn" data-view="cellar" title="Cellar" type="button" id="cellar-nav-btn">
                 <span class="nav-icon">🏠</span>
                 <span class="nav-label">Cellar</span>
             </button>
@@ -100,8 +113,93 @@
                 </ul>
             </div>
         </div>
+
+        <!-- Create Cellar Dialog -->
+        <div id="create-cellar-dialog" class="overlay hidden">
+            <div class="overlay-content dialog-content">
+                <button class="overlay-close" onclick="window.cellarManager.hideCreateDialog()">×</button>
+                <h3>Create New Cellar</h3>
+                <form id="create-cellar-form">
+                    <div class="form-group">
+                        <label for="create-cellar-name">Name</label>
+                        <input type="text" id="create-cellar-name" name="name" placeholder="e.g., Main Cellar">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-cellar-temperature">Temperature (°F)</label>
+                        <input type="number" id="create-cellar-temperature" name="temperature" placeholder="e.g., 55" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Shelves</label>
+                        <div id="shelves-container">
+                            <!-- Shelf inputs will be added here -->
+                        </div>
+                        <button type="button" id="add-shelf-btn" class="btn-secondary">+ Add Shelf</button>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="create-cellar-cancel" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Cellar Dialog -->
+        <div id="edit-cellar-dialog" class="overlay hidden">
+            <div class="overlay-content dialog-content">
+                <button class="overlay-close" onclick="window.cellarManager.hideEditDialog()">×</button>
+                <h3>Edit Cellar</h3>
+                <form id="edit-cellar-form">
+                    <div class="form-group">
+                        <label for="edit-cellar-name">Name</label>
+                        <input type="text" id="edit-cellar-name" name="name" placeholder="e.g., Main Cellar">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-cellar-temperature">Temperature (°F)</label>
+                        <input type="number" id="edit-cellar-temperature" name="temperature" placeholder="e.g., 55" step="0.1">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="edit-cellar-cancel" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Cellar Confirmation Dialog -->
+        <div id="delete-cellar-dialog" class="overlay hidden">
+            <div class="overlay-content dialog-content">
+                <button class="overlay-close" onclick="window.cellarManager.hideDeleteDialog()">×</button>
+                <h3>Delete Cellar</h3>
+                <p class="delete-message"></p>
+                <div class="form-actions">
+                    <button type="button" id="delete-cellar-cancel" class="btn-secondary">Cancel</button>
+                    <button type="button" id="delete-cellar-confirm" class="btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script src="debug.js"></script>
+    <script type="module">
+        // Add error handling for module loading
+        window.addEventListener('error', (e) => {
+            // Only log actual errors, not trusted events
+            if (e.message && e.filename) {
+                console.error('Global error:', e.message, 'at', e.filename + ':' + e.lineno);
+                if (window.debugPanel) {
+                    window.debugPanel.addMessage('error', ['Global error:', e.message, e.filename, e.lineno]);
+                }
+            }
+        });
+        
+        // Load the main app
+        import('./app.js').catch(error => {
+            console.error('Failed to load app.js:', error);
+            if (window.debugPanel) {
+                window.debugPanel.addMessage('error', ['Failed to load app.js:', error.message]);
+            }
+            alert('Failed to load app.js. Check console for details.');
+        });
+    </script>
 </body>
 </html>

@@ -2,33 +2,60 @@
 import { Cellar } from './models/Cellar.js';
 import { WineReference } from './models/WineReference.js';
 import { WineInstance } from './models/WineInstance.js';
+import { CellarManager } from './cellarManager.js';
 
 class WineApp {
     constructor() {
         this.currentView = 'home';
-        this.init();
+        try {
+            this.init();
+        } catch (error) {
+            console.error('Error in WineApp.init():', error);
+            // Don't throw - let the object be created even if init fails
+        }
     }
 
     init() {
         this.setupNavigation();
         this.setupMenu();
         this.setupSearch();
+        this.initCellarManager();
         this.showView('home');
     }
 
+    initCellarManager() {
+        try {
+            window.cellarManager = new CellarManager();
+        } catch (error) {
+            console.error('Error initializing CellarManager:', error);
+        }
+    }
+
     setupNavigation() {
-        // Bottom nav buttons
         const navButtons = document.querySelectorAll('.nav-btn[data-view]');
-        navButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const view = e.currentTarget.getAttribute('data-view');
-                if (view === 'photo') {
-                    // TODO: Implement photo/add wines functionality
+        
+        if (navButtons.length === 0) {
+            console.error('No navigation buttons found!');
+            return;
+        }
+        
+        navButtons.forEach((btn) => {
+            const viewName = btn.getAttribute('data-view');
+            const self = this;
+            
+            const clickHandler = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (viewName === 'photo') {
                     alert('Add Wines feature coming soon!');
                     return;
                 }
-                this.showView(view);
-            });
+                
+                self.showView(viewName);
+            };
+            
+            btn.addEventListener('click', clickHandler);
         });
     }
 
@@ -70,13 +97,11 @@ class WineApp {
         const navSearchInput = document.getElementById('nav-search-input');
         const searchInput = document.getElementById('search-input');
 
-        // Navigate to search view when typing in nav search
         navSearchInput.addEventListener('focus', () => {
             this.showView('search');
             searchInput.focus();
         });
 
-        // Sync search inputs
         navSearchInput.addEventListener('input', (e) => {
             searchInput.value = e.target.value;
             this.performSearch(e.target.value);
@@ -95,10 +120,13 @@ class WineApp {
         });
 
         // Show selected view
-        const targetView = document.getElementById(`${viewName}-view`);
+        const viewId = `${viewName}-view`;
+        const targetView = document.getElementById(viewId);
         if (targetView) {
             targetView.classList.add('active');
             this.currentView = viewName;
+        } else {
+            console.error(`View "${viewName}" not found!`);
         }
 
         // Update nav button states
@@ -108,6 +136,11 @@ class WineApp {
                 btn.classList.add('active');
             }
         });
+
+        // Reload cellar data when viewing cellar page
+        if (viewName === 'cellar' && window.cellarManager) {
+            window.cellarManager.loadCellars();
+        }
     }
 
     performSearch(searchTerm) {
@@ -116,7 +149,35 @@ class WineApp {
     }
 }
 
-// Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new WineApp();
-});
+// Initialize app function
+function initApp() {
+    try {
+        if (typeof WineApp === 'undefined') {
+            console.error('WineApp is not defined!');
+            return;
+        }
+        
+        const appInstance = new WineApp();
+        window.app = appInstance;
+        
+        // Make showView globally accessible
+        window.showView = (viewName) => {
+            if (window.app && typeof window.app.showView === 'function') {
+                return window.app.showView(viewName);
+            }
+        };
+    } catch (error) {
+        console.error('Error initializing WineApp:', error);
+        alert('Error initializing app. Please check the console for details.');
+    }
+}
+
+// Make initApp globally accessible
+window.initApp = initApp;
+
+// Initialize app when DOM is loaded (or immediately if already loaded)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}

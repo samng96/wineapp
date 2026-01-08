@@ -1,17 +1,14 @@
+import { WineReference } from './WineReference.js';
+
 /**
  * WineInstance model - represents a wine instance (physical bottle)
  * 
  * @property {string} id - Unique identifier
- * @property {WineReference} reference - WineReference object this instance belongs to
- * @property {Object|null} location - Location object with:
- *   - cellarId (string): ID of the cellar
- *   - shelfIndex (number): Index of the shelf in the cellar
- *   - position (number): Position number on the shelf
- *   - isFront (boolean): True if on front side (or single shelf), False if on back side
- *   - null if instance is unshelved
+ * @property {WineReference} reference - WineReference object (not ID)
+ * @property {Object|null} location - Location object with {cellar, shelf, position, isFront} or null for unshelved
  * @property {number|null} price - Purchase price
  * @property {string|null} purchaseDate - ISO 8601 date when purchased
- * @property {string|null} drinkByDate - ISO 8601 date for recommended consumption
+ * @property {string|null} drinkByDate - ISO 8601 date when wine should be consumed by
  * @property {boolean} consumed - Whether the wine has been consumed
  * @property {string|null} consumedDate - ISO 8601 timestamp when consumed
  * @property {string|null} storedDate - ISO 8601 timestamp when stored
@@ -24,8 +21,8 @@ export class WineInstance {
                 drinkByDate = null, consumed = false, consumedDate = null, 
                 storedDate = null, version = 1, createdAt = null, updatedAt = null) {
         this.id = id;
-        this.reference = reference;
-        this.location = location;
+        this.reference = reference; // WineReference object
+        this.location = location; // {cellar, shelf, position, isFront} or null
         this.price = price;
         this.purchaseDate = purchaseDate;
         this.drinkByDate = drinkByDate;
@@ -38,18 +35,42 @@ export class WineInstance {
     }
 
     /**
-     * Check if instance is in a cellar
-     * @returns {boolean} True if location is not null
-     */
-    isInCellar() {
-        return this.location !== null;
-    }
-
-    /**
-     * Check if instance is unshelved
-     * @returns {boolean} True if location is null
+     * Check if the wine instance is unshelved (not in a cellar)
+     * @returns {boolean} True if unshelved
      */
     isUnshelved() {
         return this.location === null;
+    }
+
+    /**
+     * Create a WineInstance instance from API response dictionary
+     * Note: This requires the reference to be resolved separately
+     * @param {Object} dict - Dictionary from API response
+     * @param {WineReference} reference - WineReference object (must be resolved separately)
+     * @returns {WineInstance} WineInstance instance
+     */
+    static fromDict(dict, reference) {
+        // Parse location if present
+        let location = null;
+        if (dict.location) {
+            // Location format from API: {cellarId, shelfIndex, position, isFront}
+            // We'll store it as-is for now, and resolve cellar/shelf objects when needed
+            location = dict.location;
+        }
+
+        return new WineInstance(
+            dict.id,
+            reference, // Must be provided as WineReference object
+            location,
+            dict.price,
+            dict.purchaseDate,
+            dict.drinkByDate,
+            dict.consumed || false,
+            dict.consumedDate,
+            dict.storedDate,
+            dict.version,
+            dict.createdAt,
+            dict.updatedAt
+        );
     }
 }

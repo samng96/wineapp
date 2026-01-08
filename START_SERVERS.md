@@ -1,0 +1,42 @@
+# Starting the Wine App Servers
+
+## 1. Start the Flask Backend Server
+
+Open a terminal and run:
+```bash
+cd /Users/samng/Docs/src/WineApp/server
+python3 app.py
+```
+
+The server will start on **port 5001** (not 5000).
+
+You should see:
+```
+ * Running on http://127.0.0.1:5001
+```
+
+## 2. Start the Frontend Web Server
+
+Open a **second terminal** and run:
+```bash
+cd /Users/samng/Docs/src/WineApp
+python3 -m http.server 8000 --directory webclient
+```
+
+The frontend will be available at:
+```
+http://localhost:8000
+```
+
+## 3. Access the App
+
+Open your browser and go to:
+```
+http://localhost:8000
+```
+
+## Troubleshooting
+
+- If you see JavaScript errors in the browser console, check that all files are loading
+- Make sure both servers are running in separate terminals
+- The Flask server must be on port 5001 (the API will need to be updated to match)

@@ -33,6 +33,33 @@ export class Cellar {
     }
 
     /**
+     * Create a Cellar instance from API response dictionary
+     * @param {Object} dict - Dictionary from API response
+     * @returns {Cellar} Cellar instance
+     */
+    static fromDict(dict) {
+        // Convert shelves from [positions, isDouble] format to Shelf objects
+        const shelves = dict.shelves.map(shelfData => {
+            const [positions, isDouble] = shelfData;
+            return new Shelf(positions, isDouble);
+        });
+
+        // If winePositions are provided, populate them (for now we'll skip this as we need WineInstance objects)
+        // This will be handled when we load full cellar details with wine instances
+
+        return new Cellar(
+            dict.id,
+            dict.name,
+            shelves,
+            dict.temperature,
+            dict.capacity,
+            dict.version,
+            dict.createdAt,
+            dict.updatedAt
+        );
+    }
+
+    /**
      * Get shelf by index
      * @private
      */

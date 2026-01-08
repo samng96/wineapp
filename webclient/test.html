@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+</head>
+<body>
+    <h1>JavaScript Test Page</h1>
+    <button id="test-btn" onclick="alert('Inline onclick works!')">Test Button (Inline)</button>
+    <button id="test-btn-2">Test Button (Event Listener)</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        console.log('Test page script loaded');
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired');
+            const btn = document.getElementById('test-btn-2');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    console.log('Event listener click fired!');
+                    alert('Event listener works!');
+                });
+                console.log('Event listener attached to test-btn-2');
+            } else {
+                console.error('test-btn-2 not found!');
+            }
+        });
+    </script>
+</body>
+</html>
