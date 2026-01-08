@@ -87,6 +87,28 @@ def _location_dict_to_tuple(location_dict: Dict, cellars: List) -> Optional[Tupl
 
 
 # Endpoints
+"""
+Get all wine instances
+
+Response Format: Array of wine instance objects, each containing:
+- id (str): Unique identifier for the wine instance
+- referenceId (str): ID of the wine reference this instance belongs to
+- location (dict, optional): Location object with:
+  - cellarId (str): ID of the cellar where instance is located
+  - shelfIndex (int): Index of the shelf in the cellar
+  - position (int): Position number on the shelf
+  - isFront (bool): True if on front side (or single shelf), False if on back side
+  - null if instance is unshelved
+- price (float, optional): Purchase price
+- purchaseDate (str, optional): ISO 8601 date when purchased
+- drinkByDate (str, optional): ISO 8601 date for recommended consumption
+- consumed (bool): Whether the wine has been consumed
+- consumedDate (str, optional): ISO 8601 timestamp when consumed
+- storedDate (str, optional): ISO 8601 timestamp when stored
+- version (int): Version number for conflict resolution
+- createdAt (str): ISO 8601 timestamp when instance was created
+- updatedAt (str): ISO 8601 timestamp when instance was last updated
+"""
 @wine_instances_bp.route('/wine-instances', methods=['GET'])
 def get_wine_instances():
     """Get all wine instances"""
@@ -95,6 +117,24 @@ def get_wine_instances():
     return jsonify([serialize_wine_instance(i) for i in instances])
 
 
+"""
+Create a new wine instance
+
+Expected POST Parameters:
+- referenceId (str, required): ID of the wine reference this instance belongs to
+- price (float, optional): Purchase price of the wine instance
+- purchaseDate (str, optional): ISO 8601 date string when the wine was purchased
+- drinkByDate (str, optional): ISO 8601 date string for recommended consumption date
+- location (dict, optional): Location object. If provided, must be:
+  {
+    'type': 'cellar',
+    'cellarId': str,
+    'shelfIndex': int,
+    'side': 'front'|'back'|'single',
+    'position': int
+  }
+  If not provided, instance will be created as unshelved (location: null)
+"""
 @wine_instances_bp.route('/wine-instances', methods=['POST'])
 def create_wine_instance():
     """Create a new wine instance"""
@@ -166,6 +206,25 @@ def create_wine_instance():
     return jsonify(serialize_wine_instance(instance)), 201
 
 
+"""
+Get a specific wine instance by ID
+
+Response Format: Wine instance object containing:
+- id (str): Unique identifier for the wine instance
+- referenceId (str): ID of the wine reference this instance belongs to
+- location (dict, optional): Location object with cellarId, shelfIndex, position, isFront (or null if unshelved)
+- price (float, optional): Purchase price
+- purchaseDate (str, optional): ISO 8601 date when purchased
+- drinkByDate (str, optional): ISO 8601 date for recommended consumption
+- consumed (bool): Whether the wine has been consumed
+- consumedDate (str, optional): ISO 8601 timestamp when consumed
+- storedDate (str, optional): ISO 8601 timestamp when stored
+- version (int): Version number for conflict resolution
+- createdAt (str): ISO 8601 timestamp when instance was created
+- updatedAt (str): ISO 8601 timestamp when instance was last updated
+
+Error Response (404): {'error': 'Wine instance not found'} if instance doesn't exist
+"""
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['GET'])
 def get_wine_instance(instance_id: str):
     """Get a specific wine instance"""
@@ -176,6 +235,17 @@ def get_wine_instance(instance_id: str):
     return jsonify(serialize_wine_instance(instance))
 
 
+"""
+Update a wine instance
+
+Expected PUT Parameters (all optional):
+- price (float, optional): Updated purchase price
+- purchaseDate (str, optional): Updated purchase date (ISO 8601 format)
+- drinkByDate (str, optional): Updated recommended consumption date (ISO 8601 format)
+
+Note: referenceId and location cannot be updated via this endpoint.
+Use PUT /wine-instances/<instance_id>/location to update location.
+"""
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['PUT'])
 def update_wine_instance(instance_id: str):
     """Update a wine instance"""
@@ -283,6 +353,20 @@ def consume_wine_instance(instance_id: str):
     return jsonify(serialize_wine_instance(instance))
 
 
+"""
+Update wine instance location
+
+Expected PUT Parameters:
+- location (dict, required): Location object. Can be:
+  - null or {'type': 'unshelved'} to mark as unshelved
+  - {
+      'type': 'cellar',
+      'cellarId': str (required),
+      'shelfIndex': int (required),
+      'side': 'front'|'back'|'single' (required),
+      'position': int (required)
+    } to assign to a cellar position
+"""
 @wine_instances_bp.route('/wine-instances/<instance_id>/location', methods=['PUT'])
 def update_wine_instance_location(instance_id: str):
     """Update wine instance location"""
@@ -368,6 +452,16 @@ def update_wine_instance_location(instance_id: str):
 
 
 # Unshelved endpoints
+"""
+Get all unshelved wine instances (wines not currently in a cellar and not consumed)
+
+Response Format: Array of wine instance objects (same format as GET /wine-instances),
+but filtered to only include instances where:
+- location is null (not assigned to any cellar position)
+- consumed is false (not yet consumed)
+
+Each instance object contains the same fields as described in GET /wine-instances
+"""
 @wine_instances_bp.route('/unshelved', methods=['GET'])
 def get_unshelved():
     """Get all unshelved wine instances"""
@@ -378,6 +472,19 @@ def get_unshelved():
     return jsonify([serialize_wine_instance(i) for i in unshelved])
 
 
+"""
+Assign unshelved wine to a cellar shelf location
+
+Expected POST Parameters:
+- location (dict, required): Location object with the following structure:
+  {
+    'type': 'cellar' (required, must be 'cellar'),
+    'cellarId': str (required),
+    'shelfIndex': int (required),
+    'side': 'front'|'back'|'single' (required),
+    'position': int (required)
+  }
+"""
 @wine_instances_bp.route('/unshelved/<instance_id>/assign', methods=['POST'])
 def assign_unshelved_to_cellar(instance_id: str):
     """Assign unshelved wine to a cellar shelf location"""

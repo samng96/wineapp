@@ -39,6 +39,25 @@ def find_wine_reference_by_id(reference_id: str) -> Optional[WineReference]:
 
 
 # Endpoints
+"""
+Get all wine references
+
+Response Format: Array of wine reference objects, each containing:
+- id (str): Unique identifier for the wine reference
+- name (str): Name of the wine
+- type (str): Type of wine (e.g., 'Red', 'White', 'Rosé', 'Sparkling')
+- vintage (int, optional): Year the wine was produced
+- producer (str, optional): Name of the wine producer/winery
+- varietals (list[str], optional): List of grape varietals used
+- region (str, optional): Wine region
+- country (str, optional): Country of origin
+- rating (int, optional): Rating from 1-5
+- tastingNotes (str, optional): Tasting notes or description
+- labelImageUrl (str, optional): URL to the wine label image
+- version (int): Version number for conflict resolution
+- createdAt (str): ISO 8601 timestamp when reference was created
+- updatedAt (str): ISO 8601 timestamp when reference was last updated
+"""
 @wine_references_bp.route('/wine-references', methods=['GET'])
 def get_wine_references():
     """Get all wine references"""
@@ -46,6 +65,21 @@ def get_wine_references():
     return jsonify([serialize_wine_reference(r) for r in references])
 
 
+"""
+Create a new wine reference
+
+Expected POST Parameters:
+- name (str, required): Name of the wine
+- type (str, required): Type of wine (e.g., 'Red', 'White', 'Rosé', 'Sparkling')
+- vintage (int, optional): Year the wine was produced
+- producer (str, optional): Name of the wine producer/winery
+- varietals (list[str], optional): List of grape varietals used in the wine
+- region (str, optional): Wine region (e.g., 'Napa Valley', 'Bordeaux')
+- country (str, optional): Country of origin
+- rating (int, optional): Rating from 1-5
+- tastingNotes (str, optional): Tasting notes or description
+- labelImageUrl (str, optional): URL to the wine label image in blob storage
+"""
 @wine_references_bp.route('/wine-references', methods=['POST'])
 def create_wine_reference():
     """Create a new wine reference"""
@@ -93,6 +127,27 @@ def create_wine_reference():
     return jsonify(serialize_wine_reference(reference)), 201
 
 
+"""
+Get a specific wine reference with all instances
+
+Response Format: Wine reference object containing all fields from GET /wine-references, plus:
+- instances (array): Array of wine instance objects that reference this wine reference
+  Each instance object contains:
+  - id (str): Unique identifier for the wine instance
+  - referenceId (str): ID of the wine reference this instance belongs to
+  - location (dict, optional): Location object with cellarId, shelfIndex, position, isFront
+  - price (float, optional): Purchase price
+  - purchaseDate (str, optional): ISO 8601 date when purchased
+  - drinkByDate (str, optional): ISO 8601 date for recommended consumption
+  - consumed (bool): Whether the wine has been consumed
+  - consumedDate (str, optional): ISO 8601 timestamp when consumed
+  - storedDate (str, optional): ISO 8601 timestamp when stored
+  - version (int): Version number for conflict resolution
+  - createdAt (str): ISO 8601 timestamp when instance was created
+  - updatedAt (str): ISO 8601 timestamp when instance was last updated
+
+Error Response (404): {'error': 'Wine reference not found'} if reference doesn't exist
+"""
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['GET'])
 def get_wine_reference(reference_id: str):
     """Get a specific wine reference with all instances"""
@@ -113,6 +168,21 @@ def get_wine_reference(reference_id: str):
     return jsonify(response)
 
 
+"""
+Update a wine reference
+
+Expected PUT Parameters (all optional):
+- name (str, optional): Updated name of the wine
+- type (str, optional): Updated type of wine
+- vintage (int, optional): Updated vintage year
+- producer (str, optional): Updated producer name
+- varietals (list[str], optional): Updated list of grape varietals
+- region (str, optional): Updated wine region
+- country (str, optional): Updated country of origin
+- rating (int, optional): Updated rating (1-5)
+- tastingNotes (str, optional): Updated tasting notes
+- labelImageUrl (str, optional): Updated URL to label image
+"""
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['PUT'])
 def update_wine_reference(reference_id: str):
     """Update a wine reference"""

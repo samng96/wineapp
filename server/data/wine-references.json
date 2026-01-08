@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "a615e19f-b430-40c1-8566-fde1d8a14389",
+    "name": "Wine 1",
+    "type": "Red",
+    "vintage": 2020,
+    "producer": "Test Winery",
+    "varietals": [
+      "Cabernet Sauvignon"
+    ],
+    "region": "Napa Valley",
+    "country": "USA",
+    "rating": 4,
+    "tastingNotes": "Rich and full-bodied",
+    "labelImageUrl": "https://example.com/label.jpg",
+    "version": 1,
+    "createdAt": "2026-01-07T07:25:52.189120Z",
+    "updatedAt": "2026-01-07T07:25:52.189120Z"
+  },
+  {
+    "id": "dd7d19e6-01bd-4077-b754-4e07f23d20b6",
+    "name": "Wine 2",
+    "type": "Red",
+    "vintage": 2019,
+    "producer": "Test Winery",
+    "varietals": [
+      "Cabernet Sauvignon"
+    ],
+    "region": "Napa Valley",
+    "country": "USA",
+    "rating": 4,
+    "tastingNotes": "Rich and full-bodied",
+    "labelImageUrl": "https://example.com/label.jpg",
+    "version": 1,
+    "createdAt": "2026-01-07T07:25:52.190409Z",
+    "updatedAt": "2026-01-07T07:25:52.190409Z"
+  }
+]

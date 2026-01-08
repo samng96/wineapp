@@ -58,6 +58,21 @@ def update_and_save_cellar(cellar: Cellar):
 
 
 # Endpoints
+"""
+Get all cellars
+
+Response Format: Array of cellar objects, each containing:
+- id (str): Unique identifier for the cellar
+- name (str): Name of the cellar
+- shelves (list): List of shelf configurations, each as [positions, isDouble]
+- temperature (float, optional): Temperature in Fahrenheit
+- capacity (int): Total bottle capacity (calculated from shelves)
+- winePositions (dict): Dictionary mapping shelf index (as string) to wine positions structure
+  for each shelf (front/back/single with instance IDs)
+- version (int): Version number for conflict resolution
+- createdAt (str): ISO 8601 timestamp when cellar was created
+- updatedAt (str): ISO 8601 timestamp when cellar was last updated
+"""
 @cellars_bp.route('/cellars', methods=['GET'])
 def get_cellars():
     """Get all cellars"""
@@ -65,6 +80,16 @@ def get_cellars():
     return jsonify([serialize_cellar(c) for c in cellars])
 
 
+"""
+Create a new cellar
+
+Expected POST Parameters:
+- name (str, optional): Name of the cellar
+- shelves (list, required): List of shelf configurations. Each shelf is a list of [positions, isDouble]
+  where positions (int) is the number of bottle positions per side, and isDouble (bool) indicates
+  if the shelf has front/back sides (True) or is single-sided (False)
+- temperature (float, optional): Temperature in Fahrenheit for the cellar
+"""
 @cellars_bp.route('/cellars', methods=['POST'])
 def create_cellar():
     """Create a new cellar"""
@@ -107,6 +132,23 @@ def create_cellar():
     return jsonify(serialize_cellar(cellar)), 201
 
 
+"""
+Get a specific cellar by ID
+
+Response Format: Cellar object containing:
+- id (str): Unique identifier for the cellar
+- name (str): Name of the cellar
+- shelves (list): List of shelf configurations, each as [positions, isDouble]
+- temperature (float, optional): Temperature in Fahrenheit
+- capacity (int): Total bottle capacity (calculated from shelves)
+- winePositions (dict): Dictionary mapping shelf index (as string) to wine positions structure
+  for each shelf (front/back/single with instance IDs)
+- version (int): Version number for conflict resolution
+- createdAt (str): ISO 8601 timestamp when cellar was created
+- updatedAt (str): ISO 8601 timestamp when cellar was last updated
+
+Error Response (404): {'error': 'Cellar not found'} if cellar doesn't exist
+"""
 @cellars_bp.route('/cellars/<cellar_id>', methods=['GET'])
 def get_cellar(cellar_id: str):
     """Get a specific cellar by ID"""
@@ -117,6 +159,15 @@ def get_cellar(cellar_id: str):
     return jsonify(serialize_cellar(cellar))
 
 
+"""
+Update a cellar
+
+Expected PUT Parameters (all optional):
+- name (str, optional): Updated name of the cellar
+- temperature (float, optional): Updated temperature in Fahrenheit
+
+Note: shelves cannot be updated via this endpoint (bulk updates not allowed).
+"""
 @cellars_bp.route('/cellars/<cellar_id>', methods=['PUT'])
 def update_cellar(cellar_id: str):
     """Update a cellar"""
