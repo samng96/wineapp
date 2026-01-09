@@ -1,6 +1,7 @@
 // Cellar Management Module
 import { Cellar } from './models/Cellar.js';
 import { API } from './api.js';
+import { getWineCard } from './WineCard.js';
 
 class CellarManager {
     constructor() {
@@ -582,6 +583,58 @@ class CellarManager {
         
         // Add resize handler to recalculate bar widths when window resizes
         this.setupResizeHandler(container, cellar);
+        
+        // Set up wine card hover handlers
+        this.setupWineCardHovers(referenceMap);
+    }
+
+    setupWineCardHovers(referenceMap) {
+        const wineCard = getWineCard();
+        const winePositions = document.querySelectorAll('.wine-position[data-wine-reference-id]');
+        
+        winePositions.forEach(position => {
+            const referenceId = position.getAttribute('data-wine-reference-id');
+            if (!referenceId) return;
+            
+            const wineReference = referenceMap[referenceId];
+            if (!wineReference) return;
+            
+            // Get wine instance if available
+            const instanceId = position.id ? position.id.split('-').pop() : null;
+            
+            position.addEventListener('mouseenter', (e) => {
+                const rect = position.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top;
+                wineCard.show(wineReference, null, x, y);
+            });
+            
+            position.addEventListener('mouseleave', () => {
+                wineCard.hide(200); // Small delay to allow moving to card
+            });
+            
+            position.addEventListener('mousemove', (e) => {
+                const rect = position.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top;
+                wineCard.positionCard(x, y);
+            });
+        });
+        
+        // Also handle hover on the card itself to keep it visible
+        const card = document.getElementById('wine-card');
+        if (card) {
+            card.addEventListener('mouseenter', () => {
+                if (wineCard.hideTimeout) {
+                    clearTimeout(wineCard.hideTimeout);
+                    wineCard.hideTimeout = null;
+                }
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                wineCard.hide(0);
+            });
+        }
     }
 
     recalculateBarWidths(container, cellar) {
@@ -663,11 +716,15 @@ class CellarManager {
         const centerX = (2 * position + 1) * unitSize; // Position 0: center at 40px, Position 1: center at 120px
         const leftEdge = centerX - radius; // Position 0: left at 0px, Position 1: left at 80px
         
+        const positionId = `wine-pos-${shelfIndex}-single-${position}`;
+        const wineRefId = wine ? wine.id : '';
+        
         if (this.showLabels) {
             // Labels mode - show wine label image
             if (wineImage) {
                 return `
-                    <div class="wine-position circle single" style="left: ${leftEdge}px;" title="${wineName}">
+                    <div class="wine-position circle single" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName}" 
+                         data-wine-reference-id="${wineRefId}">
                         <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
                     </div>
                 `;
@@ -683,7 +740,8 @@ class CellarManager {
             if (wine && vintage) {
                 const wineTypeClass = this.getWineTypeClass(wineType);
                 return `
-                    <div class="wine-position circle single vintage-mode ${wineTypeClass}" style="left: ${leftEdge}px;" title="${wineName} (${vintage})">
+                    <div class="wine-position circle single vintage-mode ${wineTypeClass}" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName} (${vintage})"
+                         data-wine-reference-id="${wineRefId}">
                         <span class="vintage-text">${vintage}</span>
                     </div>
                 `;
@@ -754,12 +812,16 @@ class CellarManager {
         const backCenterX = (2 * position + 2) * unitSize; // in pixels
         const radius = 40; // 40px radius = 80px diameter
         
+        const frontPositionId = `wine-pos-${shelfIndex}-front-${position}`;
+        const backPositionId = `wine-pos-${shelfIndex}-back-${position}`;
+        
         if (this.showLabels) {
             // Labels mode - show wine label images
             return `
                 <div class="wine-position-container staggered" data-position="${position}" title="${title}">
                     ${frontImage ? `
-                        <div class="wine-position circle stagger-front" style="left: ${frontCenterX - radius}px;">
+                        <div class="wine-position circle stagger-front" id="${frontPositionId}" style="left: ${frontCenterX - radius}px;"
+                             data-wine-reference-id="${frontWine ? frontWine.id : ''}">
                             <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
                         </div>
                     ` : `
@@ -768,7 +830,8 @@ class CellarManager {
                         </div>
                     `}
                     ${backImage ? `
-                        <div class="wine-position circle stagger-back" style="left: ${backCenterX - radius}px;">
+                        <div class="wine-position circle stagger-back" id="${backPositionId}" style="left: ${backCenterX - radius}px;"
+                             data-wine-reference-id="${backWine ? backWine.id : ''}">
                             <img src="${backImage}" alt="${backName}" class="wine-label-image" />
                         </div>
                     ` : `
@@ -786,7 +849,8 @@ class CellarManager {
             return `
                 <div class="wine-position-container staggered" data-position="${position}" title="${title}">
                     ${frontWine && frontVintage ? `
-                        <div class="wine-position circle stagger-front vintage-mode ${frontTypeClass}" style="left: ${frontCenterX - radius}px;">
+                        <div class="wine-position circle stagger-front vintage-mode ${frontTypeClass}" id="${frontPositionId}" style="left: ${frontCenterX - radius}px;"
+                             data-wine-reference-id="${frontWine.id}">
                             <span class="vintage-text">${frontVintage}</span>
                         </div>
                     ` : `
@@ -795,7 +859,8 @@ class CellarManager {
                         </div>
                     `}
                     ${backWine && backVintage ? `
-                        <div class="wine-position circle stagger-back vintage-mode ${backTypeClass}" style="left: ${backCenterX - radius}px;">
+                        <div class="wine-position circle stagger-back vintage-mode ${backTypeClass}" id="${backPositionId}" style="left: ${backCenterX - radius}px;"
+                             data-wine-reference-id="${backWine.id}">
                             <span class="vintage-text">${backVintage}</span>
                         </div>
                     ` : `
