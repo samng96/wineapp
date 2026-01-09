@@ -1,7 +1,7 @@
 [
   {
-    "id": "88f17937-73c7-451a-9492-896fd81f1f6e",
-    "referenceId": "2501d0d9-72b5-4ac8-9e29-2a84536fcae7",
+    "id": "0",
+    "referenceId": "0",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 5,
@@ -19,8 +19,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "a03e4758-e6f7-4082-bd41-39b709cc5c3d",
-    "referenceId": "2501d0d9-72b5-4ac8-9e29-2a84536fcae7",
+    "id": "1",
+    "referenceId": "0",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 3,
@@ -38,8 +38,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "bd3f9464-f3a7-4bca-9cce-5d0f249db0fa",
-    "referenceId": "7b4bbf13-9b33-44bd-ada2-c896e8818dd8",
+    "id": "2",
+    "referenceId": "1",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 6,
@@ -57,8 +57,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "50e705b3-839e-4bde-ba7f-2af62d24026c",
-    "referenceId": "7b4bbf13-9b33-44bd-ada2-c896e8818dd8",
+    "id": "3",
+    "referenceId": "1",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 2,
@@ -76,8 +76,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "b2cb1033-55b3-4812-9692-8c75fbc634dc",
-    "referenceId": "1af2c231-22d4-4e9c-96bc-1ba540df3232",
+    "id": "4",
+    "referenceId": "2",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 3,
@@ -95,8 +95,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "b9c34962-0634-44e8-be85-7a61bfc59cce",
-    "referenceId": "1af2c231-22d4-4e9c-96bc-1ba540df3232",
+    "id": "5",
+    "referenceId": "2",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 6,
@@ -114,8 +114,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "d61d2692-626a-4e33-9632-6aebb67a0b1a",
-    "referenceId": "275fb855-8be9-4a37-ac82-b2b2bbad48be",
+    "id": "6",
+    "referenceId": "3",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 3,
@@ -133,8 +133,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "8b6e0c48-ea49-4ce5-8bff-39799c503445",
-    "referenceId": "275fb855-8be9-4a37-ac82-b2b2bbad48be",
+    "id": "7",
+    "referenceId": "3",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 0,
@@ -152,8 +152,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "6ccf62a0-9104-43ff-a5a2-866aef4172fa",
-    "referenceId": "f8ee5513-6f6b-42dc-a5ee-74f23a285b83",
+    "id": "8",
+    "referenceId": "4",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 2,
@@ -171,8 +171,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "a7914a7b-59da-4c90-b7a0-fa07b5a1c067",
-    "referenceId": "f8ee5513-6f6b-42dc-a5ee-74f23a285b83",
+    "id": "9",
+    "referenceId": "4",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 4,
@@ -190,8 +190,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "6df76974-27d2-4959-b48c-c27a8e0811bb",
-    "referenceId": "ca02b05c-df08-4e9b-869a-3c4476c0a0e3",
+    "id": "10",
+    "referenceId": "5",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 5,
@@ -209,8 +209,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "7f125005-78ab-4a56-ac7a-ef6bfab77a00",
-    "referenceId": "ca02b05c-df08-4e9b-869a-3c4476c0a0e3",
+    "id": "11",
+    "referenceId": "5",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 1,
@@ -228,8 +228,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "fdd96f95-2391-4d26-94be-ab8a35f01751",
-    "referenceId": "ad9aca15-dd46-4f60-8c7c-6d81ae5319ef",
+    "id": "12",
+    "referenceId": "6",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 4,
@@ -247,8 +247,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "4ea8fc9f-dd08-482a-b416-9b47f4291002",
-    "referenceId": "ad9aca15-dd46-4f60-8c7c-6d81ae5319ef",
+    "id": "13",
+    "referenceId": "6",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 0,
@@ -266,8 +266,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "3292d8b2-34f8-431a-b488-551ddb633c0d",
-    "referenceId": "837bd449-2dec-416b-aeb8-1e05faadefd3",
+    "id": "14",
+    "referenceId": "7",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 4,
@@ -285,8 +285,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "82421591-a110-4917-be2b-db2dbab67ca2",
-    "referenceId": "837bd449-2dec-416b-aeb8-1e05faadefd3",
+    "id": "15",
+    "referenceId": "7",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 1,
@@ -304,8 +304,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "d29566aa-0f72-484b-b90f-299de2a29097",
-    "referenceId": "f9741b86-95fd-41ed-98aa-c01d31a476b7",
+    "id": "16",
+    "referenceId": "8",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 2,
@@ -323,8 +323,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "79b494ec-db2c-45ef-b8c1-46e39421941c",
-    "referenceId": "f9741b86-95fd-41ed-98aa-c01d31a476b7",
+    "id": "17",
+    "referenceId": "8",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 3,
@@ -342,8 +342,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "bdce7c20-bb1f-455a-827d-569521fb0699",
-    "referenceId": "5ca0e6f0-3f8d-4de4-9f61-d0416edb3724",
+    "id": "18",
+    "referenceId": "9",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -361,8 +361,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "27554206-8d4b-4ca8-8f84-ac8471c47024",
-    "referenceId": "5ca0e6f0-3f8d-4de4-9f61-d0416edb3724",
+    "id": "19",
+    "referenceId": "9",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 3,
@@ -380,8 +380,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "b255e4ba-8389-46c0-8846-92cfaab9fa10",
-    "referenceId": "9496b6a6-19c9-49a8-9df8-7e136dd7e6d7",
+    "id": "20",
+    "referenceId": "10",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 5,
@@ -399,8 +399,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "edc4a358-7d5a-4d70-8a11-b19aa4842af8",
-    "referenceId": "b7c04f92-657a-44c5-8ffa-6941e1cf3d2d",
+    "id": "21",
+    "referenceId": "11",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -418,8 +418,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "c2a7e42c-3332-4826-b93a-1363a7d3842d",
-    "referenceId": "2c403f18-05e5-46c8-8cde-5749a5fde776",
+    "id": "22",
+    "referenceId": "12",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 5,
@@ -437,8 +437,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "c8e3cabd-b148-473a-bfbe-ca475410b989",
-    "referenceId": "6471a9b4-2a33-4fac-aca0-86b574bc3d0f",
+    "id": "23",
+    "referenceId": "13",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 6,
@@ -456,8 +456,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "e01966dc-5f74-445b-91de-5a3fe5dc51e2",
-    "referenceId": "4045b6e5-57c4-4b8e-83b8-2ed529a857bd",
+    "id": "24",
+    "referenceId": "14",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 3,
@@ -475,8 +475,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "e2175ed4-dac3-491e-b1e2-69a9e307fffd",
-    "referenceId": "afc539d4-7e6d-4187-838f-8a2923f028dd",
+    "id": "25",
+    "referenceId": "15",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 4,
@@ -494,8 +494,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "bc7bb7c0-1161-4f59-907f-b348dfa736d0",
-    "referenceId": "6d5f86db-b69f-47e5-bb9d-b2459973a7ac",
+    "id": "26",
+    "referenceId": "16",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 5,
@@ -513,8 +513,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "4a62fad0-1d5d-4668-86db-e99648dd9160",
-    "referenceId": "31ddf328-8251-4b91-833e-d9e0606ec178",
+    "id": "27",
+    "referenceId": "17",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 3,
@@ -532,8 +532,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "ec67270c-6459-4568-933b-05e5e9a68816",
-    "referenceId": "6147f9e2-376d-4cff-ba57-1befbe675798",
+    "id": "28",
+    "referenceId": "18",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 2,
@@ -551,8 +551,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "1a4207c2-171d-44fe-ad4d-c2d481cfcd67",
-    "referenceId": "f1dabd0e-aee7-42b6-9e92-e1c69ff09ad2",
+    "id": "29",
+    "referenceId": "19",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 2,
@@ -570,8 +570,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "12657ab2-f571-4a9d-abda-cc74af350165",
-    "referenceId": "46f17363-9839-4aa6-8a99-e8fe8ab573cb",
+    "id": "30",
+    "referenceId": "20",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 3,
@@ -589,8 +589,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "8aaf7180-a5c6-49c6-a27f-617824f0f3c8",
-    "referenceId": "fde68fc4-89ea-4546-9406-d3e8416a068a",
+    "id": "31",
+    "referenceId": "21",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 0,
@@ -608,8 +608,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "e517dd97-18f7-4994-88b8-24ca02fab2f5",
-    "referenceId": "eb8f485f-09af-4309-bd97-efe5448aca19",
+    "id": "32",
+    "referenceId": "22",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 4,
@@ -627,8 +627,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "56aa26d0-5640-4c21-a9f9-55ed89645872",
-    "referenceId": "44c2a4d6-4f60-466d-b1f8-78f537d37025",
+    "id": "33",
+    "referenceId": "23",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 0,
@@ -646,8 +646,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "36d7f026-f77c-4831-8fb6-56826ccaeb8e",
-    "referenceId": "232fb22a-8ad5-4951-a55a-889ef787a72e",
+    "id": "34",
+    "referenceId": "24",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 0,
@@ -665,8 +665,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "32e523b8-3399-4598-ab15-167bcc418aad",
-    "referenceId": "8ad08ab7-6496-438b-a31d-7616b7843f14",
+    "id": "35",
+    "referenceId": "25",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 4,
@@ -684,8 +684,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "d5733b1a-a9a5-436a-9fb8-d2246d60013e",
-    "referenceId": "baf365f5-86f2-4d9c-8e0d-c64e2ed8129a",
+    "id": "36",
+    "referenceId": "26",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -703,8 +703,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "80fb1a40-4452-48df-b853-ef2fcd64f186",
-    "referenceId": "510afecf-2acd-42a7-ad71-ff9947000d20",
+    "id": "37",
+    "referenceId": "27",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 6,
@@ -722,8 +722,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "67af6dbf-f4e2-424e-8f3b-ece3fbfef123",
-    "referenceId": "1c42e60f-1f56-4bf3-a015-6f182c48f8a6",
+    "id": "38",
+    "referenceId": "28",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -741,8 +741,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "8b5ef821-aa2e-44c3-af69-c912d4a29b51",
-    "referenceId": "895e092b-c507-494c-8831-7cfff03bac22",
+    "id": "39",
+    "referenceId": "29",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 4,
@@ -760,8 +760,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "7b49cc97-48d0-486e-bb7a-2902725c20df",
-    "referenceId": "714def32-65ad-4d47-be25-f6967d8f4d09",
+    "id": "40",
+    "referenceId": "30",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -779,8 +779,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "136d087d-2901-410f-b2b7-f3a0bb944d1b",
-    "referenceId": "fe5c4dd2-862f-4a82-b6df-799a64d26583",
+    "id": "41",
+    "referenceId": "31",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 5,
@@ -798,8 +798,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "6c0a93f1-ff42-4124-a715-ba3323fd4708",
-    "referenceId": "41a2f4d5-e4eb-4d29-88cb-278b5e716582",
+    "id": "42",
+    "referenceId": "32",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 4,
@@ -817,8 +817,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "1c2ba6e0-a492-4e35-8fce-8fb4d4c6476e",
-    "referenceId": "692712d6-beae-44ef-a87c-a9f998f43e80",
+    "id": "43",
+    "referenceId": "33",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 2,
@@ -836,8 +836,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "8fcc4383-5b2e-4127-9043-8602106b4118",
-    "referenceId": "1c47e18e-ecf1-4e8a-b7a1-7b6bd539b977",
+    "id": "44",
+    "referenceId": "34",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 4,
@@ -855,8 +855,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "aecc7ee3-3eb0-43b3-8e03-79f8a5714170",
-    "referenceId": "43957fe4-4ec8-433d-b2dd-1b28ede74fa9",
+    "id": "45",
+    "referenceId": "35",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -874,8 +874,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "f5dfd916-3747-42b8-9d43-38b8a142857c",
-    "referenceId": "77b28411-38c5-44dc-81b7-b61652da2867",
+    "id": "46",
+    "referenceId": "36",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 4,
@@ -893,8 +893,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "41a1482c-3754-4290-ae51-afe06d341fc9",
-    "referenceId": "816b40c4-6acd-4bf0-917a-6e558580964e",
+    "id": "47",
+    "referenceId": "37",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -912,8 +912,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "62e7918b-b52e-4393-a8be-47df80368c11",
-    "referenceId": "6dc467ba-d227-42b8-949d-37362dc614ce",
+    "id": "48",
+    "referenceId": "38",
     "location": {
       "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
       "shelfIndex": 1,
@@ -931,8 +931,8 @@
     "updatedAt": "2026-01-08T06:46:28.877748Z"
   },
   {
-    "id": "82848a1c-65a6-4c0f-9691-455141e1a304",
-    "referenceId": "60fa8caa-3c68-4834-84e9-e96438bcd551",
+    "id": "49",
+    "referenceId": "39",
     "location": {
       "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
       "shelfIndex": 3,
@@ -948,5 +948,290 @@
     "version": 1,
     "createdAt": "2026-01-08T06:46:28.877748Z",
     "updatedAt": "2026-01-08T06:46:28.877748Z"
+  },
+  {
+    "id": "50",
+    "referenceId": "40",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 3,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 51.34,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "51",
+    "referenceId": "41",
+    "location": {
+      "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
+      "shelfIndex": 2,
+      "position": 4,
+      "isFront": false
+    },
+    "price": 67.74,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "52",
+    "referenceId": "42",
+    "location": {
+      "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
+      "shelfIndex": 3,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 56.85,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "53",
+    "referenceId": "43",
+    "location": {
+      "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
+      "shelfIndex": 0,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 65.06,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "54",
+    "referenceId": "44",
+    "location": {
+      "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
+      "shelfIndex": 1,
+      "position": 0,
+      "isFront": false
+    },
+    "price": 61.96,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "55",
+    "referenceId": "45",
+    "location": {
+      "cellarId": "04ccc5a8-f334-4698-93df-4c7412cd5e09",
+      "shelfIndex": 3,
+      "position": 2,
+      "isFront": true
+    },
+    "price": 52.7,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "56",
+    "referenceId": "46",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 5,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 45.03,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "57",
+    "referenceId": "47",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 3,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 77.78,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "58",
+    "referenceId": "48",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 1,
+      "position": 4,
+      "isFront": true
+    },
+    "price": 67.25,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "59",
+    "referenceId": "49",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 5,
+      "position": 2,
+      "isFront": true
+    },
+    "price": 63.67,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "60",
+    "referenceId": "40",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 2,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 79.35,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "61",
+    "referenceId": "41",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 2,
+      "position": 0,
+      "isFront": false
+    },
+    "price": 62.16,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "62",
+    "referenceId": "42",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 5,
+      "position": 7,
+      "isFront": false
+    },
+    "price": 37.8,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "63",
+    "referenceId": "43",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 3,
+      "position": 3,
+      "isFront": true
+    },
+    "price": 67.38,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "64",
+    "referenceId": "44",
+    "location": {
+      "cellarId": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
+      "shelfIndex": 1,
+      "position": 5,
+      "isFront": false
+    },
+    "price": 79.74,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-09T01:45:37.491356Z",
+    "version": 1,
+    "createdAt": "2026-01-09T01:45:37.491356Z",
+    "updatedAt": "2026-01-09T01:45:37.491356Z"
   }
 ]

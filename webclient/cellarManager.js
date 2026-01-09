@@ -5,6 +5,8 @@ import { API } from './api.js';
 class CellarManager {
     constructor() {
         this.cellars = [];
+        this.wineInstances = []; // Cache wine instances for breakdown calculation
+        this.wineReferences = []; // Cache wine references for breakdown calculation
         this.init();
     }
 
@@ -98,6 +100,16 @@ class CellarManager {
         try {
             const data = await API.get('/cellars');
             this.cellars = data.map(c => Cellar.fromDict(c));
+            
+            // Load wine instances and references for breakdown calculation
+            try {
+                this.wineInstances = await API.get('/wine-instances');
+                this.wineReferences = await API.get('/wine-references');
+            } catch (err) {
+                console.warn('Could not load wine data for breakdown:', err);
+                // Continue without breakdown data
+            }
+            
             this.renderCellars();
         } catch (error) {
             console.error('Error loading cellars:', error);
@@ -108,6 +120,79 @@ class CellarManager {
                 container.innerHTML = '<p style="text-align: center; color: #f44336; padding: 40px;">Failed to load cellars. Please make sure the server is running.</p>';
             }
         }
+    }
+
+    /**
+     * Calculate wine breakdown by type for a cellar
+     * @param {Cellar} cellar - The cellar to calculate breakdown for
+     * @returns {Object} Object with wine type counts, e.g. { 'Red': 10, 'White': 3 }
+     */
+    getWineBreakdown(cellar) {
+        if (!this.wineInstances || !this.wineReferences || !cellar.winePositions) {
+            return {};
+        }
+
+        // Create a map of reference ID to type for quick lookup
+        const referenceTypeMap = {};
+        this.wineReferences.forEach(ref => {
+            referenceTypeMap[ref.id] = ref.type || 'Unknown';
+        });
+
+        // Get all wine instance IDs in this cellar
+        const cellarWineIds = new Set();
+        for (const shelfIndex in cellar.winePositions) {
+            const shelfPositions = cellar.winePositions[shelfIndex];
+            if (shelfPositions.front) {
+                shelfPositions.front.forEach(id => {
+                    if (id) cellarWineIds.add(id);
+                });
+            }
+            if (shelfPositions.back) {
+                shelfPositions.back.forEach(id => {
+                    if (id) cellarWineIds.add(id);
+                });
+            }
+            if (shelfPositions.single) {
+                shelfPositions.single.forEach(id => {
+                    if (id) cellarWineIds.add(id);
+                });
+            }
+        }
+
+        // Count wines by type
+        const breakdown = {};
+        this.wineInstances.forEach(instance => {
+            // If this instance is in this cellar's winePositions
+            if (cellarWineIds.has(instance.id) && instance.referenceId) {
+                const wineType = referenceTypeMap[instance.referenceId] || 'Unknown';
+                breakdown[wineType] = (breakdown[wineType] || 0) + 1;
+            }
+        });
+
+        return breakdown;
+    }
+
+    /**
+     * Format wine breakdown as a tooltip string
+     * @param {Object} breakdown - Object with wine type counts
+     * @returns {string} Formatted breakdown string
+     */
+    formatBreakdown(breakdown) {
+        const entries = Object.entries(breakdown);
+        if (entries.length === 0) {
+            return 'No wines in cellar';
+        }
+        
+        // Sort by count (descending) then by type name
+        entries.sort((a, b) => {
+            if (b[1] !== a[1]) return b[1] - a[1]; // Count descending
+            return a[0].localeCompare(b[0]); // Type ascending
+        });
+
+        return entries.map(([type, count]) => {
+            const plural = count === 1 ? 'bottle' : 'bottles';
+            return `${count} ${type} ${plural}`;
+        }).join(', ');
     }
 
     renderCellars() {
@@ -121,15 +206,28 @@ class CellarManager {
 
         container.innerHTML = this.cellars.map(cellar => {
             const tempText = cellar.temperature ? `${cellar.temperature}°F` : 'Not set';
-            const capacityText = `${cellar.capacity} bottles`;
             const shelfCount = cellar.shelves.length;
             const shelfText = shelfCount === 1 ? '1 shelf' : `${shelfCount} shelves`;
+            
+            // Calculate used slots and show as used/capacity
+            const usedSlots = cellar.getUsedSlots();
+            const capacity = cellar.capacity;
+            const usageText = `${usedSlots} stored bottles ${capacity} total slots`;
+            
+            // Calculate wine breakdown for tooltip
+            const breakdown = this.getWineBreakdown(cellar);
+            const breakdownText = this.formatBreakdown(breakdown);
+            const tooltipText = breakdownText ? `Breakdown: ${breakdownText}` : 'No wines in cellar';
 
             return `
                 <div class="list-item" data-cellar-id="${cellar.id}">
                     <div class="list-item-content">
                         <div class="list-item-title">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</div>
-                        <div class="list-item-subtitle">${shelfText} • ${capacityText} • ${tempText}</div>
+                        <div class="list-item-subtitle">
+                            ${shelfText} • 
+                            <span class="usage-text" title="${this.escapeHtml(tooltipText)}">${usageText}</span> • 
+                            ${tempText}
+                        </div>
                     </div>
                     <div class="list-item-actions">
                         <button class="list-item-btn" onclick="window.cellarManager.showEditDialog('${cellar.id}')" title="Edit">✏️</button>

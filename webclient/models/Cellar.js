@@ -47,7 +47,7 @@ export class Cellar {
         // If winePositions are provided, populate them (for now we'll skip this as we need WineInstance objects)
         // This will be handled when we load full cellar details with wine instances
 
-        return new Cellar(
+        const cellar = new Cellar(
             dict.id,
             dict.name,
             shelves,
@@ -57,6 +57,45 @@ export class Cellar {
             dict.createdAt,
             dict.updatedAt
         );
+
+        // Store winePositions for calculating used slots
+        cellar.winePositions = dict.winePositions || {};
+
+        return cellar;
+    }
+
+    /**
+     * Calculate the number of used slots (positions with wine instances)
+     * @returns {number} Number of used slots
+     */
+    getUsedSlots() {
+        if (!this.winePositions || Object.keys(this.winePositions).length === 0) {
+            return 0;
+        }
+
+        let used = 0;
+        for (const shelfIndex in this.winePositions) {
+            const shelfPositions = this.winePositions[shelfIndex];
+            // Count non-null values in front, back, or single arrays
+            if (shelfPositions.front) {
+                used += shelfPositions.front.filter(id => id !== null && id !== undefined).length;
+            }
+            if (shelfPositions.back) {
+                used += shelfPositions.back.filter(id => id !== null && id !== undefined).length;
+            }
+            if (shelfPositions.single) {
+                used += shelfPositions.single.filter(id => id !== null && id !== undefined).length;
+            }
+        }
+        return used;
+    }
+
+    /**
+     * Calculate the number of free slots
+     * @returns {number} Number of free slots
+     */
+    getFreeSlots() {
+        return this.capacity - this.getUsedSlots();
     }
 
     /**

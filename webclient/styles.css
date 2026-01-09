@@ -281,6 +281,18 @@ body {
 .list-item-subtitle {
     font-size: 14px;
     color: #666;
+    position: relative;
+}
+
+.list-item-subtitle .usage-text {
+    cursor: help;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+
+.list-item-subtitle .usage-text:hover {
+    color: #6200ea;
 }
 
 .list-item-actions {

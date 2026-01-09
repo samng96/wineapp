@@ -24,9 +24,9 @@ if lsof -ti:8000 > /dev/null; then
 else
     echo "Starting frontend web server on port 8000..."
     cd "$(dirname "$0")"
-    python3 -m http.server 8000 --directory webclient &
+    python3 webclient/dev_server.py webclient &
     WEB_PID=$!
-    echo "Web server started (PID: $WEB_PID)"
+    echo "Web server started (PID: $WEB_PID) - with no-cache headers for development"
     echo ""
 fi
 

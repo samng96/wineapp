@@ -20,8 +20,12 @@ You should see:
 Open a **second terminal** and run:
 ```bash
 cd /Users/samng/Docs/src/WineApp
-python3 -m http.server 8000 --directory webclient
+python3 webclient/dev_server.py webclient
 ```
+
+**Note:** We use a custom development server (`dev_server.py`) that sends no-cache headers to prevent browser caching issues. If you see stale code after refreshing, use:
+- **Hard refresh**: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows/Linux)
+- Or use the development server which prevents caching automatically
 
 The frontend will be available at:
 ```

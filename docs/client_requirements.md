@@ -66,6 +66,8 @@ The home view needs several components. For now, just have a simple splash scree
 ### 2. Cellar management
 The cellar management screen starts by showing all the cellars the user has. From here, the user can add new cellars, edit them (they can only edit the cellar temperature and the name of the cellar), and remove them.
 
+Each cellar that apperas shows the name that is editable, the number of shelves, the total capacity (ie used/total), and what the cellar's temperature is set to. Hovering over the text for the number of bottles displays a breakdown by type of the bottles stored.
+
 UI placement:
 - Top bar showing a plus sign on the right side that when clicked pops up a dialog to create a new cellar
 - Main page is just a list view of all the cellars that the user has. Next to the cellar, there is an edit icon and a delete icon. Clicking the edit icon pops up a dialog to edit the editable fileds of a cellar, and clicking the delete icon prompts an "are you sure?" before deleting.

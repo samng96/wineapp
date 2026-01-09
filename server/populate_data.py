@@ -167,7 +167,7 @@ def get_wine_label_url(wine_name, producer, vintage):
 
 
 def create_wine_instances(references, cellars):
-    """Create 50 wine instances and assign them to cellars randomly"""
+    """Create 65 wine instances (50 red, 15 white) and assign them to cellars randomly"""
     instances = []
     timestamp = get_current_timestamp()
     
@@ -188,28 +188,35 @@ def create_wine_instances(references, cellars):
     # Randomize the available positions
     random.shuffle(available_positions)
     
-    if len(available_positions) < 50:
-        raise ValueError(f"Not enough available positions ({len(available_positions)}) for 50 wine instances")
+    if len(available_positions) < 65:
+        raise ValueError(f"Not enough available positions ({len(available_positions)}) for 65 wine instances")
     
-    # We need 50 instances total
-    # Some references should have multiple instances
+    # Separate red and white references
+    red_references = [ref for ref in references if ref.type == 'Red']
+    white_references = [ref for ref in references if ref.type == 'White']
+    
+    # We need 65 instances total: 50 red, 15 white
     instance_count = 0
-    reference_index = 0
     
-    while instance_count < 50:
-        reference = references[reference_index % len(references)]
+    # Create 50 red wine instances
+    # Some red references should have multiple instances
+    red_instance_count = 0
+    red_reference_index = 0
+    
+    while red_instance_count < 50:
+        reference = red_references[red_reference_index % len(red_references)]
         
         # Determine how many instances for this reference
-        # First 10 references get 2 instances each (20 instances)
-        # Remaining references get 1 instance each
-        if reference_index < 10:
+        # First 10 red references get 2 instances each (20 instances)
+        # Remaining red references get 1 instance each
+        if red_reference_index < 10:
             num_instances = 2
         else:
             num_instances = 1
         
         # Create instances for this reference
         for i in range(num_instances):
-            if instance_count >= 50:
+            if red_instance_count >= 50:
                 break
             
             # Get a random available position
@@ -225,7 +232,7 @@ def create_wine_instances(references, cellars):
                 id=generate_id(),
                 reference=reference,
                 location=location,
-                price=50.0 + (instance_count * 2.5),  # Varying prices
+                price=round(50.0 + (instance_count * 2.5), 2),  # Varying prices
                 purchase_date="2024-01-15",
                 drink_by_date="2030-01-15",
                 consumed=False,
@@ -241,8 +248,47 @@ def create_wine_instances(references, cellars):
             
             instances.append(instance)
             instance_count += 1
+            red_instance_count += 1
         
-        reference_index += 1
+        red_reference_index += 1
+    
+    # Create 15 white wine instances
+    # Cycle through white references to distribute them
+    white_reference_index = 0
+    
+    for white_instance_count in range(15):
+        reference = white_references[white_reference_index % len(white_references)]
+        
+        # Get a random available position
+        cellar, shelf_index, side, position = available_positions[instance_count]
+        shelf = cellar.shelves[shelf_index]
+        is_front = (side == 'front') if shelf.is_double else True
+        
+        # Create location tuple
+        location = (cellar, shelf, position, is_front)
+        
+        # Create instance
+        instance = WineInstance(
+            id=generate_id(),
+            reference=reference,
+            location=location,
+            price=round(30.0 + (instance_count * 2.5), 2),  # Varying prices for white wines
+            purchase_date="2024-01-15",
+            drink_by_date="2030-01-15",
+            consumed=False,
+            consumed_date=None,
+            stored_date=timestamp,
+            version=1,
+            created_at=timestamp,
+            updated_at=timestamp
+        )
+        
+        # Assign to cellar position
+        cellar.assign_wine_to_position(shelf_index, side, position, instance)
+        
+        instances.append(instance)
+        instance_count += 1
+        white_reference_index += 1
     
     return instances
 
@@ -266,7 +312,9 @@ def main():
     
     print("Creating wine instances...")
     instances = create_wine_instances(references, cellars)
-    print(f"Created {len(instances)} wine instances")
+    red_count = sum(1 for inst in instances if inst.reference.type == 'Red')
+    white_count = sum(1 for inst in instances if inst.reference.type == 'White')
+    print(f"Created {len(instances)} wine instances ({red_count} red, {white_count} white)")
     
     # Serialize and save
     print("Saving data...")

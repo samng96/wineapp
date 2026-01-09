@@ -71,6 +71,31 @@ While paused:
 - **Import errors**: Look for red errors in Console
 - **Class not defined**: Check if `typeof WineApp === 'function'`
 - **Object empty**: Check if constructor threw an error
+- **Stale code after refresh**: Browser caching issue - see "Caching Issues" below
+
+## Caching Issues
+
+If you're not seeing your latest code changes after refreshing:
+
+### Quick Solutions:
+1. **Hard Refresh** (recommended):
+   - Mac: `Cmd + Shift + R`
+   - Windows/Linux: `Ctrl + Shift + R`
+
+2. **Disable Cache in DevTools**:
+   - Open DevTools (F12)
+   - Go to **Network** tab
+   - Check **"Disable cache"** checkbox
+   - Keep DevTools open while developing
+
+3. **Use the Development Server**:
+   - The `dev_server.py` script sends no-cache headers automatically
+   - Run: `python3 webclient/dev_server.py webclient`
+   - Or use `start_servers.sh` which uses the dev server
+
+4. **Clear Browser Cache**:
+   - Chrome: Settings → Privacy → Clear browsing data → Cached images and files
+   - Or: Right-click refresh button → "Empty Cache and Hard Reload"
 
 ## Using Console Commands
 
