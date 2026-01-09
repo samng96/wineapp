@@ -507,41 +507,29 @@ class CellarManager {
             const shelfData = winePositions[shelfKey] || {};
 
             html += `<div class="shelf-row">`;
-            html += `<div class="shelf-label">Shelf ${shelfIndex + 1}${isDouble ? ' (Double-sided)' : ''}</div>`;
+            html += `<div class="shelf-label">Shelf ${shelfIndex + 1}</div>`;
             html += `<div class="shelf-positions-container">`;
 
             if (isDouble) {
-                // Front side
-                html += `<div class="shelf-side">`;
-                html += `<div class="side-label">Front</div>`;
-                html += `<div class="positions-row">`;
+                // Double-sided: staggered circles layout
+                html += `<div class="positions-row staggered">`;
+                const frontPositions = shelfData.front || [];
+                const backPositions = shelfData.back || [];
                 for (let pos = 0; pos < positions; pos++) {
-                    const frontPositions = shelfData.front || [];
-                    const instanceId = frontPositions[pos] || null;
-                    html += this.renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, 'front', pos);
+                    const frontInstanceId = frontPositions[pos] || null;
+                    const backInstanceId = backPositions[pos] || null;
+                    html += this.renderStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, shelfIndex, pos);
                 }
-                html += `</div></div>`;
-
-                // Back side
-                html += `<div class="shelf-side">`;
-                html += `<div class="side-label">Back</div>`;
-                html += `<div class="positions-row">`;
-                for (let pos = 0; pos < positions; pos++) {
-                    const backPositions = shelfData.back || [];
-                    const instanceId = backPositions[pos] || null;
-                    html += this.renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, 'back', pos);
-                }
-                html += `</div></div>`;
+                html += `</div>`;
             } else {
-                // Single side
-                html += `<div class="shelf-side">`;
-                html += `<div class="positions-row">`;
+                // Single side - use circles in a single row
+                html += `<div class="positions-row single-row">`;
                 const singlePositions = shelfData.single || [];
                 for (let pos = 0; pos < positions; pos++) {
                     const instanceId = singlePositions[pos] || null;
-                    html += this.renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, 'single', pos);
+                    html += this.renderSinglePosition(instanceId, instanceMap, referenceMap, shelfIndex, pos);
                 }
-                html += `</div></div>`;
+                html += `</div>`;
             }
 
             html += `</div></div>`;
@@ -564,12 +552,89 @@ class CellarManager {
                 `;
             } else {
                 // Wine instance but no reference or image
-                return `<div class="wine-position empty" title="Wine (no image)"><div class="empty-circle"></div></div>`;
+                return `<div class="wine-position empty" title="Wine (no image)"><div class="empty-square"></div></div>`;
             }
         } else {
             // Empty position
-            return `<div class="wine-position empty" title="Empty position"><div class="empty-circle"></div></div>`;
+            return `<div class="wine-position empty" title="Empty position"><div class="empty-square"></div></div>`;
         }
+    }
+
+    renderSinglePosition(instanceId, instanceMap, referenceMap, shelfIndex, position) {
+        const wine = instanceId && instanceMap[instanceId] ? referenceMap[instanceMap[instanceId].referenceId] : null;
+        const wineName = wine ? this.escapeHtml(wine.name || 'Unknown Wine') : '';
+        const wineImage = wine && wine.labelImageUrl ? this.escapeHtml(wine.labelImageUrl) : '';
+        
+        // Single row: position bottles so edges align (double spaced)
+        // Bottle radius = 2 units, diameter = 4 units = 80px
+        // Position 0: center at x=1 unit (draws 0-2), Position 1: center at x=3 units (draws 2-4), etc.
+        // Using same unit size as staggered: 40px per unit
+        const unitSize = 40;
+        const radius = 40; // 40px radius = 80px diameter
+        // Center at (2*position + 1) * unitSize, left edge at center - radius
+        const centerX = (2 * position + 1) * unitSize; // Position 0: center at 40px, Position 1: center at 120px
+        const leftEdge = centerX - radius; // Position 0: left at 0px, Position 1: left at 80px
+        
+        if (wineImage) {
+            return `
+                <div class="wine-position circle single" style="left: ${leftEdge}px;" title="${wineName}">
+                    <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
+                </div>
+            `;
+        } else {
+            return `
+                <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="${wineName || 'Empty position'}">
+                    <div class="empty-circle"></div>
+                </div>
+            `;
+        }
+    }
+
+    renderStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, shelfIndex, position) {
+        const frontWine = frontInstanceId && instanceMap[frontInstanceId] ? referenceMap[instanceMap[frontInstanceId].referenceId] : null;
+        const backWine = backInstanceId && instanceMap[backInstanceId] ? referenceMap[instanceMap[backInstanceId].referenceId] : null;
+        
+        const frontName = frontWine ? this.escapeHtml(frontWine.name || 'Unknown Wine') : '';
+        const backName = backWine ? this.escapeHtml(backWine.name || 'Unknown Wine') : '';
+        
+        const frontImage = frontWine && frontWine.labelImageUrl ? this.escapeHtml(frontWine.labelImageUrl) : '';
+        const backImage = backWine && backWine.labelImageUrl ? this.escapeHtml(backWine.labelImageUrl) : '';
+        
+        const title = `Front: ${frontName || 'Empty'} | Back: ${backName || 'Empty'}`;
+        
+        // Staggered layout: 
+        // Bottle radius = 2 units, diameter = 4 units = 80px
+        // Position 0: front center at x=1 (draws 0-2), back center at x=2 (draws 1-3)
+        // Position 1: front center at x=3 (draws 2-4), back center at x=4 (draws 3-5)
+        // Position i: front center at x=2*i+1, back center at x=2*i+2
+        // If bottle draws from 0-2 and center is at 1, then 1 unit = 40px (half of 80px diameter)
+        const unitSize = 40; // pixels per unit (so x=1 = 40px, x=2 = 80px)
+        const frontCenterX = (2 * position + 1) * unitSize; // in pixels
+        const backCenterX = (2 * position + 2) * unitSize; // in pixels
+        const radius = 40; // 40px radius = 80px diameter
+        
+        return `
+            <div class="wine-position-container staggered" data-position="${position}" title="${title}">
+                ${frontImage ? `
+                    <div class="wine-position circle stagger-front" style="left: ${frontCenterX - radius}px;">
+                        <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
+                    </div>
+                ` : `
+                    <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;">
+                        <div class="empty-circle"></div>
+                    </div>
+                `}
+                ${backImage ? `
+                    <div class="wine-position circle stagger-back" style="left: ${backCenterX - radius}px;">
+                        <img src="${backImage}" alt="${backName}" class="wine-label-image" />
+                    </div>
+                ` : `
+                    <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;">
+                        <div class="empty-circle"></div>
+                    </div>
+                `}
+            </div>
+        `;
     }
 }
 
