@@ -501,23 +501,38 @@ class CellarManager {
 
         let html = '<div class="fridge-container">';
         
+        // Calculate available width: container width minus fridge padding (20px each side = 40px total)
+        // We'll calculate this after inserting HTML, but for now use container width
+        const containerWidth = container.clientWidth || (window.innerWidth || document.documentElement.clientWidth);
+        const fridgePadding = 40; // 20px padding on each side
+        const availableWidth = containerWidth - fridgePadding;
+        const eightyPercentWidth = availableWidth * 0.8;
+
         shelves.forEach((shelfConfig, shelfIndex) => {
             const [positions, isDouble] = shelfConfig;
             const shelfKey = String(shelfIndex);
             const shelfData = winePositions[shelfKey] || {};
 
+            // Calculate bottle width for this shelf
+            const unitSize = 40;
+            let bottleWidth;
+            if (isDouble) {
+                // Last back position: center at (2*positions) * 40, right edge at (2*positions + 1) * 40
+                bottleWidth = (2 * positions + 1) * unitSize;
+            } else {
+                // Last position: center at (2*positions - 1) * 40, right edge at (2*positions) * 40
+                bottleWidth = (2 * positions) * unitSize;
+            }
+
+            // Bar width is max(80% available width, width of all bottles), but never exceed available width
+            const barWidth = Math.min(Math.max(eightyPercentWidth, bottleWidth), availableWidth);
+
             html += `<div class="shelf-row">`;
-            html += `<div class="shelf-label">Shelf ${shelfIndex + 1}</div>`;
             html += `<div class="shelf-positions-container">`;
 
             if (isDouble) {
                 // Double-sided: staggered circles layout
-                // Calculate total width: last back position right edge at (2 * positions + 1) * 40px
-                const unitSize = 40;
-                const radius = 40;
-                // Last back position: center at (2*positions) * 40, right edge at (2*positions + 1) * 40
-                const totalWidth = (2 * positions + 1) * unitSize;
-                html += `<div class="positions-row staggered" style="position: relative; width: ${totalWidth}px; margin: 0 auto;">`;
+                html += `<div class="positions-row staggered" style="position: relative; width: ${bottleWidth}px; margin: 0 auto;">`;
                 const frontPositions = shelfData.front || [];
                 const backPositions = shelfData.back || [];
                 for (let pos = 0; pos < positions; pos++) {
@@ -528,12 +543,7 @@ class CellarManager {
                 html += `</div>`;
             } else {
                 // Single side - use circles in a single row
-                // Calculate total width: last position right edge at (2 * positions) * 40px
-                const unitSize = 40;
-                const radius = 40;
-                // Last position: center at (2*positions - 1) * 40, right edge at (2*positions) * 40
-                const totalWidth = (2 * positions) * unitSize;
-                html += `<div class="positions-row single-row" style="position: relative; width: ${totalWidth}px; margin: 0 auto;">`;
+                html += `<div class="positions-row single-row" style="position: relative; width: ${bottleWidth}px; margin: 0 auto;">`;
                 const singlePositions = shelfData.single || [];
                 for (let pos = 0; pos < positions; pos++) {
                     const instanceId = singlePositions[pos] || null;
@@ -542,11 +552,61 @@ class CellarManager {
                 html += `</div>`;
             }
 
-            html += `</div></div>`;
+            html += `</div>`;
+            html += `<div class="shelf-separator-bar" style="width: ${barWidth}px;">`;
+            html += `<div class="shelf-label">Shelf ${shelfIndex + 1}</div>`;
+            html += `</div>`;
+            html += `</div>`;
         });
 
         html += '</div>';
         container.innerHTML = html;
+        
+        // Recalculate bar widths after HTML is inserted to get actual fridge width
+        this.recalculateBarWidths(container, cellar);
+        
+        // Add resize handler to recalculate bar widths when window resizes
+        this.setupResizeHandler(container, cellar);
+    }
+
+    recalculateBarWidths(container, cellar) {
+        const fridgeContainer = container.querySelector('.fridge-container');
+        if (!fridgeContainer) return;
+        
+        const availableWidth = fridgeContainer.clientWidth - 40; // Subtract padding (20px each side)
+        const eightyPercentWidth = availableWidth * 0.8;
+        const shelves = cellar.shelves || [];
+        const unitSize = 40;
+        
+        const bars = container.querySelectorAll('.shelf-separator-bar');
+        bars.forEach((bar, index) => {
+            if (index >= shelves.length) return;
+            
+            const [positions, isDouble] = shelves[index];
+            let bottleWidth;
+            if (isDouble) {
+                bottleWidth = (2 * positions + 1) * unitSize;
+            } else {
+                bottleWidth = (2 * positions) * unitSize;
+            }
+            
+            const barWidth = Math.min(Math.max(eightyPercentWidth, bottleWidth), availableWidth);
+            bar.style.width = `${barWidth}px`;
+        });
+    }
+
+    setupResizeHandler(container, cellar) {
+        // Remove existing handler if any
+        if (this.resizeHandler) {
+            window.removeEventListener('resize', this.resizeHandler);
+        }
+        
+        // Create new resize handler
+        this.resizeHandler = () => {
+            this.recalculateBarWidths(container, cellar);
+        };
+        
+        window.addEventListener('resize', this.resizeHandler);
     }
 
     renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, side, position) {
