@@ -312,5 +312,110 @@
     "version": 2,
     "createdAt": "2026-01-08T06:46:28.876114Z",
     "updatedAt": "2026-01-09T01:45:37.491356Z"
+  },
+  {
+    "id": "aa579fcc-0b42-4a04-878b-e2e7ddb72cc5",
+    "name": "Living Room Fridge",
+    "temperature": 60,
+    "capacity": 46,
+    "shelves": [
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        8,
+        false
+      ],
+      [
+        8,
+        false
+      ]
+    ],
+    "winePositions": {
+      "0": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "1": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "2": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "3": {
+        "single": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "4": {
+        "single": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "version": 1,
+    "createdAt": "2026-01-09T01:55:58.573659Z",
+    "updatedAt": "2026-01-09T01:55:58.573659Z"
   }
 ]

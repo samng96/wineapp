@@ -129,13 +129,15 @@ class WineApp {
             console.error(`View "${viewName}" not found!`);
         }
 
-        // Update nav button states
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-view') === viewName) {
-                btn.classList.add('active');
-            }
-        });
+        // Update nav button states (only for main navigation views)
+        if (viewName !== 'cellar-detail') {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-view') === viewName) {
+                    btn.classList.add('active');
+                }
+            });
+        }
 
         // Reload cellar data when viewing cellar page
         if (viewName === 'cellar' && window.cellarManager) {

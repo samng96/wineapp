@@ -94,6 +94,26 @@ class CellarManager {
                 });
             }
         });
+
+        // Back to cellars button
+        const backBtn = document.getElementById('back-to-cellars-btn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                if (window.app && window.app.showView) {
+                    window.app.showView('cellar');
+                }
+            });
+        }
+
+        // Cellar name click handler (delegated - will be set up after rendering)
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('cellar-name-link')) {
+                const cellarId = e.target.getAttribute('data-cellar-id');
+                if (cellarId) {
+                    this.showCellarDetail(cellarId);
+                }
+            }
+        });
     }
 
     async loadCellars() {
@@ -222,7 +242,7 @@ class CellarManager {
             return `
                 <div class="list-item" data-cellar-id="${cellar.id}">
                     <div class="list-item-content">
-                        <div class="list-item-title">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</div>
+                        <div class="list-item-title cellar-name-link" data-cellar-id="${cellar.id}" style="cursor: pointer; color: #6200ea; text-decoration: underline;">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</div>
                         <div class="list-item-subtitle">
                             ${shelfText} • 
                             <span class="usage-text" title="${this.escapeHtml(tooltipText)}">${usageText}</span> • 
@@ -424,6 +444,132 @@ class CellarManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    async showCellarDetail(cellarId) {
+        try {
+            // Load full cellar data with wine instances
+            const cellar = await API.get(`/cellars/${cellarId}`);
+            
+            // Load wine instances and references to get label images
+            const [wineInstances, wineReferences] = await Promise.all([
+                API.get('/wine-instances'),
+                API.get('/wine-references')
+            ]);
+
+            // Create maps for quick lookup
+            const instanceMap = {};
+            wineInstances.forEach(inst => {
+                instanceMap[inst.id] = inst;
+            });
+
+            const referenceMap = {};
+            wineReferences.forEach(ref => {
+                referenceMap[ref.id] = ref;
+            });
+
+            // Update view header
+            const nameHeader = document.getElementById('cellar-detail-name');
+            if (nameHeader) {
+                nameHeader.textContent = cellar.name || 'Unnamed Cellar';
+            }
+
+            // Render cellar shelves
+            this.renderCellarDetail(cellar, instanceMap, referenceMap);
+
+            // Switch to cellar detail view
+            if (window.app && window.app.showView) {
+                window.app.showView('cellar-detail');
+            }
+        } catch (error) {
+            console.error('Error loading cellar detail:', error);
+            alert('Failed to load cellar details. Please try again.');
+        }
+    }
+
+    renderCellarDetail(cellar, instanceMap, referenceMap) {
+        const container = document.getElementById('cellar-detail-content');
+        if (!container) return;
+
+        const shelves = cellar.shelves || [];
+        const winePositions = cellar.winePositions || {};
+
+        if (shelves.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No shelves in this cellar.</p>';
+            return;
+        }
+
+        let html = '';
+        
+        shelves.forEach((shelfConfig, shelfIndex) => {
+            const [positions, isDouble] = shelfConfig;
+            const shelfKey = String(shelfIndex);
+            const shelfData = winePositions[shelfKey] || {};
+
+            html += `<div class="shelf-row">`;
+            html += `<div class="shelf-label">Shelf ${shelfIndex + 1}${isDouble ? ' (Double-sided)' : ''}</div>`;
+            html += `<div class="shelf-positions-container">`;
+
+            if (isDouble) {
+                // Front side
+                html += `<div class="shelf-side">`;
+                html += `<div class="side-label">Front</div>`;
+                html += `<div class="positions-row">`;
+                for (let pos = 0; pos < positions; pos++) {
+                    const frontPositions = shelfData.front || [];
+                    const instanceId = frontPositions[pos] || null;
+                    html += this.renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, 'front', pos);
+                }
+                html += `</div></div>`;
+
+                // Back side
+                html += `<div class="shelf-side">`;
+                html += `<div class="side-label">Back</div>`;
+                html += `<div class="positions-row">`;
+                for (let pos = 0; pos < positions; pos++) {
+                    const backPositions = shelfData.back || [];
+                    const instanceId = backPositions[pos] || null;
+                    html += this.renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, 'back', pos);
+                }
+                html += `</div></div>`;
+            } else {
+                // Single side
+                html += `<div class="shelf-side">`;
+                html += `<div class="positions-row">`;
+                const singlePositions = shelfData.single || [];
+                for (let pos = 0; pos < positions; pos++) {
+                    const instanceId = singlePositions[pos] || null;
+                    html += this.renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, 'single', pos);
+                }
+                html += `</div></div>`;
+            }
+
+            html += `</div></div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    renderPosition(instanceId, instanceMap, referenceMap, shelfIndex, side, position) {
+        if (instanceId && instanceMap[instanceId]) {
+            const instance = instanceMap[instanceId];
+            const reference = referenceMap[instance.referenceId];
+            
+            if (reference && reference.labelImageUrl) {
+                const wineName = this.escapeHtml(reference.name || 'Unknown Wine');
+                return `
+                    <div class="wine-position" title="${wineName}">
+                        <img src="${this.escapeHtml(reference.labelImageUrl)}" alt="${wineName}" class="wine-label-image" />
+                    </div>
+                `;
+            } else {
+                // Wine instance but no reference or image
+                return `<div class="wine-position empty" title="Wine (no image)"><div class="empty-circle"></div></div>`;
+            }
+        } else {
+            // Empty position
+            return `<div class="wine-position empty" title="Empty position"><div class="empty-circle"></div></div>`;
+        }
     }
 }
 
