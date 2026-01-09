@@ -499,7 +499,7 @@ class CellarManager {
             return;
         }
 
-        let html = '';
+        let html = '<div class="fridge-container">';
         
         shelves.forEach((shelfConfig, shelfIndex) => {
             const [positions, isDouble] = shelfConfig;
@@ -512,7 +512,12 @@ class CellarManager {
 
             if (isDouble) {
                 // Double-sided: staggered circles layout
-                html += `<div class="positions-row staggered">`;
+                // Calculate total width: last back position right edge at (2 * positions + 1) * 40px
+                const unitSize = 40;
+                const radius = 40;
+                // Last back position: center at (2*positions) * 40, right edge at (2*positions + 1) * 40
+                const totalWidth = (2 * positions + 1) * unitSize;
+                html += `<div class="positions-row staggered" style="position: relative; width: ${totalWidth}px; margin: 0 auto;">`;
                 const frontPositions = shelfData.front || [];
                 const backPositions = shelfData.back || [];
                 for (let pos = 0; pos < positions; pos++) {
@@ -523,7 +528,12 @@ class CellarManager {
                 html += `</div>`;
             } else {
                 // Single side - use circles in a single row
-                html += `<div class="positions-row single-row">`;
+                // Calculate total width: last position right edge at (2 * positions) * 40px
+                const unitSize = 40;
+                const radius = 40;
+                // Last position: center at (2*positions - 1) * 40, right edge at (2*positions) * 40
+                const totalWidth = (2 * positions) * unitSize;
+                html += `<div class="positions-row single-row" style="position: relative; width: ${totalWidth}px; margin: 0 auto;">`;
                 const singlePositions = shelfData.single || [];
                 for (let pos = 0; pos < positions; pos++) {
                     const instanceId = singlePositions[pos] || null;
@@ -535,6 +545,7 @@ class CellarManager {
             html += `</div></div>`;
         });
 
+        html += '</div>';
         container.innerHTML = html;
     }
 
