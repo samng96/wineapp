@@ -1,7 +1,7 @@
 // Debug Panel Module
 class DebugPanel {
     constructor() {
-        this.isMinimized = false;
+        this.isMinimized = true; // Start minimized by default
         this.maxMessages = 100;
         this.init();
     }
@@ -9,6 +9,37 @@ class DebugPanel {
     init() {
         this.setupEventListeners();
         this.interceptConsole();
+        // Set initial minimized state
+        this.setMinimizedState();
+    }
+
+    setMinimizedState() {
+        const panel = document.getElementById('debug-panel');
+        const app = document.getElementById('app');
+        const content = document.getElementById('debug-content');
+        const toggleBtn = document.getElementById('debug-toggle-btn');
+
+        if (panel && content && toggleBtn) {
+            if (this.isMinimized) {
+                panel.classList.add('minimized');
+                toggleBtn.textContent = '+';
+                toggleBtn.title = 'Expand';
+            } else {
+                panel.classList.remove('minimized');
+                toggleBtn.textContent = '−';
+                toggleBtn.title = 'Minimize';
+            }
+            // Set app width based on minimized state
+            if (app) {
+                setTimeout(() => {
+                    if (this.isMinimized) {
+                        app.style.width = 'calc(100% - 50px)';
+                    } else {
+                        app.style.width = 'calc(100% - 400px)';
+                    }
+                }, 0);
+            }
+        }
     }
 
     setupEventListeners() {
@@ -163,19 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Test that interception is working
         console.log('Testing debug panel - this message should appear in the panel');
         
-        // Set initial app width to account for debug panel (not minimized by default)
-        const app = document.getElementById('app');
-        const panel = document.getElementById('debug-panel');
-        if (app && panel) {
-            // Wait for layout to settle before measuring
-            setTimeout(() => {
-                if (panel.classList.contains('minimized')) {
-                    app.style.width = 'calc(100% - 50px)';
-                } else {
-                    app.style.width = 'calc(100% - 400px)';
-                }
-            }, 100);
-        }
+        // Initial state is set by setMinimizedState() in constructor
     } catch (error) {
         console.error('❌ Error initializing debug panel:', error);
     }
