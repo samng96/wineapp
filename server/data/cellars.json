@@ -2,7 +2,7 @@
   {
     "id": "4f9d0f50-3530-4cca-af98-c2e7de671c47",
     "name": "Main Wine Cellar",
-    "temperature": 55,
+    "temperature": 60,
     "capacity": 96,
     "shelves": [
       [
@@ -164,9 +164,9 @@
         ]
       }
     },
-    "version": 1,
+    "version": 2,
     "createdAt": "2026-01-08T06:46:28.876114Z",
-    "updatedAt": "2026-01-08T06:46:28.876114Z"
+    "updatedAt": "2026-01-09T00:55:14.078466Z"
   },
   {
     "id": "04ccc5a8-f334-4698-93df-4c7412cd5e09",

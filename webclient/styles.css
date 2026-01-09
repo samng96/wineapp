@@ -10,14 +10,37 @@ body {
     background-color: #f5f5f5;
     color: #333;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden; /* Only hide horizontal overflow */
+    overflow-y: hidden; /* Hide vertical overflow */
 }
 
-#app {
+/* App Wrapper - contains app content and debug panel */
+#app-wrapper {
+    display: -webkit-box; /* Safari fallback */
+    display: -webkit-flex; /* Safari fallback */
     display: flex;
     flex-direction: row;
+    -webkit-flex-direction: row; /* Safari fallback */
     height: 100vh;
     position: relative;
+    width: 100%;
+    overflow: hidden; /* Prevent horizontal scroll */
+}
+
+/* App Container - contains main content and bottom nav */
+#app {
+    display: -webkit-box; /* Safari fallback */
+    display: -webkit-flex; /* Safari fallback */
+    display: flex;
+    flex-direction: column;
+    -webkit-flex-direction: column; /* Safari fallback */
+    -webkit-box-flex: 1; /* Safari fallback */
+    -webkit-flex: 1; /* Safari fallback */
+    flex: 1;
+    min-width: 0; /* Allow flex item to shrink */
+    height: 100vh;
+    overflow: hidden; /* Prevent content overflow */
+    position: relative; /* Ensure bottom nav positioning context */
 }
 
 /* Main Content Area */
@@ -25,32 +48,53 @@ body {
     flex: 1;
     overflow-y: auto;
     padding-bottom: 80px; /* Space for bottom nav */
-    min-width: 0; /* Allow flex item to shrink */
     display: flex;
     flex-direction: column;
 }
 
 /* Debug Panel */
-.debug-panel {
+#debug-panel {
     width: 400px;
-    background: #1e1e1e;
+    background: #1e1e1e !important;
     color: #d4d4d4;
-    display: flex;
+    display: -webkit-box !important; /* Safari fallback */
+    display: -webkit-flex !important; /* Safari fallback */
+    display: flex !important;
+    -webkit-box-orient: vertical; /* Safari fallback */
+    -webkit-box-direction: normal; /* Safari fallback */
+    -webkit-flex-direction: column; /* Safari fallback */
     flex-direction: column;
     border-left: 1px solid #333;
     font-family: 'Courier New', monospace;
     font-size: 12px;
     transition: width 0.3s ease;
+    -webkit-transition: width 0.3s ease; /* Safari transition */
+    -webkit-box-flex: 0; /* Safari fallback */
+    -webkit-flex-shrink: 0; /* Safari fallback */
+    flex-shrink: 0; /* Don't shrink the debug panel */
+    height: 100vh !important;
+    min-height: 100vh; /* Safari height fix */
+    min-width: 50px; /* Minimum width when minimized */
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    overflow: hidden; /* Prevent content overflow */
+    box-sizing: border-box; /* Ensure padding doesn't affect width */
 }
 
+#debug-panel.minimized,
 .debug-panel.minimized {
-    width: 50px;
+    width: 50px !important;
 }
 
+#debug-panel.minimized .debug-header h3,
 .debug-panel.minimized .debug-header h3,
+#debug-panel.minimized .debug-controls #debug-clear-btn,
 .debug-panel.minimized .debug-controls #debug-clear-btn,
+#debug-panel.minimized .debug-content,
 .debug-panel.minimized .debug-content {
-    display: none;
+    display: none !important;
 }
 
 .debug-header {
@@ -90,11 +134,18 @@ body {
 }
 
 .debug-content {
+    -webkit-box-flex: 1; /* Safari fallback */
+    -webkit-flex: 1; /* Safari fallback */
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on Safari iOS */
     padding: 8px;
+    display: -webkit-box; /* Safari fallback */
+    display: -webkit-flex; /* Safari fallback */
     display: flex;
+    -webkit-flex-direction: column-reverse; /* Safari fallback */
     flex-direction: column-reverse; /* Newest messages at top */
+    min-height: 0; /* Allow flex item to shrink in Safari */
 }
 
 .debug-message {
@@ -140,12 +191,8 @@ body {
     color: #d4d4d4;
 }
 
-/* Responsive: Hide debug panel on small screens */
-@media (max-width: 768px) {
-    .debug-panel {
-        display: none;
-    }
-}
+/* Ensure debug panel is always visible - removed responsive hiding */
+/* Duplicate removed - styles are defined above */
 
 .view {
     display: none;
@@ -275,18 +322,20 @@ body {
 
 /* Bottom Navigation */
 #bottom-nav {
-    position: fixed;
+    position: relative; /* Changed from absolute to relative so it respects parent width */
     bottom: 0;
-    left: 0;
-    right: 0;
+    width: 100%; /* Full width of parent (#app) */
     background: white;
     border-top: 1px solid #e0e0e0;
+    display: -webkit-box; /* Safari fallback */
+    display: -webkit-flex; /* Safari fallback */
     display: flex;
     align-items: center;
     justify-content: space-around;
     padding: 8px 0;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
+    flex-shrink: 0; /* Don't shrink the nav bar */
 }
 
 .nav-btn {
