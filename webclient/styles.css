@@ -253,6 +253,65 @@ body {
     background: #7c3aed;
 }
 
+/* Labels Toggle Switch */
+.labels-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggle-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #6200ea;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
 /* Splash Screen */
 .splash-screen {
     display: flex;
@@ -843,6 +902,67 @@ body {
 
 .wine-position.circle .wine-label-image {
     border-radius: 50%;
+}
+
+/* Vintage Mode Styling */
+.wine-position.vintage-mode {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #333;
+}
+
+.vintage-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+}
+
+/* Wine Type Colors */
+.wine-type-red {
+    background-color: #8B0000 !important;
+    border-color: #5a0000 !important;
+}
+
+.wine-type-red .vintage-text {
+    color: white;
+}
+
+.wine-type-white {
+    background-color: #FFF8DC !important;
+    border-color: #ddd !important;
+}
+
+.wine-type-white .vintage-text {
+    color: #333;
+}
+
+.wine-type-rose {
+    background-color: #FFE4E1 !important;
+    border-color: #ffb3b3 !important;
+}
+
+.wine-type-rose .vintage-text {
+    color: #8B0000;
+}
+
+.wine-type-sparkling {
+    background-color: #F0F8FF !important;
+    border-color: #b3d9ff !important;
+}
+
+.wine-type-sparkling .vintage-text {
+    color: #333;
+}
+
+.wine-type-default {
+    background-color: #f5f5f5 !important;
+    border-color: #ddd !important;
+}
+
+.wine-type-default .vintage-text {
+    color: #333;
 }
 
 .cellar-name-link {

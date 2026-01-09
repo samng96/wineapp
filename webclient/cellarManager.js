@@ -7,6 +7,10 @@ class CellarManager {
         this.cellars = [];
         this.wineInstances = []; // Cache wine instances for breakdown calculation
         this.wineReferences = []; // Cache wine references for breakdown calculation
+        this.showLabels = true; // Toggle state for labels vs vintage view
+        this.currentCellar = null; // Store current cellar data for re-rendering
+        this.currentInstanceMap = null;
+        this.currentReferenceMap = null;
         this.init();
     }
 
@@ -28,6 +32,9 @@ class CellarManager {
         if (addShelfBtn) {
             addShelfBtn.addEventListener('click', () => this.addShelfInput());
         }
+
+        // Labels toggle switch - set up when view is shown
+        this.setupLabelsToggle();
 
         // Create dialog
         const createDialog = document.getElementById('create-cellar-dialog');
@@ -474,6 +481,14 @@ class CellarManager {
                 nameHeader.textContent = cellar.name || 'Unnamed Cellar';
             }
 
+            // Store current data for re-rendering on toggle
+            this.currentCellar = cellar;
+            this.currentInstanceMap = instanceMap;
+            this.currentReferenceMap = referenceMap;
+
+            // Set up labels toggle after view is shown
+            this.setupLabelsToggle();
+
             // Render cellar shelves
             this.renderCellarDetail(cellar, instanceMap, referenceMap);
 
@@ -635,6 +650,8 @@ class CellarManager {
         const wine = instanceId && instanceMap[instanceId] ? referenceMap[instanceMap[instanceId].referenceId] : null;
         const wineName = wine ? this.escapeHtml(wine.name || 'Unknown Wine') : '';
         const wineImage = wine && wine.labelImageUrl ? this.escapeHtml(wine.labelImageUrl) : '';
+        const wineType = wine ? (wine.type || '').toLowerCase() : '';
+        const vintage = wine && wine.vintage ? wine.vintage : null;
         
         // Single row: position bottles so edges align (double spaced)
         // Bottle radius = 2 units, diameter = 4 units = 80px
@@ -646,18 +663,66 @@ class CellarManager {
         const centerX = (2 * position + 1) * unitSize; // Position 0: center at 40px, Position 1: center at 120px
         const leftEdge = centerX - radius; // Position 0: left at 0px, Position 1: left at 80px
         
-        if (wineImage) {
-            return `
-                <div class="wine-position circle single" style="left: ${leftEdge}px;" title="${wineName}">
-                    <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
-                </div>
-            `;
+        if (this.showLabels) {
+            // Labels mode - show wine label image
+            if (wineImage) {
+                return `
+                    <div class="wine-position circle single" style="left: ${leftEdge}px;" title="${wineName}">
+                        <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="${wineName || 'Empty position'}">
+                        <div class="empty-circle"></div>
+                    </div>
+                `;
+            }
         } else {
-            return `
-                <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="${wineName || 'Empty position'}">
-                    <div class="empty-circle"></div>
-                </div>
-            `;
+            // Vintage mode - show vintage text with wine type color
+            if (wine && vintage) {
+                const wineTypeClass = this.getWineTypeClass(wineType);
+                return `
+                    <div class="wine-position circle single vintage-mode ${wineTypeClass}" style="left: ${leftEdge}px;" title="${wineName} (${vintage})">
+                        <span class="vintage-text">${vintage}</span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="${wineName || 'Empty position'}">
+                        <div class="empty-circle"></div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    getWineTypeClass(wineType) {
+        const type = wineType.toLowerCase();
+        if (type.includes('red')) return 'wine-type-red';
+        if (type.includes('white')) return 'wine-type-white';
+        if (type.includes('rosé') || type.includes('rose')) return 'wine-type-rose';
+        if (type.includes('sparkling')) return 'wine-type-sparkling';
+        return 'wine-type-default';
+    }
+
+    setupLabelsToggle() {
+        const labelsToggle = document.getElementById('labels-toggle');
+        if (labelsToggle) {
+            // Remove existing listener if any
+            const newToggle = labelsToggle.cloneNode(true);
+            labelsToggle.parentNode.replaceChild(newToggle, labelsToggle);
+            
+            // Add new listener
+            newToggle.addEventListener('change', (e) => {
+                this.showLabels = e.target.checked;
+                if (this.currentCellar && this.currentInstanceMap && this.currentReferenceMap) {
+                    this.renderCellarDetail(this.currentCellar, this.currentInstanceMap, this.currentReferenceMap);
+                }
+            });
+            
+            // Set initial state
+            newToggle.checked = this.showLabels;
         }
     }
 
@@ -670,6 +735,11 @@ class CellarManager {
         
         const frontImage = frontWine && frontWine.labelImageUrl ? this.escapeHtml(frontWine.labelImageUrl) : '';
         const backImage = backWine && backWine.labelImageUrl ? this.escapeHtml(backWine.labelImageUrl) : '';
+        
+        const frontType = frontWine ? (frontWine.type || '').toLowerCase() : '';
+        const backType = backWine ? (backWine.type || '').toLowerCase() : '';
+        const frontVintage = frontWine && frontWine.vintage ? frontWine.vintage : null;
+        const backVintage = backWine && backWine.vintage ? backWine.vintage : null;
         
         const title = `Front: ${frontName || 'Empty'} | Back: ${backName || 'Empty'}`;
         
@@ -684,28 +754,58 @@ class CellarManager {
         const backCenterX = (2 * position + 2) * unitSize; // in pixels
         const radius = 40; // 40px radius = 80px diameter
         
-        return `
-            <div class="wine-position-container staggered" data-position="${position}" title="${title}">
-                ${frontImage ? `
-                    <div class="wine-position circle stagger-front" style="left: ${frontCenterX - radius}px;">
-                        <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
-                    </div>
-                ` : `
-                    <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;">
-                        <div class="empty-circle"></div>
-                    </div>
-                `}
-                ${backImage ? `
-                    <div class="wine-position circle stagger-back" style="left: ${backCenterX - radius}px;">
-                        <img src="${backImage}" alt="${backName}" class="wine-label-image" />
-                    </div>
-                ` : `
-                    <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;">
-                        <div class="empty-circle"></div>
-                    </div>
-                `}
-            </div>
-        `;
+        if (this.showLabels) {
+            // Labels mode - show wine label images
+            return `
+                <div class="wine-position-container staggered" data-position="${position}" title="${title}">
+                    ${frontImage ? `
+                        <div class="wine-position circle stagger-front" style="left: ${frontCenterX - radius}px;">
+                            <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
+                        </div>
+                    ` : `
+                        <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;">
+                            <div class="empty-circle"></div>
+                        </div>
+                    `}
+                    ${backImage ? `
+                        <div class="wine-position circle stagger-back" style="left: ${backCenterX - radius}px;">
+                            <img src="${backImage}" alt="${backName}" class="wine-label-image" />
+                        </div>
+                    ` : `
+                        <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;">
+                            <div class="empty-circle"></div>
+                        </div>
+                    `}
+                </div>
+            `;
+        } else {
+            // Vintage mode - show vintage text with wine type colors
+            const frontTypeClass = frontWine ? this.getWineTypeClass(frontType) : '';
+            const backTypeClass = backWine ? this.getWineTypeClass(backType) : '';
+            
+            return `
+                <div class="wine-position-container staggered" data-position="${position}" title="${title}">
+                    ${frontWine && frontVintage ? `
+                        <div class="wine-position circle stagger-front vintage-mode ${frontTypeClass}" style="left: ${frontCenterX - radius}px;">
+                            <span class="vintage-text">${frontVintage}</span>
+                        </div>
+                    ` : `
+                        <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;">
+                            <div class="empty-circle"></div>
+                        </div>
+                    `}
+                    ${backWine && backVintage ? `
+                        <div class="wine-position circle stagger-back vintage-mode ${backTypeClass}" style="left: ${backCenterX - radius}px;">
+                            <span class="vintage-text">${backVintage}</span>
+                        </div>
+                    ` : `
+                        <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;">
+                            <div class="empty-circle"></div>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
     }
 }
 
