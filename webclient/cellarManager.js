@@ -891,11 +891,9 @@ class CellarManager {
     }
 
     toggleCellarMenu(cellarId) {
-        console.log('toggleCellarMenu called for:', cellarId);
         const menu = document.getElementById(`cellar-menu-${cellarId}`);
         if (!menu) {
-            console.error(`Menu not found for cellar ${cellarId}. Available menus:`, 
-                Array.from(document.querySelectorAll('.cellar-menu-dropdown')).map(m => m.id));
+            console.error(`Menu not found for cellar ${cellarId}`);
             return;
         }
 
@@ -910,28 +908,20 @@ class CellarManager {
         const inlineDisplay = menu.style.display;
         const computedDisplay = window.getComputedStyle(menu).display;
         
-        console.log('Menu display state - inline:', inlineDisplay, 'computed:', computedDisplay);
-        
         // If inline style is set, use it; otherwise use computed
         if (inlineDisplay) {
             // Inline style is set - toggle it
             if (inlineDisplay === 'none') {
                 menu.style.display = 'block';
-                console.log('Menu opened');
             } else {
                 menu.style.display = 'none';
-                console.log('Menu closed');
             }
         } else {
             // No inline style - check computed style (initial state is 'none' from inline style in HTML)
-            // Since HTML has style="display: none;", inlineDisplay should be 'none'
-            // But if it's empty, check computed
             if (computedDisplay === 'none' || !inlineDisplay) {
                 menu.style.display = 'block';
-                console.log('Menu opened (from computed)');
             } else {
                 menu.style.display = 'none';
-                console.log('Menu closed (from computed)');
             }
         }
     }
