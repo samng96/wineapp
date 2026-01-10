@@ -26,7 +26,7 @@ def test_create_wine_instance(client, sample_wine_instance, created_wine_referen
     assert 'version' in data
     assert 'createdAt' in data
     assert 'updatedAt' in data
-
+    
 
 def test_create_wine_instance_invalid_reference(client, sample_wine_instance):
     """Test creating a wine instance with invalid reference ID"""
@@ -92,7 +92,7 @@ def test_delete_wine_instance(client, sample_wine_instance, created_wine_referen
     # Verify it's deleted
     get_response = client.get(f'/wine-instances/{instance_id}')
     assert get_response.status_code == 404
-
+    
 
 def test_consume_wine_instance(client, sample_wine_instance, created_wine_reference):
     """Test consuming a wine instance"""
@@ -124,7 +124,7 @@ def test_update_wine_instance_location(client, sample_wine_instance, created_win
     # Update location
     location_data = {
         'location': {
-            'type': 'cellar',
+        'type': 'cellar',
             'cellarId': cellar_id,
             'shelfIndex': 0,
             'side': 'single',
@@ -168,7 +168,7 @@ def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_r
     # Assign to cellar
     location_data = {
         'location': {
-            'type': 'cellar',
+        'type': 'cellar',
             'cellarId': cellar_id,
             'shelfIndex': 0,
             'side': 'single',

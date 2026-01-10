@@ -1,1 +1,1237 @@
-[]
+[
+  {
+    "id": "1756bbac-8113-484b-ab67-337bf54644e9",
+    "referenceId": "afc82e1b-a860-4e61-8d18-adf13163e338",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 6,
+      "position": 7,
+      "isFront": true
+    },
+    "price": 50.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "f3521f51-c394-4798-8061-7a51b92d42df",
+    "referenceId": "afc82e1b-a860-4e61-8d18-adf13163e338",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 1,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 52.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "abb8fdce-6ecc-456c-af13-467247c00578",
+    "referenceId": "065b1152-d9a0-42b9-a76c-3864beba39d3",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 0,
+      "isFront": false
+    },
+    "price": 55.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "f251b479-0950-48bb-97e7-87123c240b8f",
+    "referenceId": "065b1152-d9a0-42b9-a76c-3864beba39d3",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 6,
+      "position": 4,
+      "isFront": true
+    },
+    "price": 57.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "cf9b3f75-5a34-4976-bf65-eba04c4c28a5",
+    "referenceId": "db01b9c9-be0d-4fe6-ae1c-0824304da589",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 60.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "431f0ab9-45dc-4f5b-8ac6-90a1f98b499b",
+    "referenceId": "db01b9c9-be0d-4fe6-ae1c-0824304da589",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 62.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "f5ada3b9-f383-4266-a44d-71b3eab9f743",
+    "referenceId": "25738247-1fc1-423d-86a9-7155ae5d85e2",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 6,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 65.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "4a6ae786-20f2-416c-8527-e63b6a91b443",
+    "referenceId": "25738247-1fc1-423d-86a9-7155ae5d85e2",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 4,
+      "isFront": false
+    },
+    "price": 67.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "efacf016-4aba-44ba-a13b-b883e821c6a6",
+    "referenceId": "46d13fbb-96c1-446b-b0c3-32739e55334b",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 3,
+      "isFront": true
+    },
+    "price": 70.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "1fcc8457-64c5-4d04-9bb9-9741f67d96ad",
+    "referenceId": "46d13fbb-96c1-446b-b0c3-32739e55334b",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 72.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "78caac79-6af5-404c-ad91-f7d2c06b2816",
+    "referenceId": "f3b440a1-ab00-4faf-a089-e5512c26ab72",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 1,
+      "position": 3,
+      "isFront": true
+    },
+    "price": 75.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "d7ab5759-510f-4a9f-a0bf-ae87661a8ba9",
+    "referenceId": "f3b440a1-ab00-4faf-a089-e5512c26ab72",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 3,
+      "position": 5,
+      "isFront": false
+    },
+    "price": 77.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "e325b32b-c348-4cb0-8df1-5aebf7121223",
+    "referenceId": "391333cb-28d8-4766-b716-e206e70c4a68",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 3,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 80.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "5ab40ff7-0b7b-4bc9-93ba-cac1b93a2ef1",
+    "referenceId": "391333cb-28d8-4766-b716-e206e70c4a68",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 3,
+      "position": 7,
+      "isFront": true
+    },
+    "price": 82.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "9026d58f-1fed-4467-a70c-f9f07e38b152",
+    "referenceId": "fc095749-0aa5-4745-9459-0b4e9f4a2363",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 4,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 85.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "df77eaf4-8e29-4dc0-886a-19b908493495",
+    "referenceId": "fc095749-0aa5-4745-9459-0b4e9f4a2363",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 1,
+      "isFront": false
+    },
+    "price": 87.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "0fcc21b1-0edd-4daa-a39d-363e29460bef",
+    "referenceId": "30f71d20-b29b-4e64-a995-95651e7c50f5",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 6,
+      "isFront": true
+    },
+    "price": 90.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "1ab93c42-4e89-4b8c-b392-6b4d59137234",
+    "referenceId": "30f71d20-b29b-4e64-a995-95651e7c50f5",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 0,
+      "position": 1,
+      "isFront": false
+    },
+    "price": 92.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "97ec7578-196c-45e6-b71b-29e362f269ea",
+    "referenceId": "c21cde6f-2ee0-467e-bcb8-b49861353ff1",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 3,
+      "position": 0,
+      "isFront": false
+    },
+    "price": 95.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "07d26507-da80-4c77-8077-388397b036a3",
+    "referenceId": "c21cde6f-2ee0-467e-bcb8-b49861353ff1",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 3,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 97.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "834f0c31-8e0a-4e05-a187-14538a5b4c4d",
+    "referenceId": "10dde04e-61a5-481a-88bd-71d485fb6849",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 1,
+      "isFront": false
+    },
+    "price": 100.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "902ea1c2-4607-47b0-8118-d6f9e1d57800",
+    "referenceId": "66b3e451-6269-4c99-8b7d-9ef9c547c71a",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 4,
+      "isFront": true
+    },
+    "price": 102.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "ab309e1c-a95f-4b1a-8166-0eaa2ad16b38",
+    "referenceId": "2c141cf7-2b9f-4c1e-8b08-f53a2378dfff",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 105.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "99bbb6ce-42c4-40cb-ade9-065898c96206",
+    "referenceId": "2eca721e-9bf8-4318-9b27-364757343b58",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 7,
+      "isFront": true
+    },
+    "price": 107.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "3492442c-9a3c-4ed9-8914-4a4452d3334b",
+    "referenceId": "be7eef36-ead2-40e5-b4b3-6f40d9343cac",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 0,
+      "position": 1,
+      "isFront": true
+    },
+    "price": 110.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "72cdf056-afab-4f53-9f86-186d82e82b3d",
+    "referenceId": "4c02e332-41ce-4291-9f33-5625954d9fa3",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 3,
+      "position": 4,
+      "isFront": false
+    },
+    "price": 112.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "dabe6e6a-792c-49cd-9546-7eab0187f7e3",
+    "referenceId": "0d11fd0e-977c-44ef-ba5a-a32fcf6096b5",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 4,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 115.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "7baafcc9-16e2-4a20-adac-4b465c44754d",
+    "referenceId": "e0d35b12-30e1-44a1-ab7b-d016ad634e64",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 7,
+      "isFront": false
+    },
+    "price": 117.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "0e473568-736d-45de-9aab-6288f792221d",
+    "referenceId": "693742cb-b62b-446b-8157-83df014b72f8",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 3,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 120.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "7d939f8f-8504-4aeb-9294-b4b0a8b92cfa",
+    "referenceId": "b940a7ef-13d5-45a0-9eb1-f1dcc0348971",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 0,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 122.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "10f6acc8-50e8-490a-b430-69aa7c82efca",
+    "referenceId": "47994a03-2c69-4b59-b5d3-7cb26ea72b68",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 0,
+      "position": 0,
+      "isFront": false
+    },
+    "price": 125.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "cdab6f40-89e2-4226-a06f-de6f2620af3d",
+    "referenceId": "54f300ea-ad2c-4798-9385-604fbfaa7b80",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 2,
+      "position": 6,
+      "isFront": true
+    },
+    "price": 127.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "0fc1c9f8-1a51-400d-b1e6-fcb26dfb2470",
+    "referenceId": "3651d7f3-889a-407c-b60f-cddde1ceede2",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 4,
+      "position": 1,
+      "isFront": false
+    },
+    "price": 130.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "913978ed-748f-41dd-9897-7bbd8e6000bc",
+    "referenceId": "28b728a8-ddd3-4d8d-a740-208c3dbade05",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 0,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 132.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "9bfe1370-7b59-44d4-950b-06b1fbb6df5b",
+    "referenceId": "536cf0f3-e575-448a-9c8e-45eff7c7f022",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 3,
+      "position": 7,
+      "isFront": false
+    },
+    "price": 135.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "a31e6636-5083-4cc0-b756-e2e6699fcaf8",
+    "referenceId": "9da29964-e264-46d8-822f-4f1c6d368211",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 137.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "1204532b-5203-4794-978b-cb91f74aab8f",
+    "referenceId": "ab8272ee-7673-4034-9835-1917fa26ccd2",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 6,
+      "position": 2,
+      "isFront": true
+    },
+    "price": 140.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "db7c277b-aa7a-4004-961b-d3c2bfe07300",
+    "referenceId": "c305023f-7dc6-4f25-b0de-2cb53c52957e",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 1,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 142.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "ed033709-d51c-4076-af43-c910f1d1f4bd",
+    "referenceId": "0ab7d173-59b1-4ba1-83b8-c0d35e8b6a90",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 2,
+      "position": 7,
+      "isFront": false
+    },
+    "price": 145.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "ac2d37f7-fc3a-4722-8d3c-3192ab35640a",
+    "referenceId": "5f343401-1973-4ad5-8528-75b0a68eea4f",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 7,
+      "isFront": true
+    },
+    "price": 147.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "5bc619f0-04ee-453f-8cdb-6ae902c68b2d",
+    "referenceId": "eb4f0cff-619a-40bb-9b83-b33e9db74903",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 0,
+      "position": 4,
+      "isFront": false
+    },
+    "price": 150.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "362301b4-8e40-42cd-bf72-3bf9fd5eec22",
+    "referenceId": "bc35844b-c5a1-40fd-b867-c1a95d47ed11",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 3,
+      "position": 3,
+      "isFront": true
+    },
+    "price": 152.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "14b6c25f-c6c9-458a-91b4-6faf2d197f90",
+    "referenceId": "c1d07ee2-3f4b-4a20-88a2-f541d6a13355",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 0,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 155.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "97d4912b-8936-4051-ad77-82559fc5ad8f",
+    "referenceId": "e88ad784-cd01-4113-8227-8c48a6eab763",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 0,
+      "position": 6,
+      "isFront": true
+    },
+    "price": 157.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "fe599009-cf33-4d10-b6fd-cd5d75b5e1fc",
+    "referenceId": "ec33be61-88db-4371-b4bc-950e19ac6c5f",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 4,
+      "position": 4,
+      "isFront": false
+    },
+    "price": 160.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "763763d0-76a2-44a2-98f4-b9135e4d920c",
+    "referenceId": "cd880a49-88fd-4e91-9db2-d36f1976031a",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 1,
+      "isFront": true
+    },
+    "price": 162.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "1c6fea1d-2937-4060-ad88-e716fb6533b8",
+    "referenceId": "fa7cda97-f66f-4522-9ff9-0552d04fb8d8",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 7,
+      "isFront": true
+    },
+    "price": 165.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "9b4b804f-127b-4bd6-bf06-2c1d734fcafe",
+    "referenceId": "b4838665-eb9f-4629-9ada-c4cb2af43554",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 6,
+      "isFront": false
+    },
+    "price": 167.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "188b2e67-245b-4477-9b26-8e97ff9a99e9",
+    "referenceId": "85de6720-de18-4039-829b-385b35b53b6a",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 6,
+      "isFront": false
+    },
+    "price": 170.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "4c1fd32e-b115-42bb-9ed6-bdd6a8e49f94",
+    "referenceId": "bb2474c7-e622-41b0-9898-6ee16aa93575",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 5,
+      "isFront": true
+    },
+    "price": 172.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "b7bcccf8-0ef3-4e0c-b329-fd74b9021679",
+    "referenceId": "d1abf277-43d8-4f4f-9906-c30ff1e18a14",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 5,
+      "position": 4,
+      "isFront": true
+    },
+    "price": 155.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "3eb1bb9a-ac7e-456c-b769-00e2577cf53b",
+    "referenceId": "619c00c7-910c-48b7-8d8c-14bb6d89422c",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 4,
+      "position": 2,
+      "isFront": false
+    },
+    "price": 157.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "2cf32105-60da-4ffb-9f2b-cb96ff3a2146",
+    "referenceId": "d388cd7f-24b0-49b4-8625-2a7d20bb4829",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 160.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "772a804c-d538-4e55-95bf-0d7e6c6f89ef",
+    "referenceId": "1e947190-0385-49c3-8a2c-37c6fe6e95b1",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 3,
+      "position": 1,
+      "isFront": true
+    },
+    "price": 162.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "df08bad3-b72e-4212-8b00-2357738de764",
+    "referenceId": "661b8dd8-02e8-4f61-8348-d9587ea5b1eb",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 2,
+      "position": 6,
+      "isFront": false
+    },
+    "price": 165.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "a0070853-d5aa-4bee-b016-65c24a989e76",
+    "referenceId": "51cfebb9-c60b-484b-aa79-da56f9984b99",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 2,
+      "position": 3,
+      "isFront": true
+    },
+    "price": 167.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "9f2cd8ac-5dc8-4da1-9bb5-676288348756",
+    "referenceId": "a8cc9ccc-d0a1-4388-bfd8-f903b09a8f0d",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 2,
+      "position": 0,
+      "isFront": false
+    },
+    "price": 170.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "e0c57ec3-a3c9-4f43-bcc8-91594b031a77",
+    "referenceId": "1e0d6490-3e8c-4bd3-8abb-437de7aed5c5",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 2,
+      "position": 4,
+      "isFront": true
+    },
+    "price": 172.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "41049ec7-c9cb-4ea4-b2bd-392a855d6fd4",
+    "referenceId": "a2bd1e98-f060-4026-99da-abf153a56c6d",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 1,
+      "position": 4,
+      "isFront": false
+    },
+    "price": 175.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "6baaeab7-8f11-4c97-94c3-6befc7da161a",
+    "referenceId": "e5761753-38cf-4a67-a1e4-167db9607cad",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 5,
+      "position": 3,
+      "isFront": true
+    },
+    "price": 177.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "50d93b18-aa55-4035-9924-ba88fad92359",
+    "referenceId": "d1abf277-43d8-4f4f-9906-c30ff1e18a14",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 4,
+      "position": 2,
+      "isFront": true
+    },
+    "price": 180.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "0d73af9b-e428-4731-aecc-44ec7074bf09",
+    "referenceId": "619c00c7-910c-48b7-8d8c-14bb6d89422c",
+    "location": {
+      "cellarId": "1c1a1f18-cffd-488e-be51-76ee4b31aeec",
+      "shelfIndex": 0,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 182.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "c5b46293-aa6b-45a1-8a22-ec8068163e38",
+    "referenceId": "d388cd7f-24b0-49b4-8625-2a7d20bb4829",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 4,
+      "position": 0,
+      "isFront": true
+    },
+    "price": 185.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "db967e39-d813-492e-92f9-324b074f1bb8",
+    "referenceId": "1e947190-0385-49c3-8a2c-37c6fe6e95b1",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 1,
+      "position": 3,
+      "isFront": false
+    },
+    "price": 187.5,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  },
+  {
+    "id": "bea7fd09-e080-48bb-ad3b-32006d235694",
+    "referenceId": "661b8dd8-02e8-4f61-8348-d9587ea5b1eb",
+    "location": {
+      "cellarId": "10193382-cf72-4f59-a70e-73ef97c000ed",
+      "shelfIndex": 3,
+      "position": 4,
+      "isFront": true
+    },
+    "price": 190.0,
+    "purchaseDate": "2024-01-15",
+    "drinkByDate": "2030-01-15",
+    "consumed": false,
+    "consumedDate": null,
+    "storedDate": "2026-01-10T04:58:08.012263Z",
+    "version": 1,
+    "createdAt": "2026-01-10T04:58:08.012263Z",
+    "updatedAt": "2026-01-10T04:58:08.012263Z"
+  }
+]

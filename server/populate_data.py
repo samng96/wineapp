@@ -2,6 +2,7 @@
 import json
 import os
 import random
+import time
 from server.utils import (
     DATA_DIR, CELLARS_FILE, WINE_REFERENCES_FILE, WINE_INSTANCES_FILE,
     generate_id, get_current_timestamp, init_data_files
@@ -109,9 +110,21 @@ def create_wine_references():
     references = []
     timestamp = get_current_timestamp()
     
+    all_wines = RED_WINES + WHITE_WINES
+    total_wines = len(all_wines)
+    
+    print(f"Fetching Vivino label images for {total_wines} wines...")
+    print("This may take a while due to rate limiting...\n")
+    
     # Create 40 red wine references
-    for wine_data in RED_WINES:
+    for i, wine_data in enumerate(RED_WINES, 1):
+        print(f"[{i}/40] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
         label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
+        if label_url:
+            print(f"  ✓ Found: {label_url[:60]}...")
+        else:
+            print(f"  ✗ No image found - using None")
+        
         reference = WineReference(
             id=generate_id(),
             name=wine_data["name"],
@@ -123,17 +136,26 @@ def create_wine_references():
             country=wine_data["country"],
             rating=4,  # Default rating
             tasting_notes=f"Excellent {wine_data['name']} from {wine_data['region']}",
-            label_image_url=label_url,
+            label_image_url=label_url,  # Can be None if not found
             version=1,
             created_at=timestamp,
             updated_at=timestamp
         )
         register_wine_reference(reference)
         references.append(reference)
+        
+        # Rate limiting - be respectful
+        time.sleep(0.5)
     
     # Create 10 white wine references
-    for wine_data in WHITE_WINES:
+    for i, wine_data in enumerate(WHITE_WINES, 1):
+        print(f"[{i}/10] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
         label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
+        if label_url:
+            print(f"  ✓ Found: {label_url[:60]}...")
+        else:
+            print(f"  ✗ No image found - using None")
+        
         reference = WineReference(
             id=generate_id(),
             name=wine_data["name"],
@@ -145,25 +167,123 @@ def create_wine_references():
             country=wine_data["country"],
             rating=4,  # Default rating
             tasting_notes=f"Excellent {wine_data['name']} from {wine_data['region']}",
-            label_image_url=label_url,
+            label_image_url=label_url,  # Can be None if not found
             version=1,
             created_at=timestamp,
             updated_at=timestamp
         )
         register_wine_reference(reference)
         references.append(reference)
+        
+        # Rate limiting - be respectful
+        time.sleep(0.5)
     
     return references
 
 
+def search_vivino_images_scrape(query):
+    """
+    Search Google Images specifically for Vivino wine label images
+    Uses site:vivino.com to restrict results to Vivino only
+    Focuses on labels by adding 'label' to the search query
+    """
+    try:
+        import requests
+        from urllib.parse import quote
+        import re
+        
+        # Search specifically on Vivino for wine labels
+        # Use site:vivino.com to restrict to Vivino only
+        # Add 'label' to focus on labels rather than full bottles
+        search_query = quote(f'site:vivino.com {query} wine label')
+        url = f"https://www.google.com/search?q={search_query}&tbm=isch&safe=active"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+        }
+        
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+        html = response.text
+        
+        # Method 1: Look for "ou":"URL" pattern (Google's embedded image data)
+        # Prioritize Vivino URLs
+        matches = re.findall(r'"ou":"(https?://[^"]+)"', html)
+        vivino_urls = []
+        other_urls = []
+        
+        for match in matches[:30]:  # Check first 30 matches
+            match_lower = match.lower()
+            if ('google' not in match_lower and 'gstatic' not in match_lower and 
+                'doubleclick' not in match_lower):
+                # Check if it's a Vivino URL
+                if 'vivino.com' in match_lower:
+                    # Verify it looks like an image URL
+                    if any(ext in match_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'image' in match_lower or 'label' in match_lower:
+                        vivino_urls.append(match)
+                else:
+                    # Keep other URLs as backup
+                    if any(ext in match_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+                        other_urls.append(match)
+        
+        # Prefer Vivino URLs
+        if vivino_urls:
+            return vivino_urls[0]
+        
+        # Method 2: Look for Vivino image URLs in script tags
+        script_matches = re.findall(r'<script[^>]*>(.*?)</script>', html, re.DOTALL)
+        for script in script_matches:
+            # Look for Vivino image URLs
+            vivino_pattern = r'https?://[^\s"<>\)]*vivino\.com[^\s"<>\)]+\.(?:jpg|jpeg|png|gif|webp)'
+            matches = re.findall(vivino_pattern, script, re.IGNORECASE)
+            if matches:
+                return matches[0]
+        
+        # Method 3: Direct pattern matching for Vivino CDN URLs
+        # Vivino typically uses patterns like: https://images.vivino.com/...
+        vivino_cdn_pattern = r'https?://[^\s"<>\)]*images\.vivino\.com[^\s"<>\)]+'
+        matches = re.findall(vivino_cdn_pattern, html, re.IGNORECASE)
+        if matches:
+            # Filter for image extensions
+            for match in matches:
+                if any(ext in match.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'label' in match.lower():
+                    return match
+            # If no extension, return first match (Vivino CDN URLs might not have extensions)
+            return matches[0]
+        
+        # If no Vivino URLs found, return None (we want Vivino specifically)
+        return None
+    except Exception as e:
+        print(f"  Warning: Error searching Vivino for '{query}': {e}")
+        return None
+
+
 def get_wine_label_url(wine_name, producer, vintage):
-    """Generate a wine label image URL using Unsplash API for wine bottle images"""
-    # Use Unsplash Source API for wine bottle images
-    # Format: https://source.unsplash.com/featured/?wine+bottle
-    # For more specific searches, we can use the wine name
-    search_terms = wine_name.lower().replace(" ", "+").replace("'", "")
-    # Use a generic wine bottle image from Unsplash with search terms
-    return f"https://source.unsplash.com/400x600/?wine+bottle+{search_terms}"
+    """Get a wine label image URL from Vivino via Google Images search"""
+    # Build search query from wine information
+    query_parts = []
+    if wine_name:
+        query_parts.append(wine_name)
+    if producer:
+        query_parts.append(producer)
+    if vintage:
+        query_parts.append(str(vintage))
+    
+    query = ' '.join(query_parts)
+    
+    # Search for Vivino label image
+    image_url = search_vivino_images_scrape(query)
+    
+    if image_url:
+        return image_url
+    
+    # Fallback: if no Vivino image found, return None or a placeholder
+    # The caller should handle None appropriately
+    return None
 
 
 def create_wine_instances(references, cellars):
