@@ -25,4 +25,15 @@ loaded_refs = load_wine_references()
 print(f"Loaded {len(loaded_refs)} wine references into registry")
 
 if __name__ == '__main__':
+    import os
+    # Enable debugpy if DEBUGPY environment variable is set
+    if os.environ.get('DEBUGPY'):
+        import debugpy
+        debugpy.listen(('0.0.0.0', 5678))
+        print("Debugpy listening on port 5678. Attach debugger now.")
+        # Optionally wait for debugger to attach before continuing
+        if os.environ.get('DEBUGPY_WAIT'):
+            debugpy.wait_for_client()
+            print("Debugger attached!")
+    
     app.run(debug=True, port=5001, host='127.0.0.1', use_reloader=False)

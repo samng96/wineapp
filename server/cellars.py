@@ -209,12 +209,13 @@ def delete_cellar(cellar_id: str):
     
     all_instances = load_wine_instances(cellars=[cellar])
     for instance in all_instances:
-        if instance.location is not None:
-            cellar_obj, shelf, position, is_front = instance.location
-            if cellar_obj.id == cellar_id:
-                instance.location = None  # Set to None for unshelved
-                instance.version += 1
-                instance.updated_at = get_current_timestamp()
+        if instance is not None:
+            if instance.location is not None and instance.consumed is False:
+                cellar_obj, shelf, position, is_front = instance.location
+                if cellar_obj.id == cellar_id:
+                    instance.location = None  # Set to None for unshelved
+                    instance.version += 1
+                    instance.updated_at = get_current_timestamp()
     
     # Save instances
     save_wine_instances(all_instances)

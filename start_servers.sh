@@ -11,8 +11,8 @@ if lsof -ti:5001 > /dev/null; then
     echo "⚠️  Flask server already running on port 5001"
 else
     echo "Starting Flask backend server on port 5001..."
-    cd "$(dirname "$0")/server"
-    python3 app.py &
+    cd "$(dirname "$0")"
+    PYTHONPATH="$(dirname "$0")" python3 server/app.py &
     FLASK_PID=$!
     echo "Flask server started (PID: $FLASK_PID)"
     echo ""

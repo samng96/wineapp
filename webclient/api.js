@@ -61,7 +61,13 @@ class API {
             const error = await response.json().catch(() => ({ error: response.statusText }));
             throw new Error(error.error || `API Error: ${response.status} ${response.statusText}`);
         }
-        return await response.json();
+        // Handle empty response or JSON response
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        }
+        // If no JSON, return success message
+        return { message: 'Deleted successfully' };
     }
 }
 

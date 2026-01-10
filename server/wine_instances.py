@@ -33,7 +33,7 @@ def load_wine_instances(cellars: Optional[List] = None) -> List[WineInstance]:
 
 def save_wine_instances(instances: List[WineInstance]):
     """Save wine instances to JSON file (accepts WineInstance model objects)"""
-    data = [serialize_wine_instance(i) for i in instances]
+    data = [serialize_wine_instance(i) for i in instances if i is not None]
     with open(WINE_INSTANCES_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 

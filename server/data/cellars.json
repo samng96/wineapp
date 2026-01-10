@@ -33,14 +33,14 @@
     "winePositions": {
       "0": {
         "front": [
-          "34",
           null,
           null,
           null,
           null,
           null,
           null,
-          "31"
+          null,
+          null
         ],
         "back": [
           null,
@@ -48,7 +48,7 @@
           null,
           null,
           null,
-          "33",
+          null,
           null,
           null
         ]
@@ -57,28 +57,6 @@
         "front": [
           null,
           null,
-          "38",
-          null,
-          "58",
-          "47",
-          "36",
-          "45"
-        ],
-        "back": [
-          null,
-          null,
-          "40",
-          "21",
-          "48",
-          "64",
-          null,
-          "18"
-        ]
-      },
-      "2": {
-        "front": [
-          null,
-          "3",
           null,
           null,
           null,
@@ -87,10 +65,32 @@
           null
         ],
         "back": [
-          "61",
-          "43",
-          "8",
-          "60",
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "2": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
           null,
           null,
           null,
@@ -102,41 +102,41 @@
           null,
           null,
           null,
-          "63",
           null,
-          "50",
-          "1",
+          null,
+          null,
+          null,
           null
         ],
         "back": [
-          "6",
           null,
-          "57",
           null,
-          "17",
           null,
-          "4",
-          "24"
+          null,
+          null,
+          null,
+          null,
+          null
         ]
       },
       "4": {
         "front": [
           null,
           null,
-          "39",
-          "12",
-          "32",
           null,
-          "9",
+          null,
+          null,
+          null,
+          null,
           null
         ],
         "back": [
-          "46",
           null,
           null,
           null,
           null,
-          "14",
+          null,
+          null,
           null,
           null
         ]
@@ -145,22 +145,22 @@
         "front": [
           null,
           null,
-          "59",
           null,
           null,
-          "56",
+          null,
+          null,
           null,
           null
         ],
         "back": [
-          "20",
           null,
-          "22",
           null,
-          "0",
           null,
-          "10",
-          "62"
+          null,
+          null,
+          null,
+          null,
+          null
         ]
       }
     },
@@ -213,11 +213,11 @@
           null
         ],
         "back": [
-          "7",
           null,
-          "53",
           null,
-          "13"
+          null,
+          null,
+          null
         ]
       },
       "1": {
@@ -229,10 +229,10 @@
           null
         ],
         "back": [
-          "54",
-          "15",
           null,
-          "11",
+          null,
+          null,
+          null,
           null
         ]
       },
@@ -241,38 +241,38 @@
           null,
           null,
           null,
-          "29",
+          null,
           null
         ],
         "back": [
           null,
           null,
-          "28",
-          "16",
-          "51"
+          null,
+          null,
+          null
         ]
       },
       "3": {
         "front": [
           null,
-          "27",
-          "55",
-          "49",
-          "30"
+          null,
+          null,
+          null,
+          null
         ],
         "back": [
           null,
           null,
-          "19",
-          "52",
+          null,
+          null,
           null
         ]
       },
       "4": {
         "front": [
-          "25",
-          "35",
-          "44",
+          null,
+          null,
+          null,
           null,
           null
         ],
@@ -280,7 +280,7 @@
           null,
           null,
           null,
-          "42",
+          null,
           null
         ]
       },
@@ -288,9 +288,9 @@
         "single": [
           null,
           null,
-          "26",
           null,
-          "41",
+          null,
+          null,
           null,
           null,
           null
@@ -298,337 +298,19 @@
       },
       "6": {
         "single": [
-          "5",
           null,
           null,
-          "2",
           null,
           null,
-          "23",
-          "37"
+          null,
+          null,
+          null,
+          null
         ]
       }
     },
     "version": 2,
     "createdAt": "2026-01-08T06:46:28.876114Z",
     "updatedAt": "2026-01-09T01:45:37.491356Z"
-  },
-  {
-    "id": "aa579fcc-0b42-4a04-878b-e2e7ddb72cc5",
-    "name": "Living Room Fridge",
-    "temperature": 60,
-    "capacity": 46,
-    "shelves": [
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        8,
-        false
-      ],
-      [
-        8,
-        false
-      ]
-    ],
-    "winePositions": {
-      "0": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "1": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "2": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "3": {
-        "single": [
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "4": {
-        "single": [
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      }
-    },
-    "version": 1,
-    "createdAt": "2026-01-09T01:55:58.573659Z",
-    "updatedAt": "2026-01-09T01:55:58.573659Z"
-  },
-  {
-    "id": "05772fba-5c68-49b0-b04b-0a47d668e333",
-    "name": "Rec room fridge",
-    "temperature": 60,
-    "capacity": 100,
-    "shelves": [
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ],
-      [
-        5,
-        true
-      ]
-    ],
-    "winePositions": {
-      "0": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "1": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "2": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "3": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "4": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "5": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "6": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "7": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "8": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      },
-      "9": {
-        "front": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ],
-        "back": [
-          null,
-          null,
-          null,
-          null,
-          null
-        ]
-      }
-    },
-    "version": 1,
-    "createdAt": "2026-01-10T02:30:50.112716Z",
-    "updatedAt": "2026-01-10T02:30:50.112716Z"
   }
 ]

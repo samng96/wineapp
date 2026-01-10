@@ -215,7 +215,7 @@ def deserialize_wine_instance(data: Dict[str, Any], cellars: Optional[List[Cella
             # Find cellar
             cellar = next((c for c in cellars if c.id == cellar_id), None)
             if not cellar:
-                raise ValueError(f"Cellar with ID '{cellar_id}' not found")
+                return None
             
             # Get shelf
             if shelf_index < 0 or shelf_index >= len(cellar.shelves):

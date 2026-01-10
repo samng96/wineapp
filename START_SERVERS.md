@@ -2,16 +2,27 @@
 
 ## 1. Start the Flask Backend Server
 
-Open a terminal and run:
+Open a terminal and run from the **project root**:
 ```bash
-cd /Users/samng/Docs/src/WineApp/server
-python3 app.py
+cd /Users/samng/Docs/src/WineApp
+PYTHONPATH=. python3 server/app.py
 ```
+
+Or with debugpy enabled (for debugging):
+```bash
+cd /Users/samng/Docs/src/WineApp
+DEBUGPY=1 PYTHONPATH=. python3 server/app.py
+```
+
+**Important:** You must run from the project root (not from the `server/` directory) and set `PYTHONPATH=.` because the code uses `from server.utils import ...` style imports.
 
 The server will start on **port 5001** (not 5000).
 
 You should see:
 ```
+Loading wine references into registry on startup...
+Loaded X wine references into registry
+Debugpy listening on port 5678. Attach debugger now.  (only if DEBUGPY=1)
  * Running on http://127.0.0.1:5001
 ```
 
