@@ -12,6 +12,7 @@ class CellarManager {
         this.currentCellar = null; // Store current cellar data for re-rendering
         this.currentInstanceMap = null;
         this.currentReferenceMap = null;
+        this.panelClickHandler = null; // Store handler reference for cleanup
         this.init();
     }
 
@@ -113,14 +114,110 @@ class CellarManager {
             });
         }
 
-        // Close cellar menus when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.cellar-panel-menu')) {
-                document.querySelectorAll('.cellar-menu-dropdown').forEach(menu => {
-                    menu.style.display = 'none';
-                });
+        // Close cellar menus when clicking outside (only add once)
+        // Use a timeout to ensure this runs after the button click handler
+        if (!this.menuCloseListenerAttached) {
+            this.menuCloseHandler = (e) => {
+                // Use setTimeout to run after other click handlers
+                setTimeout(() => {
+                    // Don't close if clicking on menu toggle button (it will toggle itself)
+                    if (e.target.closest('.cellar-menu-toggle')) {
+                        return;
+                    }
+                    // Don't close if clicking on menu item
+                    if (e.target.closest('.cellar-menu-item')) {
+                        return;
+                    }
+                    // Don't close if clicking inside the dropdown menu
+                    if (e.target.closest('.cellar-menu-dropdown')) {
+                        return;
+                    }
+                    // Close all menus if clicking outside the menu area
+                    if (!e.target.closest('.cellar-panel-menu')) {
+                        document.querySelectorAll('.cellar-menu-dropdown').forEach(menu => {
+                            menu.style.display = 'none';
+                        });
+                    }
+                }, 10);
+            };
+            document.addEventListener('click', this.menuCloseHandler);
+            this.menuCloseListenerAttached = true;
+        }
+    }
+
+    setupCellarPanelListeners() {
+        const container = document.getElementById('cellar-list');
+        if (!container) {
+            console.error('Cellar list container not found!');
+            return;
+        }
+
+        // Remove old listener if it exists
+        if (this.panelClickHandler) {
+            container.removeEventListener('click', this.panelClickHandler);
+        }
+
+        // Create new handler using event delegation
+        this.panelClickHandler = (e) => {
+            // Check if clicking on menu toggle button or inside it
+            let menuToggle = e.target.closest('.cellar-menu-toggle');
+            // Also check if the target itself is the button
+            if (!menuToggle && e.target.classList && e.target.classList.contains('cellar-menu-toggle')) {
+                menuToggle = e.target;
             }
-        });
+            
+            if (menuToggle) {
+                e.stopPropagation();
+                e.preventDefault();
+                const cellarId = menuToggle.getAttribute('data-cellar-id');
+                if (cellarId) {
+                    this.toggleCellarMenu(cellarId);
+                }
+                return;
+            }
+
+            // Check if clicking on menu item (Edit or Delete)
+            const menuItem = e.target.closest('.cellar-menu-item');
+            if (menuItem) {
+                e.stopPropagation();
+                e.preventDefault();
+                const action = menuItem.getAttribute('data-action');
+                const cellarId = menuItem.getAttribute('data-cellar-id');
+                if (action && cellarId) {
+                    this.hideCellarMenu(cellarId);
+                    if (action === 'edit') {
+                        this.showEditDialog(cellarId);
+                    } else if (action === 'delete') {
+                        this.showDeleteDialog(cellarId);
+                    }
+                }
+                return;
+            }
+
+            // Check if clicking inside menu dropdown
+            if (e.target.closest('.cellar-menu-dropdown')) {
+                e.stopPropagation();
+                return;
+            }
+
+            // Check if clicking inside menu container but not on buttons
+            if (e.target.closest('.cellar-panel-menu')) {
+                e.stopPropagation();
+                return;
+            }
+
+            // Otherwise, navigate to cellar detail when clicking on panel
+            const panel = e.target.closest('.cellar-panel');
+            if (panel) {
+                const cellarId = panel.getAttribute('data-cellar-id');
+                if (cellarId) {
+                    this.showCellarDetail(cellarId);
+                }
+            }
+        };
+
+        // Attach new listener
+        container.addEventListener('click', this.panelClickHandler);
     }
 
     async loadCellars() {
@@ -266,19 +363,19 @@ class CellarManager {
             const previewHtml = this.renderCellarPreview(cellar, labelImages, breakdown);
 
             return `
-                <div class="cellar-panel" data-cellar-id="${cellar.id}" onclick="window.cellarManager.showCellarDetail('${cellar.id}')">
+                <div class="cellar-panel" data-cellar-id="${cellar.id}">
                     ${previewHtml}
                     <div class="cellar-panel-info">
                         <div class="cellar-panel-header">
                             <h3 class="cellar-panel-name">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</h3>
-                            <div class="cellar-panel-menu" onclick="event.stopPropagation();">
-                                <button class="cellar-menu-toggle" onclick="event.stopPropagation(); window.cellarManager.toggleCellarMenu('${cellar.id}')" title="Menu">⋯</button>
+                            <div class="cellar-panel-menu">
+                                <button class="cellar-menu-toggle" data-cellar-id="${cellar.id}" type="button" title="Menu">⋯</button>
                                 <div class="cellar-menu-dropdown" id="cellar-menu-${cellar.id}" style="display: none;">
-                                    <button class="cellar-menu-item" onclick="event.stopPropagation(); window.cellarManager.hideCellarMenu('${cellar.id}'); window.cellarManager.showEditDialog('${cellar.id}')">
+                                    <button class="cellar-menu-item" data-action="edit" data-cellar-id="${cellar.id}" type="button">
                                         <span>✏️</span>
                                         <span>Edit</span>
                                     </button>
-                                    <button class="cellar-menu-item" onclick="event.stopPropagation(); window.cellarManager.hideCellarMenu('${cellar.id}'); window.cellarManager.showDeleteDialog('${cellar.id}')">
+                                    <button class="cellar-menu-item" data-action="delete" data-cellar-id="${cellar.id}" type="button">
                                         <span>🗑️</span>
                                         <span>Delete</span>
                                     </button>
@@ -289,6 +386,12 @@ class CellarManager {
                 </div>
             `;
         }).join('');
+        
+        // Setup panel click listeners for navigation
+        // Use setTimeout to ensure DOM is updated
+        setTimeout(() => {
+            this.setupCellarPanelListeners();
+        }, 0);
         
         // Start image rotation for all previews after rendering
         setTimeout(() => {
@@ -662,16 +765,28 @@ class CellarManager {
 
     showEditDialog(cellarId) {
         const cellar = this.cellars.find(c => c.id === cellarId);
-        if (!cellar) return;
+        if (!cellar) {
+            console.error(`Cellar not found: ${cellarId}`);
+            return;
+        }
 
         const dialog = document.getElementById('edit-cellar-dialog');
         const form = document.getElementById('edit-cellar-form');
-        if (dialog && form) {
-            form.dataset.cellarId = cellarId;
-            form.querySelector('#edit-cellar-name').value = cellar.name || '';
-            form.querySelector('#edit-cellar-temperature').value = cellar.temperature || '';
-            dialog.classList.remove('hidden');
+        if (!dialog) {
+            console.error('Edit dialog element not found');
+            return;
         }
+        if (!form) {
+            console.error('Edit form element not found');
+            return;
+        }
+        
+        form.dataset.cellarId = cellarId;
+        const nameInput = form.querySelector('#edit-cellar-name');
+        const tempInput = form.querySelector('#edit-cellar-temperature');
+        if (nameInput) nameInput.value = cellar.name || '';
+        if (tempInput) tempInput.value = cellar.temperature || '';
+        dialog.classList.remove('hidden');
     }
 
     hideEditDialog() {
@@ -715,15 +830,26 @@ class CellarManager {
 
     showDeleteDialog(cellarId) {
         const cellar = this.cellars.find(c => c.id === cellarId);
-        if (!cellar) return;
+        if (!cellar) {
+            console.error(`Cellar not found: ${cellarId}`);
+            return;
+        }
 
         const dialog = document.getElementById('delete-cellar-dialog');
-        const message = dialog.querySelector('.delete-message');
-        if (dialog && message) {
-            dialog.dataset.cellarId = cellarId;
-            message.textContent = `Are you sure you want to delete "${this.escapeHtml(cellar.name || 'Unnamed Cellar')}"? This will move all wines in this cellar to unshelved.`;
-            dialog.classList.remove('hidden');
+        if (!dialog) {
+            console.error('Delete dialog element not found');
+            return;
         }
+        
+        const message = dialog.querySelector('.delete-message');
+        if (!message) {
+            console.error('Delete message element not found');
+            return;
+        }
+        
+        dialog.dataset.cellarId = cellarId;
+        message.textContent = `Are you sure you want to delete "${this.escapeHtml(cellar.name || 'Unnamed Cellar')}"? This will move all wines in this cellar to unshelved.`;
+        dialog.classList.remove('hidden');
     }
 
     hideDeleteDialog() {
@@ -765,8 +891,13 @@ class CellarManager {
     }
 
     toggleCellarMenu(cellarId) {
+        console.log('toggleCellarMenu called for:', cellarId);
         const menu = document.getElementById(`cellar-menu-${cellarId}`);
-        if (!menu) return;
+        if (!menu) {
+            console.error(`Menu not found for cellar ${cellarId}. Available menus:`, 
+                Array.from(document.querySelectorAll('.cellar-menu-dropdown')).map(m => m.id));
+            return;
+        }
 
         // Hide all other menus first
         document.querySelectorAll('.cellar-menu-dropdown').forEach(m => {
@@ -775,11 +906,33 @@ class CellarManager {
             }
         });
 
-        // Toggle this menu
-        if (menu.style.display === 'none' || !menu.style.display) {
-            menu.style.display = 'block';
+        // Toggle this menu - check inline style first, then computed
+        const inlineDisplay = menu.style.display;
+        const computedDisplay = window.getComputedStyle(menu).display;
+        
+        console.log('Menu display state - inline:', inlineDisplay, 'computed:', computedDisplay);
+        
+        // If inline style is set, use it; otherwise use computed
+        if (inlineDisplay) {
+            // Inline style is set - toggle it
+            if (inlineDisplay === 'none') {
+                menu.style.display = 'block';
+                console.log('Menu opened');
+            } else {
+                menu.style.display = 'none';
+                console.log('Menu closed');
+            }
         } else {
-            menu.style.display = 'none';
+            // No inline style - check computed style (initial state is 'none' from inline style in HTML)
+            // Since HTML has style="display: none;", inlineDisplay should be 'none'
+            // But if it's empty, check computed
+            if (computedDisplay === 'none' || !inlineDisplay) {
+                menu.style.display = 'block';
+                console.log('Menu opened (from computed)');
+            } else {
+                menu.style.display = 'none';
+                console.log('Menu closed (from computed)');
+            }
         }
     }
 
@@ -789,6 +942,7 @@ class CellarManager {
             menu.style.display = 'none';
         }
     }
+
 
     async showCellarDetail(cellarId) {
         try {

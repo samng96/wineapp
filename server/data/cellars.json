@@ -417,5 +417,218 @@
     "version": 1,
     "createdAt": "2026-01-09T01:55:58.573659Z",
     "updatedAt": "2026-01-09T01:55:58.573659Z"
+  },
+  {
+    "id": "05772fba-5c68-49b0-b04b-0a47d668e333",
+    "name": "Rec room fridge",
+    "temperature": 60,
+    "capacity": 100,
+    "shelves": [
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ]
+    ],
+    "winePositions": {
+      "0": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "1": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "2": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "3": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "4": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "5": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "6": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "7": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "8": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "9": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "version": 1,
+    "createdAt": "2026-01-10T02:30:50.112716Z",
+    "updatedAt": "2026-01-10T02:30:50.112716Z"
   }
 ]
