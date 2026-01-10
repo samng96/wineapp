@@ -348,7 +348,7 @@ class CellarManager {
         if (!container) return;
 
         if (this.cellars.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No cellars yet. Click the + button to create one.</p>';
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px; vertical-align: bottom;">No cellars yet. Click the + button to create one.</p>';
             return;
         }
 
@@ -391,69 +391,12 @@ class CellarManager {
         // Use setTimeout to ensure DOM is updated
         setTimeout(() => {
             this.setupCellarPanelListeners();
-            this.setCellarPanelMaxHeights();
         }, 0);
         
         // Start image rotation for all previews after rendering
         setTimeout(() => {
             this.startImageRotation();
         }, 0);
-    }
-
-    setCellarPanelMaxHeights() {
-        const panels = document.querySelectorAll('.cellar-panel');
-        panels.forEach(panel => {
-            const preview = panel.querySelector('.cellar-panel-preview');
-            const imageColumn = panel.querySelector('.preview-image-column');
-            const panelInfo = panel.querySelector('.cellar-panel-info');
-            
-            if (preview && imageColumn && panelInfo) {
-                // Get the width of the preview container (accounting for padding)
-                const previewWidth = preview.offsetWidth - 24; // Subtract 12px padding on each side (12px * 2)
-                
-                // Image column is 33.333% of preview width
-                const imageColumnWidth = previewWidth * 0.333333;
-                
-                // Each image is square (aspect-ratio: 1), so height = width
-                // 3 images = 3 * imageColumnWidth + gaps between images (2 * 4px) + container padding (4px * 2 = 8px)
-                const threeImageHeights = (3 * imageColumnWidth) + (2 * 4) + 8;
-                
-                // Add preview padding (12px top + 12px bottom = 24px)
-                const previewHeight = threeImageHeights + 24;
-                
-                // Get panel info height (cellar name panel)
-                const panelInfoHeight = panelInfo.offsetHeight;
-                
-                // Set max-height on the entire panel = 3 image heights + panel info height
-                const totalHeight = previewHeight + panelInfoHeight;
-                panel.style.maxHeight = `${totalHeight}px`;
-            }
-        });
-        
-        // Set up resize handler to recalculate on window resize (only once)
-        if (!this.panelHeightResizeHandler) {
-            this.panelHeightResizeHandler = () => {
-                // Remove the setCellarPanelMaxHeights call to avoid infinite loop
-                // Just recalculate the heights directly
-                const panels = document.querySelectorAll('.cellar-panel');
-                panels.forEach(panel => {
-                    const preview = panel.querySelector('.cellar-panel-preview');
-                    const imageColumn = panel.querySelector('.preview-image-column');
-                    const panelInfo = panel.querySelector('.cellar-panel-info');
-                    
-                    if (preview && imageColumn && panelInfo) {
-                        const previewWidth = preview.offsetWidth - 24;
-                        const imageColumnWidth = previewWidth * 0.333333;
-                        const threeImageHeights = (3 * imageColumnWidth) + (2 * 4) + 8;
-                        const previewHeight = threeImageHeights + 24;
-                        const panelInfoHeight = panelInfo.offsetHeight;
-                        const totalHeight = previewHeight + panelInfoHeight;
-                        panel.style.maxHeight = `${totalHeight}px`;
-                    }
-                });
-            };
-            window.addEventListener('resize', this.panelHeightResizeHandler);
-        }
     }
 
     getCellarLabelImages(cellar) {

@@ -356,9 +356,14 @@ body {
 #cellar-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 500px;
     gap: 16px;
     padding: 16px;
     align-items: start;
+    justify-items: center;
+    vertical-align: top;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .cellar-panel {
@@ -371,6 +376,8 @@ body {
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     height: 500px;
+    width: 100%;
+    max-width: 500px;
 }
 
 .cellar-panel:hover {
