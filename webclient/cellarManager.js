@@ -113,16 +113,8 @@ class CellarManager {
             });
         }
 
-        // Cellar name click handler (delegated - will be set up after rendering)
+        // Close cellar menus when clicking outside
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('cellar-name-link')) {
-                const cellarId = e.target.getAttribute('data-cellar-id');
-                if (cellarId) {
-                    this.showCellarDetail(cellarId);
-                }
-            }
-            
-            // Close cellar menus when clicking outside
             if (!e.target.closest('.cellar-panel-menu')) {
                 document.querySelectorAll('.cellar-menu-dropdown').forEach(menu => {
                     menu.style.display = 'none';
@@ -263,47 +255,22 @@ class CellarManager {
             return;
         }
 
-        // Create maps for quick lookup
-        const instanceMap = {};
-        if (this.wineInstances) {
-            this.wineInstances.forEach(inst => {
-                instanceMap[inst.id] = inst;
-            });
-        }
-
-        const referenceMap = {};
-        if (this.wineReferences) {
-            this.wineReferences.forEach(ref => {
-                referenceMap[ref.id] = ref;
-            });
-        }
-
         container.innerHTML = this.cellars.map(cellar => {
-            const tempText = cellar.temperature ? `${cellar.temperature}°F` : 'Not set';
-            const shelfCount = cellar.shelves.length;
-            const shelfText = shelfCount === 1 ? '1 shelf' : `${shelfCount} shelves`;
-            
-            // Calculate used slots and show as used/capacity
-            const usedSlots = cellar.getUsedSlots();
-            const capacity = cellar.capacity;
-            const usageText = `${usedSlots}/${capacity}`;
-            
-            // Calculate wine breakdown for tooltip
+            // Calculate wine breakdown for display
             const breakdown = this.getWineBreakdown(cellar);
-            const breakdownText = this.formatBreakdown(breakdown);
-            const tooltipText = breakdownText ? `Breakdown: ${breakdownText}` : 'No wines in cellar';
+
+            // Get wine label images for rotation
+            const labelImages = this.getCellarLabelImages(cellar);
 
             // Render preview
-            const previewHtml = this.renderCellarPreview(cellar, instanceMap, referenceMap);
+            const previewHtml = this.renderCellarPreview(cellar, labelImages, breakdown);
 
             return `
                 <div class="cellar-panel" data-cellar-id="${cellar.id}" onclick="window.cellarManager.showCellarDetail('${cellar.id}')">
-                    <div class="cellar-panel-preview">
-                        ${previewHtml}
-                    </div>
+                    ${previewHtml}
                     <div class="cellar-panel-info">
                         <div class="cellar-panel-header">
-                            <h3 class="cellar-panel-name cellar-name-link" data-cellar-id="${cellar.id}">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</h3>
+                            <h3 class="cellar-panel-name">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</h3>
                             <div class="cellar-panel-menu" onclick="event.stopPropagation();">
                                 <button class="cellar-menu-toggle" onclick="event.stopPropagation(); window.cellarManager.toggleCellarMenu('${cellar.id}')" title="Menu">⋯</button>
                                 <div class="cellar-menu-dropdown" id="cellar-menu-${cellar.id}" style="display: none;">
@@ -318,49 +285,166 @@ class CellarManager {
                                 </div>
                             </div>
                         </div>
-                        <div class="cellar-panel-details">
-                            <span class="usage-text" title="${this.escapeHtml(tooltipText)}">${usageText}</span>
-                            <span>•</span>
-                            <span>${shelfText}</span>
-                            <span>•</span>
-                            <span>${tempText}</span>
-                        </div>
                     </div>
                 </div>
             `;
         }).join('');
+        
+        // Start image rotation for all previews after rendering
+        setTimeout(() => {
+            this.startImageRotation();
+        }, 0);
     }
 
-    renderCellarPreview(cellar, instanceMap, referenceMap) {
-        const shelves = cellar.shelves || [];
-        const winePositions = cellar.winePositions || {};
-        const scale = 0.15; // Scale factor to make circles smaller (15% of original size)
-        const unitSize = 40 * scale; // Scaled unit size
-        const radius = 40 * scale; // Scaled radius
-
-        if (shelves.length === 0) {
-            return '<div class="cellar-preview-empty">No shelves</div>';
+    getCellarLabelImages(cellar) {
+        if (!this.wineInstances || !this.wineReferences || !cellar.winePositions) {
+            return [];
         }
 
-        let html = '<div class="cellar-preview-container">';
+        // Create a map of reference ID to WineReference for quick lookup
+        const referenceMap = {};
+        this.wineReferences.forEach(ref => {
+            referenceMap[ref.id] = ref;
+        });
+
+        // Collect all unique wine instance IDs in this cellar
+        const cellarWineIds = new Set();
+        for (const shelfIndex in cellar.winePositions) {
+            const shelfPositions = cellar.winePositions[shelfIndex];
+            if (shelfPositions.front) {
+                shelfPositions.front.forEach(id => {
+                    if (id) cellarWineIds.add(id);
+                });
+            }
+            if (shelfPositions.back) {
+                shelfPositions.back.forEach(id => {
+                    if (id) cellarWineIds.add(id);
+                });
+            }
+            if (shelfPositions.single) {
+                shelfPositions.single.forEach(id => {
+                    if (id) cellarWineIds.add(id);
+                });
+            }
+        }
+
+        // Get unique label images from wines in this cellar
+        const labelImages = [];
+        const seenImages = new Set();
         
-        // Show first few shelves as preview (limit to 3-4 shelves to keep it compact)
-        const maxShelvesToShow = Math.min(shelves.length, 4);
+        this.wineInstances.forEach(instance => {
+            if (cellarWineIds.has(instance.id) && instance.referenceId) {
+                const reference = referenceMap[instance.referenceId];
+                if (reference && reference.labelImageUrl && !seenImages.has(reference.labelImageUrl)) {
+                    labelImages.push(reference.labelImageUrl);
+                    seenImages.add(reference.labelImageUrl);
+                }
+            }
+        });
+
+        return labelImages;
+    }
+
+    renderCellarPreview(cellar, labelImages, breakdown) {
+        // Render small bottle visualization
+        const bottlePreview = this.renderBottlePreview(cellar);
         
-        for (let shelfIndex = 0; shelfIndex < maxShelvesToShow; shelfIndex++) {
-            const shelf = shelves[shelfIndex];
-            // Shelf is a Shelf object with .positions and .isDouble properties
+        // Get capacity and temperature
+        const usedSlots = cellar.getUsedSlots();
+        const capacity = cellar.capacity || 0;
+        const capacityText = `${usedSlots}/${capacity}`;
+        const tempText = cellar.temperature ? `${cellar.temperature}°F` : 'Not set';
+
+        // Create stacked image container with multiple square images
+        let imagesHtml = '';
+        if (labelImages.length > 0) {
+            // Show 3-5 images stacked on top of each other, rotating through all images
+            // Calculate how many can fit based on container height (show fewer if limited space)
+            const maxStacked = Math.min(labelImages.length, 5);
+            const numToShow = Math.max(3, maxStacked); // Show at least 3, up to 5
+            for (let i = 0; i < numToShow; i++) {
+                const imgUrl = labelImages[i % labelImages.length];
+                imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(imgUrl)}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
+            }
+        } else {
+            imagesHtml = '<div class="no-labels-message">No wine labels</div>';
+        }
+
+        return `
+            <div class="cellar-panel-preview">
+                <div class="preview-image-column">
+                    <div class="rotating-images-container">
+                        ${imagesHtml}
+                    </div>
+                </div>
+                <div class="preview-info-column">
+                    <div class="preview-info-item">
+                        <strong>Contents:</strong> ${this.formatBreakdown(breakdown) || 'Empty'}
+                    </div>
+                    <div class="preview-info-item">
+                        <strong>Capacity:</strong> ${capacityText}
+                    </div>
+                    <div class="preview-info-item">
+                        <strong>Temperature:</strong> ${tempText}
+                    </div>
+                    <div class="preview-bottles-container">
+                        <div class="preview-bottles-label">Preview</div>
+                        <div class="preview-bottles">
+                            ${bottlePreview}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderBottlePreview(cellar) {
+        if (!cellar.winePositions || !this.wineInstances || !this.wineReferences) {
+            return '<div class="bottle-preview-empty">No bottles</div>';
+        }
+
+        const shelves = cellar.shelves || [];
+        if (shelves.length === 0) {
+            return '<div class="bottle-preview-empty">No shelves</div>';
+        }
+
+        // Create maps for lookup
+        const instanceMap = {};
+        if (this.wineInstances) {
+            this.wineInstances.forEach(inst => {
+                instanceMap[inst.id] = inst;
+            });
+        }
+
+        const referenceMap = {};
+        if (this.wineReferences) {
+            this.wineReferences.forEach(ref => {
+                referenceMap[ref.id] = ref;
+            });
+        }
+
+        // Scale factor for mini preview - make it much smaller
+        const scale = 0.15; // 15% of original size
+        const baseUnitSize = 40;
+        const baseRadius = 40;
+        const unitSize = baseUnitSize * scale;
+        const radius = baseRadius * scale;
+
+        let html = '<div class="bottle-preview-shelves">';
+        
+        shelves.forEach((shelf, shelfIndex) => {
             const positions = shelf.positions;
             const isDouble = shelf.isDouble;
             const shelfKey = String(shelfIndex);
-            const shelfData = winePositions[shelfKey] || {};
+            const shelfData = cellar.winePositions[shelfKey] || {};
 
-            html += '<div class="cellar-preview-shelf">';
+            html += '<div class="bottle-preview-shelf-row">';
 
             if (isDouble) {
                 // Double-sided: staggered circles layout
                 const totalWidth = (2 * positions + 1) * unitSize;
-                html += `<div class="cellar-preview-positions staggered" style="position: relative; width: ${totalWidth}px; height: ${radius * 2}px; margin: 0 auto;">`;
+                const containerHeight = radius * 2 * 2; // Height for staggered rows
+                html += `<div class="bottle-preview-positions staggered" style="position: relative; width: ${totalWidth}px; height: ${containerHeight}px; margin: 0 auto;">`;
                 const frontPositions = shelfData.front || [];
                 const backPositions = shelfData.back || [];
                 
@@ -373,7 +457,8 @@ class CellarManager {
             } else {
                 // Single side - circles in a single row
                 const totalWidth = (2 * positions) * unitSize;
-                html += `<div class="cellar-preview-positions single-row" style="position: relative; width: ${totalWidth}px; height: ${radius * 2}px; margin: 0 auto;">`;
+                const containerHeight = radius * 2; // Height for single row
+                html += `<div class="bottle-preview-positions single-row" style="position: relative; width: ${totalWidth}px; height: ${containerHeight}px; margin: 0 auto;">`;
                 const singlePositions = shelfData.single || [];
                 
                 for (let pos = 0; pos < positions; pos++) {
@@ -384,7 +469,7 @@ class CellarManager {
             }
 
             html += '</div>';
-        }
+        });
 
         html += '</div>';
         return html;
@@ -395,17 +480,18 @@ class CellarManager {
         const wineType = wine ? (wine.type || '').toLowerCase() : '';
         const vintage = wine && wine.vintage ? wine.vintage : null;
         
+        // Same positioning as full view: edges align (double spaced)
         const centerX = (2 * position + 1) * unitSize;
         const leftEdge = centerX - radius;
         
         if (wine && vintage) {
             const wineTypeClass = this.getWineTypeClass(wineType);
             return `
-                <div class="wine-position-mini circle vintage-mode ${wineTypeClass}" style="left: ${leftEdge}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>
+                <div class="bottle-preview-position circle vintage-mode ${wineTypeClass}" style="position: absolute; left: ${leftEdge}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>
             `;
         } else {
             return `
-                <div class="wine-position-mini circle empty" style="left: ${leftEdge}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>
+                <div class="bottle-preview-position circle empty" style="position: absolute; left: ${leftEdge}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>
             `;
         }
     }
@@ -419,28 +505,75 @@ class CellarManager {
         const frontVintage = frontWine && frontWine.vintage ? frontWine.vintage : null;
         const backVintage = backWine && backWine.vintage ? backWine.vintage : null;
         
+        // Same positioning as full view: staggered layout
         const frontCenterX = (2 * position + 1) * unitSize;
         const backCenterX = (2 * position + 2) * unitSize;
         
         let html = '';
         
-        // Front position
-        if (frontWine && frontVintage) {
-            const frontTypeClass = this.getWineTypeClass(frontType);
-            html += `<div class="wine-position-mini circle stagger-front vintage-mode ${frontTypeClass}" style="left: ${frontCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: ${radius * 0.3}px;"></div>`;
-        } else {
-            html += `<div class="wine-position-mini circle empty stagger-front" style="left: ${frontCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: ${radius * 0.3}px;"></div>`;
-        }
-        
-        // Back position
+        // Back position (top row) - positioned at top: 0
         if (backWine && backVintage) {
             const backTypeClass = this.getWineTypeClass(backType);
-            html += `<div class="wine-position-mini circle stagger-back vintage-mode ${backTypeClass}" style="left: ${backCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>`;
+            html += `<div class="bottle-preview-position circle stagger-back vintage-mode ${backTypeClass}" style="position: absolute; left: ${backCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>`;
         } else {
-            html += `<div class="wine-position-mini circle empty stagger-back" style="left: ${backCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>`;
+            html += `<div class="bottle-preview-position circle empty stagger-back" style="position: absolute; left: ${backCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>`;
+        }
+        
+        // Front position (bottom row) - positioned at bottom: 0
+        if (frontWine && frontVintage) {
+            const frontTypeClass = this.getWineTypeClass(frontType);
+            html += `<div class="bottle-preview-position circle stagger-front vintage-mode ${frontTypeClass}" style="position: absolute; left: ${frontCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; bottom: 0;"></div>`;
+        } else {
+            html += `<div class="bottle-preview-position circle empty stagger-front" style="position: absolute; left: ${frontCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; bottom: 0;"></div>`;
         }
         
         return html;
+    }
+
+    startImageRotation() {
+        const previews = document.querySelectorAll('.rotating-images-container');
+        
+        previews.forEach(container => {
+            const wrappers = container.querySelectorAll('.stacked-image-wrapper');
+            if (wrappers.length === 0) return;
+            
+            // Collect all unique image URLs from all images in this container
+            // (they may have duplicates initially, we'll rotate through unique ones)
+            const allImages = Array.from(container.querySelectorAll('.rotating-label-image'));
+            const uniqueUrls = [];
+            const seenUrls = new Set();
+            
+            allImages.forEach(img => {
+                if (img.src && !seenUrls.has(img.src)) {
+                    uniqueUrls.push(img.src);
+                    seenUrls.add(img.src);
+                }
+            });
+            
+            if (uniqueUrls.length === 0) return;
+            
+            let currentStartIndex = 0;
+            
+            const rotate = () => {
+                // Update each visible stacked image to show the next image in sequence
+                wrappers.forEach((wrapper, i) => {
+                    const img = wrapper.querySelector('.rotating-label-image');
+                    if (img) {
+                        const imageIndex = (currentStartIndex + i) % uniqueUrls.length;
+                        img.src = uniqueUrls[imageIndex];
+                    }
+                });
+                
+                // Move to next starting position
+                currentStartIndex = (currentStartIndex + 1) % uniqueUrls.length;
+            };
+            
+            // Rotate every 5 seconds
+            const intervalId = setInterval(rotate, 5000);
+            
+            // Store interval ID on container for cleanup if needed
+            container.dataset.rotationInterval = intervalId;
+        });
     }
 
     showCreateDialog() {
@@ -727,8 +860,15 @@ class CellarManager {
         const availableWidth = containerWidth - fridgePadding;
         const eightyPercentWidth = availableWidth * 0.8;
 
-        shelves.forEach((shelfConfig, shelfIndex) => {
-            const [positions, isDouble] = shelfConfig;
+        shelves.forEach((shelf, shelfIndex) => {
+            // Shelf can be either [positions, isDouble] array or Shelf object
+            let positions, isDouble;
+            if (Array.isArray(shelf)) {
+                [positions, isDouble] = shelf;
+            } else {
+                positions = shelf.positions;
+                isDouble = shelf.isDouble;
+            }
             const shelfKey = String(shelfIndex);
             const shelfData = winePositions[shelfKey] || {};
 
