@@ -196,18 +196,18 @@ body {
 
 .view {
     display: none;
-    padding: 20px;
-}
-
-.view.active {
-    display: block;
-}
-
-/* Cellar detail view doesn't need padding on the view itself */
-#cellar-detail-view {
+    flex: 1;
+    flex-direction: column;
+    overflow-y: auto;
+    background: #f5f5f5;
     padding: 0;
 }
 
+.view.active {
+    display: flex;
+}
+
+/* Cellar detail view uses flex layout */
 #cellar-detail-view.active {
     display: flex;
     flex-direction: column;
@@ -223,6 +223,10 @@ body {
     padding: 12px 16px;
     border-bottom: 1px solid #e0e0e0;
     background: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .view-header h2 {
@@ -234,19 +238,27 @@ body {
     letter-spacing: 0.5px;
 }
 
+.view-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .icon-btn {
     background: #6200ea;
     color: white;
     border: none;
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    font-size: 18px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
 }
 
 .icon-btn:hover {
@@ -257,21 +269,23 @@ body {
 .labels-toggle-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .toggle-label {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     color: #333;
     cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 44px;
-    height: 24px;
+    width: 36px;
+    height: 18px;
 }
 
 .toggle-switch input {
@@ -289,16 +303,16 @@ body {
     bottom: 0;
     background-color: #ccc;
     transition: 0.3s;
-    border-radius: 24px;
+    border-radius: 18px;
 }
 
 .toggle-slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
     background-color: white;
     transition: 0.3s;
     border-radius: 50%;
@@ -309,7 +323,7 @@ body {
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(20px);
+    transform: translateX(18px);
 }
 
 /* Splash Screen */
@@ -317,13 +331,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 60vh;
+    flex: 1;
+    padding: 40px 20px;
 }
 
 .splash-screen h1 {
     font-size: 48px;
     font-weight: 300;
     color: #6200ea;
+    text-align: center;
 }
 
 /* List Containers */
@@ -331,6 +347,231 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Cellar Panel Grid */
+#cellar-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px;
+}
+
+.cellar-panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cellar-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cellar-panel-preview {
+    aspect-ratio: 1;
+    background: #f9f9f9;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.cellar-preview-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.cellar-preview-shelf {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cellar-preview-positions {
+    position: relative;
+}
+
+.cellar-preview-empty {
+    color: #999;
+    font-size: 12px;
+    text-align: center;
+}
+
+.wine-position-mini {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    background: #f5f5f5;
+    box-sizing: border-box;
+}
+
+.wine-position-mini.empty {
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+}
+
+.wine-position-mini.vintage-mode {
+    border: 1px solid #333;
+}
+
+/* Wine type colors for mini circles */
+.wine-position-mini.wine-type-red {
+    background-color: #8B0000 !important;
+    border-color: #5a0000 !important;
+}
+
+.wine-position-mini.wine-type-white {
+    background-color: #FFF8DC !important;
+    border-color: #ddd !important;
+}
+
+.wine-position-mini.wine-type-rose {
+    background-color: #FFE4E1 !important;
+    border-color: #ffb3b3 !important;
+}
+
+.wine-position-mini.wine-type-sparkling {
+    background-color: #F0F8FF !important;
+    border-color: #b3d9ff !important;
+}
+
+.wine-position-mini.wine-type-default {
+    background-color: #f5f5f5 !important;
+    border-color: #ddd !important;
+}
+
+.cellar-panel-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cellar-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.cellar-panel-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: #6200ea;
+    cursor: pointer;
+    text-decoration: underline;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cellar-panel-name:hover {
+    color: #3700b3;
+}
+
+.cellar-panel-menu {
+    position: relative;
+}
+
+.cellar-menu-toggle {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 18px;
+    color: #666;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.cellar-menu-toggle:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.cellar-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-top: 4px;
+    min-width: 120px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.cellar-menu-item {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    text-align: left;
+    transition: background 0.2s;
+}
+
+.cellar-menu-item:hover {
+    background: #f5f5f5;
+}
+
+.cellar-menu-item span:first-child {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.cellar-menu-item span:last-child {
+    flex: 1;
+}
+
+.cellar-panel-details {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cellar-panel-details .usage-text {
+    cursor: help;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.cellar-panel-details .usage-text:hover {
+    color: #6200ea;
 }
 
 .list-item {
@@ -391,7 +632,9 @@ body {
 
 /* Search */
 .search-container {
-    margin-bottom: 20px;
+    padding: 16px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 #search-input {
@@ -400,6 +643,10 @@ body {
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     font-size: 16px;
+}
+
+#search-view .list-container {
+    padding-top: 0;
 }
 
 #search-input:focus {

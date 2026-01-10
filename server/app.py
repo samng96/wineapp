@@ -25,4 +25,4 @@ loaded_refs = load_wine_references()
 print(f"Loaded {len(loaded_refs)} wine references into registry")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5001, host='127.0.0.1', use_reloader=False)

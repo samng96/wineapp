@@ -121,31 +121,62 @@ class CellarManager {
                     this.showCellarDetail(cellarId);
                 }
             }
+            
+            // Close cellar menus when clicking outside
+            if (!e.target.closest('.cellar-panel-menu')) {
+                document.querySelectorAll('.cellar-menu-dropdown').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
         });
     }
 
     async loadCellars() {
         try {
+            console.log('Loading cellars...');
             const data = await API.get('/cellars');
-            this.cellars = data.map(c => Cellar.fromDict(c));
+            console.log('Received cellars data:', data);
             
-            // Load wine instances and references for breakdown calculation
-            try {
-                this.wineInstances = await API.get('/wine-instances');
-                this.wineReferences = await API.get('/wine-references');
-            } catch (err) {
-                console.warn('Could not load wine data for breakdown:', err);
-                // Continue without breakdown data
+            if (!Array.isArray(data)) {
+                throw new Error(`Expected array but got ${typeof data}: ${JSON.stringify(data).substring(0, 100)}`);
             }
             
+            this.cellars = data.map(c => {
+                try {
+                    return Cellar.fromDict(c);
+                } catch (e) {
+                    console.error('Error parsing cellar:', c, e);
+                    throw e;
+                }
+            });
+            console.log('Parsed cellars:', this.cellars.length);
+            
+            // Load wine instances and references for breakdown calculation and preview rendering
+            try {
+                const [wineInstances, wineReferences] = await Promise.all([
+                    API.get('/wine-instances'),
+                    API.get('/wine-references')
+                ]);
+                this.wineInstances = wineInstances;
+                this.wineReferences = wineReferences;
+                console.log('Loaded wine instances:', wineInstances?.length, 'references:', wineReferences?.length);
+            } catch (err) {
+                console.warn('Could not load wine data for breakdown:', err);
+                this.wineInstances = [];
+                this.wineReferences = [];
+            }
+            
+            console.log('Rendering cellars...');
             this.renderCellars();
+            console.log('Cellars loaded successfully');
         } catch (error) {
             console.error('Error loading cellars:', error);
+            console.error('Error stack:', error.stack);
             // Don't show error alert on initial load - just log it
             // The view will show an empty state or error message
             const container = document.getElementById('cellar-list');
             if (container) {
-                container.innerHTML = '<p style="text-align: center; color: #f44336; padding: 40px;">Failed to load cellars. Please make sure the server is running.</p>';
+                container.innerHTML = `<p style="text-align: center; color: #f44336; padding: 40px;">Failed to load cellars: ${error.message || 'Unknown error'}. Check console for details.</p>`;
             }
         }
     }
@@ -232,6 +263,21 @@ class CellarManager {
             return;
         }
 
+        // Create maps for quick lookup
+        const instanceMap = {};
+        if (this.wineInstances) {
+            this.wineInstances.forEach(inst => {
+                instanceMap[inst.id] = inst;
+            });
+        }
+
+        const referenceMap = {};
+        if (this.wineReferences) {
+            this.wineReferences.forEach(ref => {
+                referenceMap[ref.id] = ref;
+            });
+        }
+
         container.innerHTML = this.cellars.map(cellar => {
             const tempText = cellar.temperature ? `${cellar.temperature}°F` : 'Not set';
             const shelfCount = cellar.shelves.length;
@@ -240,30 +286,161 @@ class CellarManager {
             // Calculate used slots and show as used/capacity
             const usedSlots = cellar.getUsedSlots();
             const capacity = cellar.capacity;
-            const usageText = `${usedSlots} stored bottles ${capacity} total slots`;
+            const usageText = `${usedSlots}/${capacity}`;
             
             // Calculate wine breakdown for tooltip
             const breakdown = this.getWineBreakdown(cellar);
             const breakdownText = this.formatBreakdown(breakdown);
             const tooltipText = breakdownText ? `Breakdown: ${breakdownText}` : 'No wines in cellar';
 
+            // Render preview
+            const previewHtml = this.renderCellarPreview(cellar, instanceMap, referenceMap);
+
             return `
-                <div class="list-item" data-cellar-id="${cellar.id}">
-                    <div class="list-item-content">
-                        <div class="list-item-title cellar-name-link" data-cellar-id="${cellar.id}" style="cursor: pointer; color: #6200ea; text-decoration: underline;">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</div>
-                        <div class="list-item-subtitle">
-                            ${shelfText} • 
-                            <span class="usage-text" title="${this.escapeHtml(tooltipText)}">${usageText}</span> • 
-                            ${tempText}
-                        </div>
+                <div class="cellar-panel" data-cellar-id="${cellar.id}" onclick="window.cellarManager.showCellarDetail('${cellar.id}')">
+                    <div class="cellar-panel-preview">
+                        ${previewHtml}
                     </div>
-                    <div class="list-item-actions">
-                        <button class="list-item-btn" onclick="window.cellarManager.showEditDialog('${cellar.id}')" title="Edit">✏️</button>
-                        <button class="list-item-btn" onclick="window.cellarManager.showDeleteDialog('${cellar.id}')" title="Delete">🗑️</button>
+                    <div class="cellar-panel-info">
+                        <div class="cellar-panel-header">
+                            <h3 class="cellar-panel-name cellar-name-link" data-cellar-id="${cellar.id}">${this.escapeHtml(cellar.name || 'Unnamed Cellar')}</h3>
+                            <div class="cellar-panel-menu" onclick="event.stopPropagation();">
+                                <button class="cellar-menu-toggle" onclick="event.stopPropagation(); window.cellarManager.toggleCellarMenu('${cellar.id}')" title="Menu">⋯</button>
+                                <div class="cellar-menu-dropdown" id="cellar-menu-${cellar.id}" style="display: none;">
+                                    <button class="cellar-menu-item" onclick="event.stopPropagation(); window.cellarManager.hideCellarMenu('${cellar.id}'); window.cellarManager.showEditDialog('${cellar.id}')">
+                                        <span>✏️</span>
+                                        <span>Edit</span>
+                                    </button>
+                                    <button class="cellar-menu-item" onclick="event.stopPropagation(); window.cellarManager.hideCellarMenu('${cellar.id}'); window.cellarManager.showDeleteDialog('${cellar.id}')">
+                                        <span>🗑️</span>
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cellar-panel-details">
+                            <span class="usage-text" title="${this.escapeHtml(tooltipText)}">${usageText}</span>
+                            <span>•</span>
+                            <span>${shelfText}</span>
+                            <span>•</span>
+                            <span>${tempText}</span>
+                        </div>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    renderCellarPreview(cellar, instanceMap, referenceMap) {
+        const shelves = cellar.shelves || [];
+        const winePositions = cellar.winePositions || {};
+        const scale = 0.15; // Scale factor to make circles smaller (15% of original size)
+        const unitSize = 40 * scale; // Scaled unit size
+        const radius = 40 * scale; // Scaled radius
+
+        if (shelves.length === 0) {
+            return '<div class="cellar-preview-empty">No shelves</div>';
+        }
+
+        let html = '<div class="cellar-preview-container">';
+        
+        // Show first few shelves as preview (limit to 3-4 shelves to keep it compact)
+        const maxShelvesToShow = Math.min(shelves.length, 4);
+        
+        for (let shelfIndex = 0; shelfIndex < maxShelvesToShow; shelfIndex++) {
+            const shelf = shelves[shelfIndex];
+            // Shelf is a Shelf object with .positions and .isDouble properties
+            const positions = shelf.positions;
+            const isDouble = shelf.isDouble;
+            const shelfKey = String(shelfIndex);
+            const shelfData = winePositions[shelfKey] || {};
+
+            html += '<div class="cellar-preview-shelf">';
+
+            if (isDouble) {
+                // Double-sided: staggered circles layout
+                const totalWidth = (2 * positions + 1) * unitSize;
+                html += `<div class="cellar-preview-positions staggered" style="position: relative; width: ${totalWidth}px; height: ${radius * 2}px; margin: 0 auto;">`;
+                const frontPositions = shelfData.front || [];
+                const backPositions = shelfData.back || [];
+                
+                for (let pos = 0; pos < positions; pos++) {
+                    const frontInstanceId = frontPositions[pos] || null;
+                    const backInstanceId = backPositions[pos] || null;
+                    html += this.renderMiniStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, pos, unitSize, radius);
+                }
+                html += `</div>`;
+            } else {
+                // Single side - circles in a single row
+                const totalWidth = (2 * positions) * unitSize;
+                html += `<div class="cellar-preview-positions single-row" style="position: relative; width: ${totalWidth}px; height: ${radius * 2}px; margin: 0 auto;">`;
+                const singlePositions = shelfData.single || [];
+                
+                for (let pos = 0; pos < positions; pos++) {
+                    const instanceId = singlePositions[pos] || null;
+                    html += this.renderMiniSinglePosition(instanceId, instanceMap, referenceMap, pos, unitSize, radius);
+                }
+                html += `</div>`;
+            }
+
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    renderMiniSinglePosition(instanceId, instanceMap, referenceMap, position, unitSize, radius) {
+        const wine = instanceId && instanceMap[instanceId] ? referenceMap[instanceMap[instanceId].referenceId] : null;
+        const wineType = wine ? (wine.type || '').toLowerCase() : '';
+        const vintage = wine && wine.vintage ? wine.vintage : null;
+        
+        const centerX = (2 * position + 1) * unitSize;
+        const leftEdge = centerX - radius;
+        
+        if (wine && vintage) {
+            const wineTypeClass = this.getWineTypeClass(wineType);
+            return `
+                <div class="wine-position-mini circle vintage-mode ${wineTypeClass}" style="left: ${leftEdge}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>
+            `;
+        } else {
+            return `
+                <div class="wine-position-mini circle empty" style="left: ${leftEdge}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>
+            `;
+        }
+    }
+
+    renderMiniStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, position, unitSize, radius) {
+        const frontWine = frontInstanceId && instanceMap[frontInstanceId] ? referenceMap[instanceMap[frontInstanceId].referenceId] : null;
+        const backWine = backInstanceId && instanceMap[backInstanceId] ? referenceMap[instanceMap[backInstanceId].referenceId] : null;
+        
+        const frontType = frontWine ? (frontWine.type || '').toLowerCase() : '';
+        const backType = backWine ? (backWine.type || '').toLowerCase() : '';
+        const frontVintage = frontWine && frontWine.vintage ? frontWine.vintage : null;
+        const backVintage = backWine && backWine.vintage ? backWine.vintage : null;
+        
+        const frontCenterX = (2 * position + 1) * unitSize;
+        const backCenterX = (2 * position + 2) * unitSize;
+        
+        let html = '';
+        
+        // Front position
+        if (frontWine && frontVintage) {
+            const frontTypeClass = this.getWineTypeClass(frontType);
+            html += `<div class="wine-position-mini circle stagger-front vintage-mode ${frontTypeClass}" style="left: ${frontCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: ${radius * 0.3}px;"></div>`;
+        } else {
+            html += `<div class="wine-position-mini circle empty stagger-front" style="left: ${frontCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: ${radius * 0.3}px;"></div>`;
+        }
+        
+        // Back position
+        if (backWine && backVintage) {
+            const backTypeClass = this.getWineTypeClass(backType);
+            html += `<div class="wine-position-mini circle stagger-back vintage-mode ${backTypeClass}" style="left: ${backCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>`;
+        } else {
+            html += `<div class="wine-position-mini circle empty stagger-back" style="left: ${backCenterX - radius}px; width: ${radius * 2}px; height: ${radius * 2}px; top: 0;"></div>`;
+        }
+        
+        return html;
     }
 
     showCreateDialog() {
@@ -452,6 +629,32 @@ class CellarManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    toggleCellarMenu(cellarId) {
+        const menu = document.getElementById(`cellar-menu-${cellarId}`);
+        if (!menu) return;
+
+        // Hide all other menus first
+        document.querySelectorAll('.cellar-menu-dropdown').forEach(m => {
+            if (m.id !== `cellar-menu-${cellarId}`) {
+                m.style.display = 'none';
+            }
+        });
+
+        // Toggle this menu
+        if (menu.style.display === 'none' || !menu.style.display) {
+            menu.style.display = 'block';
+        } else {
+            menu.style.display = 'none';
+        }
+    }
+
+    hideCellarMenu(cellarId) {
+        const menu = document.getElementById(`cellar-menu-${cellarId}`);
+        if (menu) {
+            menu.style.display = 'none';
+        }
     }
 
     async showCellarDetail(cellarId) {

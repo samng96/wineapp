@@ -3,11 +3,24 @@ const API_BASE_URL = 'http://localhost:5001';
 
 class API {
     static async get(endpoint) {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        try {
+            console.log(`API.get: Fetching ${API_BASE_URL}${endpoint}`);
+            const response = await fetch(`${API_BASE_URL}${endpoint}`);
+            console.log(`API.get: Response status ${response.status} for ${endpoint}`);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`API.get: Error response for ${endpoint}:`, errorText);
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log(`API.get: Successfully parsed JSON for ${endpoint}, data length:`, Array.isArray(data) ? data.length : 'not an array');
+            return data;
+        } catch (error) {
+            console.error(`API.get: Exception fetching ${endpoint}:`, error);
+            throw error;
         }
-        return await response.json();
     }
 
     static async post(endpoint, data) {
