@@ -451,7 +451,6 @@ body {
     flex-direction: column;
     gap: 8px;
     justify-content: flex-start;
-    padding: 4px 0;
 }
 
 .preview-info-item {
