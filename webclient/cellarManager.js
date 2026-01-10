@@ -391,12 +391,69 @@ class CellarManager {
         // Use setTimeout to ensure DOM is updated
         setTimeout(() => {
             this.setupCellarPanelListeners();
+            this.setCellarPanelMaxHeights();
         }, 0);
         
         // Start image rotation for all previews after rendering
         setTimeout(() => {
             this.startImageRotation();
         }, 0);
+    }
+
+    setCellarPanelMaxHeights() {
+        const panels = document.querySelectorAll('.cellar-panel');
+        panels.forEach(panel => {
+            const preview = panel.querySelector('.cellar-panel-preview');
+            const imageColumn = panel.querySelector('.preview-image-column');
+            const panelInfo = panel.querySelector('.cellar-panel-info');
+            
+            if (preview && imageColumn && panelInfo) {
+                // Get the width of the preview container (accounting for padding)
+                const previewWidth = preview.offsetWidth - 24; // Subtract 12px padding on each side (12px * 2)
+                
+                // Image column is 33.333% of preview width
+                const imageColumnWidth = previewWidth * 0.333333;
+                
+                // Each image is square (aspect-ratio: 1), so height = width
+                // 3 images = 3 * imageColumnWidth + gaps between images (2 * 4px) + container padding (4px * 2 = 8px)
+                const threeImageHeights = (3 * imageColumnWidth) + (2 * 4) + 8;
+                
+                // Add preview padding (12px top + 12px bottom = 24px)
+                const previewHeight = threeImageHeights + 24;
+                
+                // Get panel info height (cellar name panel)
+                const panelInfoHeight = panelInfo.offsetHeight;
+                
+                // Set max-height on the entire panel = 3 image heights + panel info height
+                const totalHeight = previewHeight + panelInfoHeight;
+                panel.style.maxHeight = `${totalHeight}px`;
+            }
+        });
+        
+        // Set up resize handler to recalculate on window resize (only once)
+        if (!this.panelHeightResizeHandler) {
+            this.panelHeightResizeHandler = () => {
+                // Remove the setCellarPanelMaxHeights call to avoid infinite loop
+                // Just recalculate the heights directly
+                const panels = document.querySelectorAll('.cellar-panel');
+                panels.forEach(panel => {
+                    const preview = panel.querySelector('.cellar-panel-preview');
+                    const imageColumn = panel.querySelector('.preview-image-column');
+                    const panelInfo = panel.querySelector('.cellar-panel-info');
+                    
+                    if (preview && imageColumn && panelInfo) {
+                        const previewWidth = preview.offsetWidth - 24;
+                        const imageColumnWidth = previewWidth * 0.333333;
+                        const threeImageHeights = (3 * imageColumnWidth) + (2 * 4) + 8;
+                        const previewHeight = threeImageHeights + 24;
+                        const panelInfoHeight = panelInfo.offsetHeight;
+                        const totalHeight = previewHeight + panelInfoHeight;
+                        panel.style.maxHeight = `${totalHeight}px`;
+                    }
+                });
+            };
+            window.addEventListener('resize', this.panelHeightResizeHandler);
+        }
     }
 
     getCellarLabelImages(cellar) {
@@ -461,10 +518,9 @@ class CellarManager {
         // Create stacked image container with multiple square images
         let imagesHtml = '';
         if (labelImages.length > 0) {
-            // Show 3-5 images stacked on top of each other, rotating through all images
-            // Calculate how many can fit based on container height (show fewer if limited space)
-            const maxStacked = Math.min(labelImages.length, 5);
-            const numToShow = Math.max(3, maxStacked); // Show at least 3, up to 5
+            // Show exactly 3 images stacked on top of each other, rotating through all images
+            // This ensures consistent card height
+            const numToShow = 3;
             for (let i = 0; i < numToShow; i++) {
                 const imgUrl = labelImages[i % labelImages.length];
                 imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(imgUrl)}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
