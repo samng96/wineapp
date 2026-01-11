@@ -4,7 +4,9 @@ from typing import Dict, List, Optional, Tuple
 from server.utils import generate_id, get_current_timestamp
 from server.models import WineInstance, WineReference
 from server.data.storage_serializers import serialize_wine_instance, deserialize_wine_instance
-from server.cellars import find_cellar_by_id, save_cellars, load_cellars, update_and_save_cellar
+from server.cellars import find_cellar_by_id, load_cellars
+from server.data.storage_serializers import serialize_cellar
+from server.dynamo.storage import update_cellar as dynamodb_update_cellar
 from server.dynamo.storage import (
     load_wine_instances as dynamodb_load_wine_instances,
     save_wine_instances as dynamodb_save_wine_instances,
@@ -180,7 +182,8 @@ def create_wine_instance():
             try:
                 cellar.assign_wine_to_position(shelf_index, side, position, instance)
                 # Save cellar
-                update_and_save_cellar(cellar)
+                cellar_data = serialize_cellar(cellar)
+                dynamodb_update_cellar(cellar_data)
             except ValueError as e:
                 return jsonify({'error': str(e)}), 400
     
@@ -292,7 +295,8 @@ def delete_wine_instance(instance_id: str):
         if shelf_index is not None:
             cellar.remove_wine_from_position(shelf_index, side, position)
             # Save cellar
-            update_and_save_cellar(cellar)
+            cellar_data = serialize_cellar(cellar)
+            dynamodb_update_cellar(cellar_data)
     
     # Delete from DynamoDB
     dynamodb_delete_wine_instance(instance_id)
@@ -329,7 +333,8 @@ def consume_wine_instance(instance_id: str):
         if shelf_index is not None:
             cellar.remove_wine_from_position(shelf_index, side, position)
             # Save cellar
-            update_and_save_cellar(cellar)
+            cellar_data = serialize_cellar(cellar)
+            dynamodb_update_cellar(cellar_data)
     
     # Clear location since it's no longer in the cellar
     instance.location = None
@@ -428,7 +433,8 @@ def update_wine_instance_location(instance_id: str):
         new_location_tuple = (cellar, shelf, position, is_front)
         
         # Save cellar
-        update_and_save_cellar(cellar)
+        cellar_data = serialize_cellar(cellar)
+        dynamodb_update_cellar(cellar_data)
     
     instance.location = new_location_tuple
     
@@ -526,7 +532,8 @@ def assign_unshelved_to_cellar(instance_id: str):
     new_location_tuple = (cellar, shelf, position, is_front)
     
     # Save cellar
-    update_and_save_cellar(cellar)
+    cellar_data = serialize_cellar(cellar)
+    dynamodb_update_cellar(cellar_data)
     
     instance.location = new_location_tuple
     

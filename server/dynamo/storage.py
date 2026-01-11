@@ -59,8 +59,17 @@ def load_cellars() -> List[Dict[str, Any]]:
         raise
 
 
+def create_cellar(cellar: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a new cellar in DynamoDB"""
+    dynamodb = get_dynamodb_resource()
+    table = dynamodb.Table(CELLARS_TABLE)
+    item = _prepare_item(cellar)
+    table.put_item(Item=item)
+    return item
+
+
 def save_cellars(cellars: List[Dict[str, Any]]):
-    """Save cellars to DynamoDB (accepts serialized dictionaries)"""
+    """Save cellars to DynamoDB (accepts serialized dictionaries) - DEPRECATED: Use create_cellar/update_cellar instead"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(CELLARS_TABLE)
     

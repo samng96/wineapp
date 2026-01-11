@@ -6,7 +6,7 @@ from server.models import Cellar, Shelf
 from server.data.storage_serializers import serialize_cellar, deserialize_cellar
 from server.dynamo.storage import (
     load_cellars as dynamodb_load_cellars,
-    save_cellars as dynamodb_save_cellars,
+    create_cellar as dynamodb_create_cellar,
     get_cellar_by_id as dynamodb_get_cellar_by_id,
     update_cellar as dynamodb_update_cellar,
     delete_cellar as dynamodb_delete_cellar
@@ -15,7 +15,6 @@ from server.dynamo.storage import (
 cellars_bp = Blueprint('cellars', __name__)
 
 
-# Helper functions
 def load_cellars() -> List[Cellar]:
     """Load cellars from DynamoDB as Cellar model objects with WineInstance objects resolved"""
     data = dynamodb_load_cellars()
@@ -29,29 +28,17 @@ def load_cellars() -> List[Cellar]:
     return [deserialize_cellar(c, wine_instances_dict) for c in data]
 
 
-def save_cellars(cellars: List[Cellar]):
-    """Save cellars to DynamoDB (accepts Cellar model objects)"""
-    data = [serialize_cellar(c) for c in cellars]
-    dynamodb_save_cellars(data)
-
-
 def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
-    """Find a cellar by ID (returns Cellar model object)"""
+    """Get a cellar by ID (returns Cellar model object)"""
     data = dynamodb_get_cellar_by_id(cellar_id)
     if not data:
         return None
-    
+
     # Load wine instances to resolve references
     from server.wine_instances import load_wine_instances
     wine_instances_list = load_wine_instances()
     wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
     return deserialize_cellar(data, wine_instances_dict)
-
-
-def update_and_save_cellar(cellar: Cellar):
-    """Helper function to update and save a cellar in DynamoDB"""
-    data = serialize_cellar(cellar)
-    dynamodb_update_cellar(data)
 
 
 # Endpoints
@@ -121,12 +108,11 @@ def create_cellar():
         updated_at=timestamp
     )
     
-    # Save to file
-    cellars = load_cellars()
-    cellars.append(cellar)
-    save_cellars(cellars)
+    # Save to DynamoDB
+    data = serialize_cellar(cellar)
+    dynamodb_create_cellar(data)
     
-    return jsonify(serialize_cellar(cellar)), 201
+    return jsonify(data), 201
 
 
 """
@@ -188,10 +174,11 @@ def update_cellar(cellar_id: str):
     cellar.version += 1
     cellar.updated_at = get_current_timestamp()
     
-    # Save to file
-    update_and_save_cellar(cellar)
+    # Update in DynamoDB
+    data = serialize_cellar(cellar)
+    dynamodb_update_cellar(data)
     
-    return jsonify(serialize_cellar(cellar))
+    return jsonify(data)
 
 
 @cellars_bp.route('/cellars/<cellar_id>', methods=['DELETE'])
@@ -204,7 +191,7 @@ def delete_cellar(cellar_id: str):
     # Move all wine instances in this cellar to unshelved
     from server.wine_instances import load_wine_instances, save_wine_instances
     
-    all_instances = load_wine_instances(cellars=[cellar])
+    all_instances = load_wine_instances()
     for instance in all_instances:
         if instance is not None:
             if instance.location is not None and instance.consumed is False:
