@@ -29,7 +29,7 @@ from server.dynamo.storage import (
 )
 from server.dynamo.setup_tables import get_dynamodb_client
 from server.models import Shelf, Cellar, WineReference, WineInstance, register_wine_reference, clear_wine_references_registry
-from server.storage import serialize_cellar, serialize_wine_reference, serialize_wine_instance
+from server.data.storage_serializers import serialize_cellar, serialize_wine_reference, serialize_wine_instance
 from server.utils import generate_id, get_current_timestamp
 
 

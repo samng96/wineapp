@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional
 from server.utils import generate_id, get_current_timestamp
 from server.models import Cellar, Shelf
-from server.storage import serialize_cellar, deserialize_cellar
+from server.data.storage_serializers import serialize_cellar, deserialize_cellar
 from server.dynamo.storage import (
     load_cellars as dynamodb_load_cellars,
     save_cellars as dynamodb_save_cellars,

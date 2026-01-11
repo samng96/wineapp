@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional
 from server.utils import generate_id, get_current_timestamp
 from server.models import WineReference, register_wine_reference
-from server.storage import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
+from server.data.storage_serializers import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
 from server.dynamo.storage import (
     load_wine_references as dynamodb_load_wine_references,
     save_wine_references as dynamodb_save_wine_references,

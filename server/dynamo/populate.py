@@ -6,7 +6,7 @@ import re
 from urllib.parse import quote
 from server.utils import generate_id, get_current_timestamp
 from server.models import Shelf, Cellar, WineReference, WineInstance, register_wine_reference
-from server.storage import serialize_cellar, serialize_wine_reference, serialize_wine_instance
+from server.data.storage_serializers import serialize_cellar, serialize_wine_reference, serialize_wine_instance
 from server.dynamo.storage import (
     save_cellars as dynamodb_save_cellars,
     save_wine_references as dynamodb_save_wine_references,
