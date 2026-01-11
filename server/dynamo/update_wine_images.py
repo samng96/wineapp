@@ -3,13 +3,18 @@
 Update wine reference label images by searching Vivino via Google Images
 Focuses on wine labels only, not full bottles
 """
-import json
 import os
+import sys
 import time
 
-# File paths
-DATA_DIR = os.path.dirname(__file__)
-WINE_REFERENCES_FILE = os.path.join(DATA_DIR, 'wine-references.json')
+# Add parent directory to path to import server modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from server.dynamo.storage import (
+    load_wine_references as dynamodb_load_wine_references,
+    update_wine_reference as dynamodb_update_wine_reference
+)
+from server.storage import deserialize_wine_reference, serialize_wine_reference
 
 def search_vivino_label(query):
     """
@@ -152,10 +157,13 @@ def build_search_query(wine):
     return ' '.join(parts)
 
 def update_wine_images():
-    """Update all wine reference label images"""
-    print("Loading wine references...")
-    with open(WINE_REFERENCES_FILE, 'r', encoding='utf-8') as f:
-        wine_references = json.load(f)
+    """Update all wine reference label images in DynamoDB"""
+    print("Loading wine references from DynamoDB...")
+    wine_references = dynamodb_load_wine_references()
+    
+    if not wine_references:
+        print("No wine references found in DynamoDB.")
+        return False
     
     print(f"Found {len(wine_references)} wine references")
     print("Starting to update image URLs from Vivino (via Google Images)...")
@@ -169,6 +177,11 @@ def update_wine_images():
         wine_id = wine.get('id', 'unknown')
         wine_name = wine.get('name', 'Unknown')
         
+        # Skip if already has an image URL
+        if wine.get('labelImageUrl'):
+            print(f"[{i}/{len(wine_references)}] Skipping {wine_name} (already has image)")
+            continue
+        
         # Build search query
         search_query = build_search_query(wine)
         print(f"[{i}/{len(wine_references)}] Searching for: {search_query}")
@@ -178,8 +191,9 @@ def update_wine_images():
             image_url = search_vivino_label(search_query)
             
             if image_url:
-                old_url = wine.get('labelImageUrl', 'N/A')
                 wine['labelImageUrl'] = image_url
+                # Update in DynamoDB
+                dynamodb_update_wine_reference(wine)
                 print(f"  ✓ Updated: {image_url[:80]}...")
                 updated_count += 1
             else:
@@ -191,11 +205,6 @@ def update_wine_images():
         
         # Rate limiting - be respectful
         time.sleep(0.5)  # Wait 0.5 seconds between requests
-    
-    # Save updated references
-    print(f"\nSaving updated wine references...")
-    with open(WINE_REFERENCES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(wine_references, f, indent=2, ensure_ascii=False)
     
     print(f"\n✓ Complete!")
     print(f"  Updated: {updated_count}")
