@@ -1,6 +1,5 @@
 """Create DynamoDB tables for WineApp"""
 import os
-import sys
 import boto3
 from botocore.exceptions import ClientError
 from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE

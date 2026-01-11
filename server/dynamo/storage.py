@@ -1,10 +1,8 @@
 """DynamoDB storage adapter for WineApp"""
 import os
-import json
 from typing import List, Optional, Dict, Any
 import boto3
 from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
 
 # DynamoDB configuration
 DYNAMODB_ENDPOINT = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
