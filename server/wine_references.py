@@ -55,7 +55,7 @@ Response Format: Array of wine reference objects, each containing:
 - updatedAt (str): ISO 8601 timestamp when reference was last updated
 """
 @wine_references_bp.route('/wine-references', methods=['GET'])
-def get_wine_references():
+def _get_wine_references():
     """Get all wine references"""
     references = load_wine_references()
     return jsonify([serialize_wine_reference(r) for r in references])
@@ -77,7 +77,7 @@ Expected POST Parameters:
 - labelImageUrl (str, optional): URL to the wine label image in blob storage
 """
 @wine_references_bp.route('/wine-references', methods=['POST'])
-def create_wine_reference():
+def _create_wine_reference():
     """Create a new wine reference"""
     data = request.json
     
@@ -146,7 +146,7 @@ Response Format: Wine reference object containing all fields from GET /wine-refe
 Error Response (404): {'error': 'Wine reference not found'} if reference doesn't exist
 """
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['GET'])
-def get_wine_reference(reference_id: str):
+def _get_wine_reference(reference_id: str):
     """Get a specific wine reference with all instances"""
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
@@ -181,7 +181,7 @@ Expected PUT Parameters (all optional):
 - labelImageUrl (str, optional): Updated URL to label image
 """
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['PUT'])
-def update_wine_reference(reference_id: str):
+def _update_wine_reference(reference_id: str):
     """Update a wine reference"""
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
@@ -226,7 +226,7 @@ def update_wine_reference(reference_id: str):
 
 
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['DELETE'])
-def delete_wine_reference(reference_id: str):
+def _delete_wine_reference(reference_id: str):
     """Delete a wine reference"""
     reference = find_wine_reference_by_id(reference_id)
     if not reference:

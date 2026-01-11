@@ -58,7 +58,7 @@ Response Format: Array of cellar objects, each containing:
 - updatedAt (str): ISO 8601 timestamp when cellar was last updated
 """
 @cellars_bp.route('/cellars', methods=['GET'])
-def get_cellars():
+def _get_cellars():
     """Get all cellars"""
     cellars = load_cellars()
     return jsonify([serialize_cellar(c) for c in cellars])
@@ -75,7 +75,7 @@ Expected POST Parameters:
 - temperature (float, optional): Temperature in Fahrenheit for the cellar
 """
 @cellars_bp.route('/cellars', methods=['POST'])
-def create_cellar():
+def _create_cellar():
     """Create a new cellar"""
     data = request.json
     
@@ -133,7 +133,7 @@ Response Format: Cellar object containing:
 Error Response (404): {'error': 'Cellar not found'} if cellar doesn't exist
 """
 @cellars_bp.route('/cellars/<cellar_id>', methods=['GET'])
-def get_cellar(cellar_id: str):
+def _get_cellar(cellar_id: str):
     """Get a specific cellar by ID"""
     cellar = find_cellar_by_id(cellar_id)
     if not cellar:
@@ -152,7 +152,7 @@ Expected PUT Parameters (all optional):
 Note: shelves cannot be updated via this endpoint (bulk updates not allowed).
 """
 @cellars_bp.route('/cellars/<cellar_id>', methods=['PUT'])
-def update_cellar(cellar_id: str):
+def _update_cellar(cellar_id: str):
     """Update a cellar"""
     cellar = find_cellar_by_id(cellar_id)
     if not cellar:
@@ -182,7 +182,7 @@ def update_cellar(cellar_id: str):
 
 
 @cellars_bp.route('/cellars/<cellar_id>', methods=['DELETE'])
-def delete_cellar(cellar_id: str):
+def _delete_cellar(cellar_id: str):
     """Delete a cellar"""
     cellar = find_cellar_by_id(cellar_id)
     if not cellar:

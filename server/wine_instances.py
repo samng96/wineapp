@@ -105,7 +105,7 @@ Response Format: Array of wine instance objects, each containing:
 - updatedAt (str): ISO 8601 timestamp when instance was last updated
 """
 @wine_instances_bp.route('/wine-instances', methods=['GET'])
-def get_wine_instances():
+def _get_wine_instances():
     """Get all wine instances"""
     cellars = load_cellars()
     instances = load_wine_instances(cellars=cellars)
@@ -131,7 +131,7 @@ Expected POST Parameters:
   If not provided, instance will be created as unshelved (location: null)
 """
 @wine_instances_bp.route('/wine-instances', methods=['POST'])
-def create_wine_instance():
+def _create_wine_instance():
     """Create a new wine instance"""
     from server.wine_references import find_wine_reference_by_id
     
@@ -222,7 +222,7 @@ Response Format: Wine instance object containing:
 Error Response (404): {'error': 'Wine instance not found'} if instance doesn't exist
 """
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['GET'])
-def get_wine_instance(instance_id: str):
+def _get_wine_instance(instance_id: str):
     """Get a specific wine instance"""
     instance = find_wine_instance_by_id(instance_id)
     if not instance:
@@ -243,7 +243,7 @@ Note: referenceId and location cannot be updated via this endpoint.
 Use PUT /wine-instances/<instance_id>/location to update location.
 """
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['PUT'])
-def update_wine_instance(instance_id: str):
+def _update_wine_instance(instance_id: str):
     """Update a wine instance"""
     instance = find_wine_instance_by_id(instance_id)
     if not instance:
@@ -270,7 +270,7 @@ def update_wine_instance(instance_id: str):
 
 
 @wine_instances_bp.route('/wine-instances/<instance_id>', methods=['DELETE'])
-def delete_wine_instance(instance_id: str):
+def _delete_wine_instance(instance_id: str):
     """Delete a wine instance"""
     instance = find_wine_instance_by_id(instance_id)
     if not instance:
@@ -305,7 +305,7 @@ def delete_wine_instance(instance_id: str):
 
 
 @wine_instances_bp.route('/wine-instances/<instance_id>/consume', methods=['POST'])
-def consume_wine_instance(instance_id: str):
+def _consume_wine_instance(instance_id: str):
     """Mark a wine instance as consumed (soft delete)"""
     instance = find_wine_instance_by_id(instance_id)
     if not instance:
@@ -363,7 +363,7 @@ Expected PUT Parameters:
     } to assign to a cellar position
 """
 @wine_instances_bp.route('/wine-instances/<instance_id>/location', methods=['PUT'])
-def update_wine_instance_location(instance_id: str):
+def _update_wine_instance_location(instance_id: str):
     """Update wine instance location"""
     instance = find_wine_instance_by_id(instance_id)
     if not instance:
@@ -459,7 +459,7 @@ but filtered to only include instances where:
 Each instance object contains the same fields as described in GET /wine-instances
 """
 @wine_instances_bp.route('/unshelved', methods=['GET'])
-def get_unshelved():
+def _get_unshelved():
     """Get all unshelved wine instances"""
     cellars = load_cellars()
     instances = load_wine_instances(cellars=cellars)
@@ -482,7 +482,7 @@ Expected POST Parameters:
   }
 """
 @wine_instances_bp.route('/unshelved/<instance_id>/assign', methods=['POST'])
-def assign_unshelved_to_cellar(instance_id: str):
+def _assign_unshelved_to_cellar(instance_id: str):
     """Assign unshelved wine to a cellar shelf location"""
     instance = find_wine_instance_by_id(instance_id)
     if not instance:
