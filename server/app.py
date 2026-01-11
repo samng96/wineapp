@@ -1,7 +1,7 @@
 """Main Flask application"""
 from flask import Flask
 from flask_cors import CORS
-from server.utils import init_data_files
+from server.dynamo.init_tables import init_dynamodb_tables
 from server.cellars import cellars_bp
 from server.wine_references import wine_references_bp, load_wine_references
 from server.wine_instances import wine_instances_bp
@@ -14,8 +14,8 @@ app.register_blueprint(cellars_bp)
 app.register_blueprint(wine_references_bp)
 app.register_blueprint(wine_instances_bp)
 
-# Initialize data files on startup
-init_data_files()
+# Initialize DynamoDB tables on startup (checks if they exist)
+init_dynamodb_tables()
 
 # Load wine references into the global registry on startup
 # This must happen before loading wine instances, which reference wine references

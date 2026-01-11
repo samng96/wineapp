@@ -1,60 +1,60 @@
 """Cellar management endpoints and helper functions"""
 from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional
-import json
-import os
-from server.utils import (
-    CELLARS_FILE,
-    WINE_INSTANCES_FILE,
-    generate_id,
-    get_current_timestamp
-)
+from server.utils import generate_id, get_current_timestamp
 from server.models import Cellar, Shelf
 from server.storage import serialize_cellar, deserialize_cellar
+from server.dynamo.storage import (
+    load_cellars as dynamodb_load_cellars,
+    save_cellars as dynamodb_save_cellars,
+    get_cellar_by_id as dynamodb_get_cellar_by_id,
+    update_cellar as dynamodb_update_cellar,
+    delete_cellar as dynamodb_delete_cellar
+)
 
 cellars_bp = Blueprint('cellars', __name__)
 
 
 # Helper functions
 def load_cellars() -> List[Cellar]:
-    """Load cellars from JSON file as Cellar model objects with WineInstance objects resolved"""
-    if os.path.exists(CELLARS_FILE):
-        with open(CELLARS_FILE, 'r') as f:
-            data = json.load(f)
-            # Load cellars first without wine instances to break circular dependency
-            cellars_temp = [deserialize_cellar(c, {}) for c in data]  # Empty dict for now
-            
-            # Load wine instances with cellars for location resolution
-            from server.wine_instances import load_wine_instances
-            wine_instances_list = load_wine_instances(cellars=cellars_temp)
-            wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
-            
-            # Now reload cellars with resolved wine instances
-            return [deserialize_cellar(c, wine_instances_dict) for c in data]
-    return []
+    """Load cellars from DynamoDB as Cellar model objects with WineInstance objects resolved"""
+    data = dynamodb_load_cellars()
+    # Load cellars first without wine instances to break circular dependency
+    cellars_temp = [deserialize_cellar(c, {}) for c in data]  # Empty dict for now
+    
+    # Load wine instances with cellars for location resolution
+    from server.wine_instances import load_wine_instances
+    wine_instances_list = load_wine_instances(cellars=cellars_temp)
+    wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
+    
+    # Now reload cellars with resolved wine instances
+    return [deserialize_cellar(c, wine_instances_dict) for c in data]
 
 
 def save_cellars(cellars: List[Cellar]):
-    """Save cellars to JSON file (accepts Cellar model objects)"""
+    """Save cellars to DynamoDB (accepts Cellar model objects)"""
     data = [serialize_cellar(c) for c in cellars]
-    with open(CELLARS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    dynamodb_save_cellars(data)
 
 
 def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
     """Find a cellar by ID (returns Cellar model object)"""
-    cellars = load_cellars()
-    return next((c for c in cellars if c.id == cellar_id), None)
+    data = dynamodb_get_cellar_by_id(cellar_id)
+    if not data:
+        return None
+    
+    # Load with wine instances resolved
+    cellars_temp = [deserialize_cellar(data, {})]
+    from server.wine_instances import load_wine_instances
+    wine_instances_list = load_wine_instances(cellars=cellars_temp)
+    wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
+    return deserialize_cellar(data, wine_instances_dict)
 
 
 def update_and_save_cellar(cellar: Cellar):
-    """Helper function to update and save a cellar in the JSON file"""
-    cellars = load_cellars()
-    for i, c in enumerate(cellars):
-        if c.id == cellar.id:
-            cellars[i] = cellar
-            break
-    save_cellars(cellars)
+    """Helper function to update and save a cellar in DynamoDB"""
+    data = serialize_cellar(cellar)
+    dynamodb_update_cellar(data)
 
 
 # Endpoints
@@ -221,8 +221,6 @@ def delete_cellar(cellar_id: str):
     save_wine_instances(all_instances)
     
     # Delete the cellar
-    cellars = load_cellars()
-    cellars = [c for c in cellars if c.id != cellar_id]
-    save_cellars(cellars)
+    dynamodb_delete_cellar(cellar_id)
     
     return jsonify({'message': 'Cellar deleted'}), 200

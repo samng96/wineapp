@@ -1,43 +1,65 @@
 """Pytest configuration and shared fixtures"""
 import pytest
 import os
-import tempfile
-import shutil
+import boto3
 from flask import Flask
 from flask_cors import CORS
 from server.cellars import cellars_bp
 from server.wine_references import wine_references_bp
 from server.wine_instances import wine_instances_bp
 from server.models import clear_wine_references_registry
+from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
+from server.dynamo.setup_tables import get_dynamodb_client
+
+
+@pytest.fixture(scope="session")
+def dynamodb_tables():
+    """Set up DynamoDB Local tables for testing (session scope)"""
+    # Use DynamoDB Local endpoint
+    endpoint = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
+    os.environ['DYNAMODB_ENDPOINT'] = endpoint
+    os.environ['DYNAMODB_REGION'] = 'us-east-1'
+    
+    client = get_dynamodb_client()
+    
+    # Create tables if they don't exist
+    tables = client.list_tables().get('TableNames', [])
+    
+    def create_table_if_not_exists(table_name):
+        """Helper to create a table if it doesn't exist"""
+        if table_name not in tables:
+            try:
+                client.create_table(
+                    TableName=table_name,
+                    KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
+                    AttributeDefinitions=[{'AttributeName': 'id', 'AttributeType': 'S'}],
+                    BillingMode='PAY_PER_REQUEST'
+                )
+                waiter = client.get_waiter('table_exists')
+                waiter.wait(TableName=table_name)
+            except Exception as e:
+                if 'ResourceInUseException' not in str(e):
+                    raise
+    
+    create_table_if_not_exists(CELLARS_TABLE)
+    create_table_if_not_exists(WINE_REFERENCES_TABLE)
+    create_table_if_not_exists(WINE_INSTANCES_TABLE)
+    
+    yield
+    
+    # Cleanup is done by clear_tables fixture before each test
 
 
 @pytest.fixture
-def temp_data_dir():
-    """Create a temporary directory for test data files"""
-    temp_dir = tempfile.mkdtemp()
-    yield temp_dir
-    shutil.rmtree(temp_dir)
-
-
-@pytest.fixture
-def app(temp_data_dir, monkeypatch):
+def app(dynamodb_tables, monkeypatch):
     """Create Flask app with test configuration"""
-    # Set environment variable to use temp directory
+    # Set environment variable for testing
     monkeypatch.setenv('FLASK_ENV', 'testing')
     
-    # Patch the data directory paths
-    import server.utils as utils_module
-    original_data_dir = utils_module.DATA_DIR
-    utils_module.DATA_DIR = temp_data_dir
-    utils_module.CELLARS_FILE = os.path.join(temp_data_dir, 'cellars.json')
-    utils_module.WINE_REFERENCES_FILE = os.path.join(temp_data_dir, 'wine-references.json')
-    utils_module.WINE_INSTANCES_FILE = os.path.join(temp_data_dir, 'wine-instances.json')
-    
-    # Create empty JSON files
-    for filepath in [utils_module.CELLARS_FILE, utils_module.WINE_REFERENCES_FILE, utils_module.WINE_INSTANCES_FILE]:
-        with open(filepath, 'w') as f:
-            import json
-            json.dump([], f)
+    # Ensure DynamoDB Local endpoint is set
+    endpoint = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
+    monkeypatch.setenv('DYNAMODB_ENDPOINT', endpoint)
+    monkeypatch.setenv('DYNAMODB_REGION', 'us-east-1')
     
     # Clear wine references registry before each test
     clear_wine_references_registry()
@@ -53,28 +75,33 @@ def app(temp_data_dir, monkeypatch):
     app.register_blueprint(wine_instances_bp)
     
     yield app
-    
-    # Restore original data directory
-    utils_module.DATA_DIR = original_data_dir
-    utils_module.CELLARS_FILE = os.path.join(original_data_dir, 'cellars.json')
-    utils_module.WINE_REFERENCES_FILE = os.path.join(original_data_dir, 'wine-references.json')
-    utils_module.WINE_INSTANCES_FILE = os.path.join(original_data_dir, 'wine-instances.json')
 
 
 @pytest.fixture(autouse=True)
-def reset_test_data(monkeypatch):
-    """Reset test data before each test"""
-    # Clear wine references registry before each test
-    clear_wine_references_registry()
+def clear_tables(dynamodb_tables):
+    """Clear all DynamoDB tables before each test"""
+    endpoint = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
+    dynamodb = boto3.resource(
+        'dynamodb',
+        endpoint_url=endpoint,
+        region_name='us-east-1',
+        aws_access_key_id='dummy',
+        aws_secret_access_key='dummy'
+    )
     
-    # Ensure JSON files are empty
-    import server.utils as utils_module
-    if hasattr(utils_module, 'CELLARS_FILE'):
-        for filepath in [utils_module.CELLARS_FILE, utils_module.WINE_REFERENCES_FILE, utils_module.WINE_INSTANCES_FILE]:
-            if os.path.exists(filepath):
-                with open(filepath, 'w') as f:
-                    import json
-                    json.dump([], f)
+    # Clear all items from all tables
+    for table_name in [CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE]:
+        table = dynamodb.Table(table_name)
+        try:
+            response = table.scan()
+            with table.batch_writer() as batch:
+                for item in response.get('Items', []):
+                    batch.delete_item(Key={'id': item['id']})
+        except Exception:
+            pass  # Table might not exist yet
+    
+    # Clear wine references registry
+    clear_wine_references_registry()
 
 
 @pytest.fixture

@@ -1,35 +1,31 @@
 """Wine reference management endpoints and helper functions"""
 from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional
-import json
-import os
-from server.utils import (
-    WINE_REFERENCES_FILE,
-    WINE_INSTANCES_FILE,
-    generate_id,
-    get_current_timestamp
-)
+from server.utils import generate_id, get_current_timestamp
 from server.models import WineReference, register_wine_reference
 from server.storage import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
+from server.dynamo.storage import (
+    load_wine_references as dynamodb_load_wine_references,
+    save_wine_references as dynamodb_save_wine_references,
+    get_wine_reference_by_id as dynamodb_get_wine_reference_by_id,
+    update_wine_reference as dynamodb_update_wine_reference,
+    delete_wine_reference as dynamodb_delete_wine_reference
+)
 
 wine_references_bp = Blueprint('wine_references', __name__)
 
 
 # Helper functions
 def load_wine_references() -> List[WineReference]:
-    """Load wine references from JSON file as WineReference model objects"""
-    if os.path.exists(WINE_REFERENCES_FILE):
-        with open(WINE_REFERENCES_FILE, 'r') as f:
-            data = json.load(f)
-            return [deserialize_wine_reference(r) for r in data]
-    return []
+    """Load wine references from DynamoDB as WineReference model objects"""
+    data = dynamodb_load_wine_references()
+    return [deserialize_wine_reference(r) for r in data]
 
 
 def save_wine_references(references: List[WineReference]):
-    """Save wine references to JSON file (accepts WineReference model objects)"""
+    """Save wine references to DynamoDB (accepts WineReference model objects)"""
     data = [serialize_wine_reference(r) for r in references]
-    with open(WINE_REFERENCES_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    dynamodb_save_wine_references(data)
 
 
 def find_wine_reference_by_id(reference_id: str) -> Optional[WineReference]:
@@ -120,7 +116,8 @@ def create_wine_reference():
     # Register in global registry
     register_wine_reference(reference)
     
-    # Save to file
+    # Save to DynamoDB
+    references = load_wine_references()
     references.append(reference)
     save_wine_references(references)
     
@@ -221,13 +218,9 @@ def update_wine_reference(reference_id: str):
     # Update in global registry
     register_wine_reference(reference)
     
-    # Save to file
-    references = load_wine_references()
-    for i, r in enumerate(references):
-        if r.id == reference_id:
-            references[i] = reference
-            break
-    save_wine_references(references)
+    # Save to DynamoDB
+    data = serialize_wine_reference(reference)
+    dynamodb_update_wine_reference(data)
     
     return jsonify(serialize_wine_reference(reference))
 
@@ -244,9 +237,7 @@ def delete_wine_reference(reference_id: str):
     if reference_id in _wine_references_registry:
         del _wine_references_registry[reference_id]
     
-    # Remove from file
-    references = load_wine_references()
-    references = [r for r in references if r.id != reference_id]
-    save_wine_references(references)
+    # Remove from DynamoDB
+    dynamodb_delete_wine_reference(reference_id)
     
     return jsonify({'message': 'Wine reference deleted'}), 200

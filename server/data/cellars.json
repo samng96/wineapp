@@ -545,5 +545,88 @@
     "version": 1,
     "createdAt": "2026-01-10T05:10:35.657758Z",
     "updatedAt": "2026-01-10T05:10:35.657758Z"
+  },
+  {
+    "id": "ffe322ec-927a-410b-9f7d-b47096215658",
+    "name": "Holly's Fridge",
+    "temperature": 60,
+    "capacity": 34,
+    "shelves": [
+      [
+        5,
+        true
+      ],
+      [
+        5,
+        true
+      ],
+      [
+        7,
+        false
+      ],
+      [
+        7,
+        false
+      ]
+    ],
+    "winePositions": {
+      "0": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "1": {
+        "front": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "back": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "2": {
+        "single": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "3": {
+        "single": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "version": 1,
+    "createdAt": "2026-01-11T02:09:57.866618Z",
+    "updatedAt": "2026-01-11T02:09:57.866618Z"
   }
 ]

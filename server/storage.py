@@ -32,12 +32,22 @@ def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[
     """
     if not isinstance(shelf_data, list) or len(shelf_data) != 2:
         raise ValueError("Shelf must be a list of [Positions, IsDouble]")
-    if not isinstance(shelf_data[0], int) or shelf_data[0] <= 0:
+    
+    # Handle Decimal from DynamoDB - convert to int
+    from decimal import Decimal
+    positions_val = shelf_data[0]
+    if isinstance(positions_val, Decimal):
+        positions = int(positions_val)
+    elif isinstance(positions_val, int):
+        positions = positions_val
+    else:
+        raise ValueError("Positions must be a positive integer")
+    
+    if positions <= 0:
         raise ValueError("Positions must be a positive integer")
     if not isinstance(shelf_data[1], bool):
         raise ValueError("IsDouble must be a boolean")
     
-    positions = shelf_data[0]
     is_double = shelf_data[1]
     
     # Initialize empty wine_positions
@@ -96,13 +106,21 @@ def deserialize_cellar(data: Dict[str, Any], wine_instances: Optional[Dict[str, 
         wine_positions_ids = wine_positions_data.get(shelf_key, {})
         shelves.append(deserialize_shelf_from_tuple(shelf_tuple, wine_positions_ids, wine_instances))
     
+    # Handle Decimal from DynamoDB for version and capacity
+    from decimal import Decimal
+    version_val = data.get('version', 1)
+    version = int(version_val) if isinstance(version_val, Decimal) else version_val
+    
+    capacity_val = data.get('capacity')
+    capacity = int(capacity_val) if capacity_val is not None and isinstance(capacity_val, Decimal) else capacity_val
+    
     cellar = Cellar(
         id=data['id'],
         name=data['name'],
         shelves=shelves,
         temperature=data.get('temperature'),
-        capacity=data.get('capacity'),  # Will be calculated in __post_init__ if None
-        version=data.get('version', 1),
+        capacity=capacity,  # Will be calculated in __post_init__ if None
+        version=version,
         created_at=data.get('createdAt'),
         updated_at=data.get('updatedAt')
     )
@@ -132,19 +150,30 @@ def serialize_wine_reference(reference: WineReference) -> Dict[str, Any]:
 
 def deserialize_wine_reference(data: Dict[str, Any]) -> WineReference:
     """Create WineReference from dictionary and auto-register in global registry"""
+    # Handle Decimal from DynamoDB for version, vintage, rating
+    from decimal import Decimal
+    version_val = data.get('version', 1)
+    version = int(version_val) if isinstance(version_val, Decimal) else version_val
+    
+    vintage_val = data.get('vintage')
+    vintage = int(vintage_val) if vintage_val is not None and isinstance(vintage_val, Decimal) else vintage_val
+    
+    rating_val = data.get('rating')
+    rating = int(rating_val) if rating_val is not None and isinstance(rating_val, Decimal) else rating_val
+    
     reference = WineReference(
         id=data['id'],
         name=data['name'],
         type=data['type'],
-        vintage=data.get('vintage'),
+        vintage=vintage,
         producer=data.get('producer'),
         varietals=data.get('varietals'),
         region=data.get('region'),
         country=data.get('country'),
-        rating=data.get('rating'),
+        rating=rating,
         tasting_notes=data.get('tastingNotes'),
         label_image_url=data.get('labelImageUrl'),
-        version=data.get('version', 1),
+        version=version,
         created_at=data.get('createdAt'),
         updated_at=data.get('updatedAt')
     )
@@ -222,7 +251,12 @@ def deserialize_wine_instance(data: Dict[str, Any], cellars: Optional[List[Cella
                 raise ValueError(f"Shelf index {shelf_index} out of range for cellar {cellar_id}")
             shelf = cellar.shelves[shelf_index]
             
-            location = (cellar, shelf, position, is_front)
+            location = (cellar, shelf, pos, is_front)
+    
+    # Handle Decimal from DynamoDB for version
+    from decimal import Decimal
+    version_val = data.get('version', 1)
+    version = int(version_val) if isinstance(version_val, Decimal) else version_val
     
     return WineInstance(
         id=data['id'],
@@ -234,7 +268,7 @@ def deserialize_wine_instance(data: Dict[str, Any], cellars: Optional[List[Cella
         consumed=data.get('consumed', False),
         consumed_date=data.get('consumedDate'),
         stored_date=data.get('storedDate'),
-        version=data.get('version', 1),
+        version=version,
         created_at=data.get('createdAt'),
         updated_at=data.get('updatedAt')
     )

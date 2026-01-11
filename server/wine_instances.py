@@ -1,59 +1,52 @@
 """Wine instance management endpoints and helper functions"""
 from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional, Tuple
-import json
-import os
-from server.utils import (
-    WINE_INSTANCES_FILE,
-    WINE_REFERENCES_FILE,
-    generate_id,
-    get_current_timestamp
-)
+from server.utils import generate_id, get_current_timestamp
 from server.models import WineInstance, WineReference
 from server.storage import serialize_wine_instance, deserialize_wine_instance
 from server.cellars import find_cellar_by_id, save_cellars, load_cellars, update_and_save_cellar
+from server.dynamo.storage import (
+    load_wine_instances as dynamodb_load_wine_instances,
+    save_wine_instances as dynamodb_save_wine_instances,
+    get_wine_instance_by_id as dynamodb_get_wine_instance_by_id,
+    update_wine_instance as dynamodb_update_wine_instance,
+    delete_wine_instance as dynamodb_delete_wine_instance
+)
 
 wine_instances_bp = Blueprint('wine_instances', __name__)
 
 
 # Helper functions
 def load_wine_instances(cellars: Optional[List] = None) -> List[WineInstance]:
-    """Load wine instances from JSON file as WineInstance model objects
+    """Load wine instances from DynamoDB as WineInstance model objects
     
     Args:
         cellars: Optional list of Cellar objects for resolving location tuples.
                  If None, location will be None for all instances.
     """
-    if os.path.exists(WINE_INSTANCES_FILE):
-        with open(WINE_INSTANCES_FILE, 'r') as f:
-            data = json.load(f)
-            return [deserialize_wine_instance(i, cellars) for i in data]
-    return []
+    data = dynamodb_load_wine_instances()
+    return [deserialize_wine_instance(i, cellars) for i in data]
 
 
 def save_wine_instances(instances: List[WineInstance]):
-    """Save wine instances to JSON file (accepts WineInstance model objects)"""
+    """Save wine instances to DynamoDB (accepts WineInstance model objects)"""
     data = [serialize_wine_instance(i) for i in instances if i is not None]
-    with open(WINE_INSTANCES_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    dynamodb_save_wine_instances(data)
 
 
 def find_wine_instance_by_id(instance_id: str) -> Optional[WineInstance]:
     """Find a wine instance by ID (returns WineInstance model object)"""
     cellars = load_cellars()
-    instances = load_wine_instances(cellars=cellars)
-    return next((i for i in instances if i.id == instance_id), None)
+    data = dynamodb_get_wine_instance_by_id(instance_id)
+    if not data:
+        return None
+    return deserialize_wine_instance(data, cellars)
 
 
 def _update_and_save_wine_instance(instance: WineInstance):
-    """Helper function to update and save a wine instance in the JSON file"""
-    cellars = load_cellars()
-    instances = load_wine_instances(cellars=cellars)
-    for i, inst in enumerate(instances):
-        if inst.id == instance.id:
-            instances[i] = instance
-            break
-    save_wine_instances(instances)
+    """Helper function to update and save a wine instance in DynamoDB"""
+    data = serialize_wine_instance(instance)
+    dynamodb_update_wine_instance(data)
 
 
 def _location_dict_to_tuple(location_dict: Dict, cellars: List) -> Optional[Tuple]:
@@ -197,7 +190,7 @@ def create_wine_instance():
     instance.created_at = timestamp
     instance.updated_at = timestamp
     
-    # Save to file
+    # Save to DynamoDB
     cellars = load_cellars()
     instances = load_wine_instances(cellars=cellars)
     instances.append(instance)
@@ -301,11 +294,8 @@ def delete_wine_instance(instance_id: str):
             # Save cellar
             update_and_save_cellar(cellar)
     
-    # Delete from file
-    cellars = load_cellars()
-    instances = load_wine_instances(cellars=cellars)
-    instances = [i for i in instances if i.id != instance_id]
-    save_wine_instances(instances)
+    # Delete from DynamoDB
+    dynamodb_delete_wine_instance(instance_id)
     
     return jsonify({'message': 'Wine instance deleted'}), 200
 
