@@ -19,15 +19,13 @@ cellars_bp = Blueprint('cellars', __name__)
 def load_cellars() -> List[Cellar]:
     """Load cellars from DynamoDB as Cellar model objects with WineInstance objects resolved"""
     data = dynamodb_load_cellars()
-    # Load cellars first without wine instances to break circular dependency
-    cellars_temp = [deserialize_cellar(c, {}) for c in data]  # Empty dict for now
     
-    # Load wine instances with cellars for location resolution
+    # Load wine instances to resolve references in cellars
     from server.wine_instances import load_wine_instances
-    wine_instances_list = load_wine_instances(cellars=cellars_temp)
+    wine_instances_list = load_wine_instances()
     wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
     
-    # Now reload cellars with resolved wine instances
+    # Deserialize cellars with resolved wine instances
     return [deserialize_cellar(c, wine_instances_dict) for c in data]
 
 
@@ -43,10 +41,9 @@ def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
     if not data:
         return None
     
-    # Load with wine instances resolved
-    cellars_temp = [deserialize_cellar(data, {})]
+    # Load wine instances to resolve references
     from server.wine_instances import load_wine_instances
-    wine_instances_list = load_wine_instances(cellars=cellars_temp)
+    wine_instances_list = load_wine_instances()
     wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
     return deserialize_cellar(data, wine_instances_dict)
 
