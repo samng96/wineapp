@@ -1,6 +1,9 @@
 """Script to populate DynamoDB with sample data"""
 import random
 import time
+import requests
+import re
+from urllib.parse import quote
 from server.utils import generate_id, get_current_timestamp
 from server.models import Shelf, Cellar, WineReference, WineInstance, register_wine_reference
 from server.storage import serialize_cellar, serialize_wine_reference, serialize_wine_instance
@@ -9,6 +12,67 @@ from server.dynamo.storage import (
     save_wine_references as dynamodb_save_wine_references,
     save_wine_instances as dynamodb_save_wine_instances
 )
+
+
+def search_vivino_label(query):
+    """
+    Search Google Images specifically for Vivino wine label images
+    Focuses on labels only, not full bottles
+    """
+    return search_vivino_images_scrape(query)
+
+
+def search_vivino_images_scrape(query):
+    """
+    Search Google Images specifically for Vivino wine label images
+    Uses site:vivino.com to restrict results to Vivino only
+    Focuses on labels by adding 'label' to the search query
+    """
+    try:
+        # Search specifically on Vivino for wine labels
+        search_query = quote(f'site:vivino.com {query} wine label')
+        url = f"https://www.google.com/search?q={search_query}&tbm=isch&safe=active"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+        html = response.text
+        
+        # Method 1: Look for "ou":"URL" pattern (Google's embedded image data)
+        matches = re.findall(r'"ou":"(https?://[^"]+)"', html)
+        vivino_urls = []
+        
+        for match in matches[:30]:  # Check first 30 matches
+            match_lower = match.lower()
+            if ('google' not in match_lower and 'gstatic' not in match_lower and 
+                'doubleclick' not in match_lower):
+                if 'vivino.com' in match_lower:
+                    if any(ext in match_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'image' in match_lower or 'label' in match_lower:
+                        vivino_urls.append(match)
+        
+        if vivino_urls:
+            return vivino_urls[0]
+        
+        # Method 2: Look for Vivino CDN URLs
+        vivino_cdn_pattern = r'https?://[^\s"<>\)]*images\.vivino\.com[^\s"<>\)]+'
+        matches = re.findall(vivino_cdn_pattern, html, re.IGNORECASE)
+        if matches:
+            for match in matches:
+                if any(ext in match.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'label' in match.lower():
+                    return match
+            return matches[0]
+        
+        return None
+    except Exception as e:
+        return None
+
 
 # Sample wine data (40 red wines, 10 white wines)
 RED_WINES = [
