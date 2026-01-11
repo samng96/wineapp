@@ -7,7 +7,6 @@ from flask_cors import CORS
 from server.cellars import cellars_bp
 from server.wine_references import wine_references_bp
 from server.wine_instances import wine_instances_bp
-from server.models import clear_wine_references_registry
 from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
 from server.dynamo.setup_tables import get_dynamodb_client
 
@@ -61,8 +60,6 @@ def app(dynamodb_tables, monkeypatch):
     monkeypatch.setenv('DYNAMODB_ENDPOINT', endpoint)
     monkeypatch.setenv('DYNAMODB_REGION', 'us-east-1')
     
-    # Clear wine references registry before each test
-    clear_wine_references_registry()
     
     # Create Flask app
     app = Flask(__name__)
@@ -100,8 +97,6 @@ def clear_tables(dynamodb_tables):
         except Exception:
             pass  # Table might not exist yet
     
-    # Clear wine references registry
-    clear_wine_references_registry()
 
 
 @pytest.fixture
@@ -144,8 +139,7 @@ def sample_wine_instance():
         'referenceId': None,  # Will be set by test
         'price': 45.99,
         'purchaseDate': '2024-01-15',
-        'drinkByDate': '2030-01-15',
-        'location': None
+        'drinkByDate': '2030-01-15'
     }
 
 

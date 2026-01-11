@@ -81,7 +81,8 @@ def test_get_wine_reference_by_id(client, sample_wine_reference):
     data = response.get_json()
     assert data['id'] == reference_id
     assert data['name'] == sample_wine_reference['name']
-    assert 'instances' in data  # Should include instances array
+    # Note: GET /wine-references/<id> does not include instances array
+    # Use GET /wine-references/<id>/instances to get instances
 
 
 def test_get_wine_reference_not_found(client):
@@ -125,8 +126,6 @@ def test_delete_wine_reference(client, sample_wine_reference):
     assert response.status_code == 200
     
     # Verify it's deleted - need to reload registry first
-    from server.models import clear_wine_references_registry
-    clear_wine_references_registry()
     get_response = client.get(f'/wine-references/{reference_id}')
     assert get_response.status_code == 404
 

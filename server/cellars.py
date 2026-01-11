@@ -1,32 +1,18 @@
 """Cellar management endpoints and helper functions"""
 from flask import Blueprint, jsonify, request
-from typing import Dict, List, Optional
+from typing import List, Optional
 from server.utils import generate_id, get_current_timestamp
-from server.models import Cellar, Shelf
+from server.models import Cellar, Shelf, WineInstance
 from server.data.storage_serializers import serialize_cellar, deserialize_cellar
+# Import moved inside functions to avoid circular import
 from server.dynamo.storage import (
-    load_cellars as dynamodb_load_cellars,
-    create_cellar as dynamodb_create_cellar,
+    get_all_cellars as dynamodb_get_all_cellars,
+    put_cellar as dynamodb_put_cellar,
     get_cellar_by_id as dynamodb_get_cellar_by_id,
-    update_cellar as dynamodb_update_cellar,
     delete_cellar as dynamodb_delete_cellar
 )
 
 cellars_bp = Blueprint('cellars', __name__)
-
-
-def load_cellars() -> List[Cellar]:
-    """Load cellars from DynamoDB as Cellar model objects with WineInstance objects resolved"""
-    data = dynamodb_load_cellars()
-    
-    # Load wine instances to resolve references in cellars
-    from server.wine_instances import load_wine_instances
-    wine_instances_list = load_wine_instances()
-    wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
-    
-    # Deserialize cellars with resolved wine instances
-    return [deserialize_cellar(c, wine_instances_dict) for c in data]
-
 
 def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
     """Get a cellar by ID (returns Cellar model object)"""
@@ -34,12 +20,32 @@ def find_cellar_by_id(cellar_id: str) -> Optional[Cellar]:
     if not data:
         return None
 
-    # Load wine instances to resolve references
-    from server.wine_instances import load_wine_instances
-    wine_instances_list = load_wine_instances()
-    wine_instances_dict = {inst.id: inst for inst in wine_instances_list}
-    return deserialize_cellar(data, wine_instances_dict)
+    # Load wine instances to resolve references (lazy import to avoid circular dependency)
+    from server.wine_instances import get_all_wine_instances
+    instances = get_all_wine_instances()
+    return deserialize_cellar(data, instances)
 
+def find_cellar_containing_wine_instance(instance: WineInstance) -> Optional[Cellar]:
+    """Find a cellar containing a wine instance"""
+    for cellar in _get_all_cellars():
+        if cellar.is_wine_instance_in_cellar(instance):
+            return cellar
+    return None
+
+def update_and_save_cellar(cellar: Cellar):
+    """Update and save a cellar"""
+    cellar.version += 1
+    cellar.updated_at = get_current_timestamp()
+    data = serialize_cellar(cellar)
+    dynamodb_put_cellar(data)
+
+def _get_all_cellars() -> List[Cellar]:
+    """Get all cellars"""
+    data = dynamodb_get_all_cellars()
+    # Lazy import to avoid circular dependency
+    from server.wine_instances import get_all_wine_instances
+    instances = get_all_wine_instances()
+    return [deserialize_cellar(c, instances) for c in data]
 
 # Endpoints
 """
@@ -60,9 +66,8 @@ Response Format: Array of cellar objects, each containing:
 @cellars_bp.route('/cellars', methods=['GET'])
 def _get_cellars():
     """Get all cellars"""
-    cellars = load_cellars()
+    cellars = _get_all_cellars()
     return jsonify([serialize_cellar(c) for c in cellars])
-
 
 """
 Create a new cellar
@@ -110,7 +115,7 @@ def _create_cellar():
     
     # Save to DynamoDB
     data = serialize_cellar(cellar)
-    dynamodb_create_cellar(data)
+    dynamodb_put_cellar(data)
     
     return jsonify(data), 201
 
@@ -169,16 +174,9 @@ def _update_cellar(cellar_id: str):
         cellar.name = data['name']
     if 'temperature' in data:
         cellar.temperature = data['temperature']
-    
-    # Update version and timestamp
-    cellar.version += 1
-    cellar.updated_at = get_current_timestamp()
-    
-    # Update in DynamoDB
-    data = serialize_cellar(cellar)
-    dynamodb_update_cellar(data)
-    
-    return jsonify(data)
+
+    update_and_save_cellar(cellar)
+    return jsonify(serialize_cellar(cellar))
 
 
 @cellars_bp.route('/cellars/<cellar_id>', methods=['DELETE'])
@@ -188,23 +186,60 @@ def _delete_cellar(cellar_id: str):
     if not cellar:
         return jsonify({'error': 'Cellar not found'}), 404
     
-    # Move all wine instances in this cellar to unshelved
-    from server.wine_instances import load_wine_instances, save_wine_instances
+    # Remove all wine instances from this cellar before deleting
+    # Find all instances in the cellar
+    instances_to_remove = []
+    for shelf in cellar.shelves:
+        if shelf.is_double:
+            sides = ['front', 'back']
+        else:
+            sides = ['single']
+        for side in sides:
+            for position in range(shelf.positions):
+                instance = shelf.get_wine_at(side, position)
+                if instance is not None:
+                    assert instance.consumed is False, "Wine instance is consumed but still in a cellar"
+                    instances_to_remove.append(instance)
+                    shelf.set_wine_at(side, position, None)
     
-    all_instances = load_wine_instances()
-    for instance in all_instances:
-        if instance is not None:
-            if instance.location is not None and instance.consumed is False:
-                cellar_obj, shelf, position, is_front = instance.location
-                if cellar_obj.id == cellar_id:
-                    instance.location = None  # Set to None for unshelved
-                    instance.version += 1
-                    instance.updated_at = get_current_timestamp()
-    
-    # Save instances
-    save_wine_instances(all_instances)
-    
+    from server.wine_instances import save_wine_instances
+    save_wine_instances(instances_to_remove)
+
     # Delete the cellar
     dynamodb_delete_cellar(cellar_id)
-    
     return jsonify({'message': 'Cellar deleted'}), 200
+
+
+"""
+Consume a wine instance in a cellar
+
+Expected POST Parameters:
+- instance_id (str): ID of the wine instance to consume
+"""
+@cellars_bp.route('/cellars/<cellar_id>/consume_instance/<instance_id>', methods=['POST'])
+def _consume_wine_instance(cellar_id: str, instance_id: str):
+    """Consume a wine instance in a cellar"""
+    cellar = find_cellar_by_id(cellar_id)
+    if not cellar:
+        return jsonify({'error': 'Cellar not found'}), 404
+    
+    instance = None
+    for shelf in cellar.shelves:
+        for position in shelf.positions:
+            if position.wine_instance.id == instance_id:
+                # We found it - remove the wine from the position
+                instance = position.wine_instance
+                position.wine_instance = None
+                position.version += 1
+                position.updated_at = get_current_timestamp()
+                break
+        if instance is not None:
+            break
+    
+    if not instance:
+        return jsonify({'error': 'Wine instance not found'}), 404
+
+    from server.wine_instances import consume_wine_instance
+    consume_wine_instance(instance)
+    dynamodb_put_cellar(serialize_cellar(cellar))
+    return jsonify({'message': 'Wine instance consumed'}), 200

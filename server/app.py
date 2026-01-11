@@ -3,7 +3,7 @@ from flask import Flask
 from flask_cors import CORS
 from server.dynamo.init_tables import init_dynamodb_tables
 from server.cellars import cellars_bp
-from server.wine_references import wine_references_bp, load_wine_references
+from server.wine_references import wine_references_bp, get_all_wine_references
 from server.wine_instances import wine_instances_bp
 
 app = Flask(__name__)
@@ -21,7 +21,7 @@ init_dynamodb_tables()
 # This must happen before loading wine instances, which reference wine references
 # The deserialize_wine_reference function automatically registers references
 print("Loading wine references into registry on startup...")
-loaded_refs = load_wine_references()
+loaded_refs = get_all_wine_references()
 print(f"Loaded {len(loaded_refs)} wine references into registry")
 
 if __name__ == '__main__':

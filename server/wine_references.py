@@ -2,13 +2,12 @@
 from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional
 from server.utils import generate_id, get_current_timestamp
-from server.models import WineReference, register_wine_reference
+from server.models import WineReference
 from server.data.storage_serializers import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
 from server.dynamo.storage import (
-    load_wine_references as dynamodb_load_wine_references,
-    save_wine_references as dynamodb_save_wine_references,
+    get_all_wine_references as dynamodb_get_all_wine_references,
+    put_wine_reference as dynamodb_put_wine_reference,
     get_wine_reference_by_id as dynamodb_get_wine_reference_by_id,
-    update_wine_reference as dynamodb_update_wine_reference,
     delete_wine_reference as dynamodb_delete_wine_reference
 )
 
@@ -16,23 +15,17 @@ wine_references_bp = Blueprint('wine_references', __name__)
 
 
 # Helper functions
-def load_wine_references() -> List[WineReference]:
+def get_all_wine_references() -> List[WineReference]:
     """Load wine references from DynamoDB as WineReference model objects"""
-    data = dynamodb_load_wine_references()
+    data = dynamodb_get_all_wine_references()
     return [deserialize_wine_reference(r) for r in data]
-
-
-def save_wine_references(references: List[WineReference]):
-    """Save wine references to DynamoDB (accepts WineReference model objects)"""
-    data = [serialize_wine_reference(r) for r in references]
-    dynamodb_save_wine_references(data)
-
 
 def find_wine_reference_by_id(reference_id: str) -> Optional[WineReference]:
     """Find a wine reference by ID (returns WineReference model object)"""
-    from server.models import get_wine_reference
-    return get_wine_reference(reference_id)
-
+    data = dynamodb_get_wine_reference_by_id(reference_id)
+    if not data:
+        return None
+    return deserialize_wine_reference(data)
 
 # Endpoints
 """
@@ -57,7 +50,7 @@ Response Format: Array of wine reference objects, each containing:
 @wine_references_bp.route('/wine-references', methods=['GET'])
 def _get_wine_references():
     """Get all wine references"""
-    references = load_wine_references()
+    references = get_all_wine_references()
     return jsonify([serialize_wine_reference(r) for r in references])
 
 
@@ -101,7 +94,7 @@ def _create_wine_reference():
     )
     
     # Check if reference already exists (name + vintage + producer)
-    references = load_wine_references()
+    references = get_all_wine_references()
     existing = next((r for r in references if r.get_unique_key() == reference.get_unique_key()), None)
     
     if existing:
@@ -113,16 +106,10 @@ def _create_wine_reference():
     reference.created_at = timestamp
     reference.updated_at = timestamp
     
-    # Register in global registry
-    register_wine_reference(reference)
-    
     # Save to DynamoDB
-    references = load_wine_references()
-    references.append(reference)
-    save_wine_references(references)
-    
-    return jsonify(serialize_wine_reference(reference)), 201
-
+    data = serialize_wine_reference(reference)
+    dynamodb_put_wine_reference(data)
+    return jsonify(data), 201
 
 """
 Get a specific wine reference with all instances
@@ -132,12 +119,13 @@ Response Format: Wine reference object containing all fields from GET /wine-refe
   Each instance object contains:
   - id (str): Unique identifier for the wine instance
   - referenceId (str): ID of the wine reference this instance belongs to
-  - location (dict, optional): Location object with cellarId, shelfIndex, position, isFront
   - price (float, optional): Purchase price
   - purchaseDate (str, optional): ISO 8601 date when purchased
   - drinkByDate (str, optional): ISO 8601 date for recommended consumption
   - consumed (bool): Whether the wine has been consumed
   - consumedDate (str, optional): ISO 8601 timestamp when consumed
+  - coravined (bool): Whether the wine has been coravined
+  - coravinedDate (str, optional): ISO 8601 timestamp when coravined
   - storedDate (str, optional): ISO 8601 timestamp when stored
   - version (int): Version number for conflict resolution
   - createdAt (str): ISO 8601 timestamp when instance was created
@@ -145,18 +133,16 @@ Response Format: Wine reference object containing all fields from GET /wine-refe
 
 Error Response (404): {'error': 'Wine reference not found'} if reference doesn't exist
 """
-@wine_references_bp.route('/wine-references/<reference_id>', methods=['GET'])
-def _get_wine_reference(reference_id: str):
+@wine_references_bp.route('/wine-references/<reference_id>/instances', methods=['GET'])
+def _get_wine_reference_instances(reference_id: str):
     """Get a specific wine reference with all instances"""
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
     # Get all instances for this reference
-    from server.wine_instances import load_wine_instances
-    from server.cellars import load_cellars
-    cellars = load_cellars()
-    instances = load_wine_instances(cellars=cellars)
+    from server.wine_instances import get_all_wine_instances
+    instances = get_all_wine_instances()
     reference_instances = [serialize_wine_instance(i) for i in instances if i.reference.id == reference_id]
     
     response = serialize_wine_reference(reference)
@@ -164,6 +150,13 @@ def _get_wine_reference(reference_id: str):
     
     return jsonify(response)
 
+@wine_references_bp.route('/wine-references/<reference_id>', methods=['GET'])
+def _get_wine_reference(reference_id: str):
+    """Get a specific wine reference"""
+    reference = find_wine_reference_by_id(reference_id)
+    if not reference:
+        return jsonify({'error': 'Wine reference not found'}), 404
+    return jsonify(serialize_wine_reference(reference))
 
 """
 Update a wine reference
@@ -214,16 +207,11 @@ def _update_wine_reference(reference_id: str):
     # Update version and timestamp
     reference.version += 1
     reference.updated_at = get_current_timestamp()
-    
-    # Update in global registry
-    register_wine_reference(reference)
-    
+
     # Save to DynamoDB
     data = serialize_wine_reference(reference)
-    dynamodb_update_wine_reference(data)
-    
-    return jsonify(serialize_wine_reference(reference))
-
+    dynamodb_put_wine_reference(data)
+    return jsonify(data)
 
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['DELETE'])
 def _delete_wine_reference(reference_id: str):
@@ -232,12 +220,6 @@ def _delete_wine_reference(reference_id: str):
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
     
-    # Remove from global registry
-    from server.models import _wine_references_registry
-    if reference_id in _wine_references_registry:
-        del _wine_references_registry[reference_id]
-    
     # Remove from DynamoDB
     dynamodb_delete_wine_reference(reference_id)
-    
     return jsonify({'message': 'Wine reference deleted'}), 200

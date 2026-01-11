@@ -13,9 +13,9 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from server.dynamo.storage import (
-    load_cellars,
-    load_wine_references,
-    load_wine_instances,
+    get_all_cellars,
+    get_all_wine_references,
+    get_all_wine_instances,
     CELLARS_TABLE,
     WINE_REFERENCES_TABLE,
     WINE_INSTANCES_TABLE
@@ -76,9 +76,9 @@ def main():
     print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Browse all tables
-    browse_table(CELLARS_TABLE, load_cellars, "Cellars")
-    browse_table(WINE_REFERENCES_TABLE, load_wine_references, "Wine References")
-    browse_table(WINE_INSTANCES_TABLE, load_wine_instances, "Wine Instances")
+    browse_table(CELLARS_TABLE, get_all_cellars, "Cellars")
+    browse_table(WINE_REFERENCES_TABLE, get_all_wine_references, "Wine References")
+    browse_table(WINE_INSTANCES_TABLE, get_all_wine_instances, "Wine Instances")
     
     print(f"\n{'='*80}")
     print("Browse complete!")

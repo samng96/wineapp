@@ -52,8 +52,8 @@ Wine Instances are single instances of each reference wine.
     - ID. This is used to refer to an instance, and will be stored as a part of shelves' serialization.
     - ID to the reference. This should be stored as an ID for serialization purposes, but should be loaded as an object based on the global WineReference registry. This is immutable.
     - Vintage (year)
-    - Location - This should be a tuple of {cellarID, shelfIndex, positionIndex, isFront} where cellarID is the cellar, shelfIndex is the index of the shelf in the cellar, positionIndex is the position in the shelf, and isFront is whether or not it's front or back. These should also be loaded as objects for the Cellar and Shelf, and positionIndex/isFront can be loaded as their direct values.
     - IsConsumed - a boolean value for whether or not this wine has been consumed
+    - IsCoravined - a boolean value for whether or not this wine has been coravined
 - Optional fields
     - Drink by date (client code should obtain this from Vivino)
     - Price
@@ -184,10 +184,6 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - `to_dict() -> Dict[str, Any]`: Serialize to JSON format (includes `id` field from object)
   - `from_dict(data: Dict) -> WineReference`: Deserialize and auto-register in global registry
   - `get_unique_key() -> tuple`: Get unique key for deduplication (name, vintage, producer)
-- **Registry Functions**:
-  - `get_wine_reference(reference_id: str) -> Optional[WineReference]`: Get WineReference object from registry (returns object, not ID)
-  - `register_wine_reference(reference: WineReference)`: Register WineReference object in global registry
-  - `clear_wine_references_registry()`: Clear registry (for testing)
   - **Note**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when needed (e.g., `reference.id`)
 
 #### 2.4 WineInstance Model

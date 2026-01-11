@@ -21,8 +21,8 @@ def test_create_wine_instance(client, sample_wine_instance, created_wine_referen
     assert data['price'] == sample_wine_instance['price']
     assert data['purchaseDate'] == sample_wine_instance['purchaseDate']
     assert data['drinkByDate'] == sample_wine_instance['drinkByDate']
-    assert data['location'] is None  # Unshelved by default
     assert data['consumed'] is False
+    assert data['coravined'] is False
     assert 'version' in data
     assert 'createdAt' in data
     assert 'updatedAt' in data
@@ -107,7 +107,6 @@ def test_consume_wine_instance(client, sample_wine_instance, created_wine_refere
     data = response.get_json()
     assert data['consumed'] is True
     assert data['consumedDate'] is not None
-    assert data['location'] is None  # Should be removed from cellar if it was there
 
 
 def test_update_wine_instance_location(client, sample_wine_instance, created_wine_reference, sample_cellar):
@@ -121,23 +120,19 @@ def test_update_wine_instance_location(client, sample_wine_instance, created_win
     instance_response = client.post('/wine-instances', json=sample_wine_instance)
     instance_id = instance_response.get_json()['id']
     
-    # Update location
+    # Update location (moving from unshelved to cellar)
     location_data = {
-        'location': {
-        'type': 'cellar',
-            'cellarId': cellar_id,
-            'shelfIndex': 0,
-            'side': 'single',
-            'position': 0
-        }
+        'oldCellarId': None,  # Was unshelved
+        'newCellarId': cellar_id,
+        'shelfIndex': 0,
+        'side': 'single',
+        'position': 0
     }
+    
     response = client.put(f'/wine-instances/{instance_id}/location', json=location_data)
     assert response.status_code == 200
     data = response.get_json()
-    assert data['location'] is not None
-    assert data['location']['cellarId'] == cellar_id
-    assert data['location']['shelfIndex'] == 0
-    assert data['location']['position'] == 0
+    assert data['id'] == instance_id
 
 
 def test_get_unshelved(client, sample_wine_instance, created_wine_reference):
@@ -147,57 +142,8 @@ def test_get_unshelved(client, sample_wine_instance, created_wine_reference):
     instance1 = client.post('/wine-instances', json=sample_wine_instance)
     instance2 = client.post('/wine-instances', json=sample_wine_instance)
     
-    # Get unshelved
+    # Get unshelved (instances not in any cellar and not consumed)
     response = client.get('/unshelved')
     assert response.status_code == 200
     data = response.get_json()
     assert len(data) >= 2  # At least the two we just created
-
-
-def test_assign_unshelved_to_cellar(client, sample_wine_instance, created_wine_reference, sample_cellar):
-    """Test assigning an unshelved wine instance to a cellar"""
-    # Create cellar
-    cellar_response = client.post('/cellars', json=sample_cellar)
-    cellar_id = cellar_response.get_json()['id']
-    
-    # Create unshelved instance
-    sample_wine_instance['referenceId'] = created_wine_reference
-    instance_response = client.post('/wine-instances', json=sample_wine_instance)
-    instance_id = instance_response.get_json()['id']
-    
-    # Assign to cellar
-    location_data = {
-        'location': {
-        'type': 'cellar',
-            'cellarId': cellar_id,
-            'shelfIndex': 0,
-            'side': 'single',
-            'position': 0
-        }
-    }
-    response = client.post(f'/unshelved/{instance_id}/assign', json=location_data)
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data['location'] is not None
-    assert data['location']['cellarId'] == cellar_id
-
-
-def test_assign_unshelved_invalid_location(client, sample_wine_instance, created_wine_reference):
-    """Test assigning unshelved with invalid location"""
-    # Create instance
-    sample_wine_instance['referenceId'] = created_wine_reference
-    instance_response = client.post('/wine-instances', json=sample_wine_instance)
-    instance_id = instance_response.get_json()['id']
-    
-    # Try to assign with invalid location
-    location_data = {
-        'location': {
-            'type': 'cellar',
-            'cellarId': 'non-existent',
-            'shelfIndex': 0,
-            'side': 'single',
-            'position': 0
-        }
-    }
-    response = client.post(f'/unshelved/{instance_id}/assign', json=location_data)
-    assert response.status_code == 404

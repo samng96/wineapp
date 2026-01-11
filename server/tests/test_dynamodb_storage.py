@@ -5,22 +5,20 @@ import boto3
 from botocore.exceptions import ClientError
 from server.dynamo.storage import (
     # Cellar functions
-    load_cellars,
-    save_cellars,
+    get_all_cellars,
+    put_cellar,
     get_cellar_by_id,
-    update_cellar,
     delete_cellar,
     # Wine reference functions
-    load_wine_references,
-    save_wine_references,
+    get_all_wine_references,
+    put_wine_reference,
     get_wine_reference_by_id,
-    update_wine_reference,
     delete_wine_reference,
     # Wine instance functions
-    load_wine_instances,
+    get_all_wine_instances,
     save_wine_instances,
     get_wine_instance_by_id,
-    update_wine_instance,
+    put_wine_instance,
     delete_wine_instance,
     # Table names
     CELLARS_TABLE,
@@ -28,9 +26,52 @@ from server.dynamo.storage import (
     WINE_INSTANCES_TABLE
 )
 from server.dynamo.setup_tables import get_dynamodb_client
-from server.models import Shelf, Cellar, WineReference, WineInstance, register_wine_reference, clear_wine_references_registry
+from server.models import Shelf, Cellar, WineReference, WineInstance
 from server.data.storage_serializers import serialize_cellar, serialize_wine_reference, serialize_wine_instance
 from server.utils import generate_id, get_current_timestamp
+
+# Helper functions for batch operations (wrappers around put_* functions)
+def save_cellars(cellars):
+    """Save multiple cellars (batch operation - replaces all existing)"""
+    # Get all existing cellars and delete them first (to match "replaces" behavior)
+    existing = get_all_cellars()
+    for c in existing:
+        delete_cellar(c['id'])
+    # Save new cellars
+    for c in cellars:
+        put_cellar(c)
+
+def save_wine_references(refs):
+    """Save multiple wine references (batch operation - replaces all existing)"""
+    # Get all existing references and delete them first (to match "replaces" behavior)
+    existing = get_all_wine_references()
+    for r in existing:
+        delete_wine_reference(r['id'])
+    # Save new references
+    for r in refs:
+        put_wine_reference(r)
+
+def update_cellar(cellar):
+    """Update a cellar (alias for put_cellar)"""
+    put_cellar(cellar)
+
+def update_wine_reference(ref):
+    """Update a wine reference (alias for put_wine_reference)"""
+    put_wine_reference(ref)
+
+def update_wine_instance(inst):
+    """Update a wine instance (alias for put_wine_instance)"""
+    put_wine_instance(inst)
+
+def save_wine_instances(instances):
+    """Save multiple wine instances (batch operation - replaces all existing)"""
+    # Get all existing instances and delete them first (to match "replaces" behavior)
+    existing = get_all_wine_instances()
+    for inst in existing:
+        delete_wine_instance(inst['id'])
+    # Save new instances
+    for inst in instances:
+        put_wine_instance(inst)
 
 
 @pytest.fixture(scope="module")
@@ -108,14 +149,13 @@ def clear_tables(dynamodb_tables):
                 batch.delete_item(Key={'id': item['id']})
     
     # Clear wine references registry
-    clear_wine_references_registry()
 
 
 # ==================== Cellar Tests ====================
 
 def test_load_cellars_empty(dynamodb_tables):
     """Test loading cellars when table is empty"""
-    cellars = load_cellars()
+    cellars = get_all_cellars()
     assert cellars == []
     assert isinstance(cellars, list)
 
@@ -139,7 +179,7 @@ def test_save_and_load_cellars(dynamodb_tables):
     save_cellars([cellar_data])
     
     # Load and verify
-    loaded = load_cellars()
+    loaded = get_all_cellars()
     assert len(loaded) == 1
     assert loaded[0]['id'] == cellar.id
     assert loaded[0]['name'] == 'Test Cellar'
@@ -163,7 +203,7 @@ def test_save_multiple_cellars(dynamodb_tables):
     
     save_cellars(cellars)
     
-    loaded = load_cellars()
+    loaded = get_all_cellars()
     assert len(loaded) == 3
     assert {c['name'] for c in loaded} == {'Cellar 0', 'Cellar 1', 'Cellar 2'}
 
@@ -243,7 +283,7 @@ def test_delete_cellar(dynamodb_tables):
     assert found is None
     
     # Verify table is empty
-    all_cellars = load_cellars()
+    all_cellars = get_all_cellars()
     assert len(all_cellars) == 0
 
 
@@ -280,7 +320,7 @@ def test_save_cellars_replaces_existing(dynamodb_tables):
     save_cellars([serialize_cellar(cellar3)])
     
     # Verify only the new cellar exists
-    loaded = load_cellars()
+    loaded = get_all_cellars()
     assert len(loaded) == 1
     assert loaded[0]['name'] == 'Cellar 3'
 
@@ -289,7 +329,7 @@ def test_save_cellars_replaces_existing(dynamodb_tables):
 
 def test_load_wine_references_empty(dynamodb_tables):
     """Test loading wine references when table is empty"""
-    references = load_wine_references()
+    references = get_all_wine_references()
     assert references == []
     assert isinstance(references, list)
 
@@ -313,14 +353,13 @@ def test_save_and_load_wine_references(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     # Serialize and save
     reference_data = serialize_wine_reference(reference)
     save_wine_references([reference_data])
     
     # Load and verify
-    loaded = load_wine_references()
+    loaded = get_all_wine_references()
     assert len(loaded) == 1
     assert loaded[0]['id'] == reference.id
     assert loaded[0]['name'] == 'Test Wine'
@@ -341,12 +380,11 @@ def test_save_multiple_wine_references(dynamodb_tables):
             created_at=get_current_timestamp(),
             updated_at=get_current_timestamp()
         )
-        register_wine_reference(reference)
         references.append(serialize_wine_reference(reference))
     
     save_wine_references(references)
     
-    loaded = load_wine_references()
+    loaded = get_all_wine_references()
     assert len(loaded) == 3
     assert {r['name'] for r in loaded} == {'Wine 0', 'Wine 1', 'Wine 2'}
 
@@ -362,7 +400,6 @@ def test_get_wine_reference_by_id(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     save_wine_references([serialize_wine_reference(reference)])
     
     # Get by ID
@@ -390,7 +427,6 @@ def test_update_wine_reference(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     save_wine_references([serialize_wine_reference(reference)])
     
     # Update
@@ -398,7 +434,6 @@ def test_update_wine_reference(dynamodb_tables):
     reference.rating = 5
     reference.version = 2
     reference.updated_at = get_current_timestamp()
-    register_wine_reference(reference)
     update_wine_reference(serialize_wine_reference(reference))
     
     # Verify
@@ -419,7 +454,6 @@ def test_delete_wine_reference(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     save_wine_references([serialize_wine_reference(reference)])
     
     # Delete
@@ -430,7 +464,7 @@ def test_delete_wine_reference(dynamodb_tables):
     assert found is None
     
     # Verify table is empty
-    all_references = load_wine_references()
+    all_references = get_all_wine_references()
     assert len(all_references) == 0
 
 
@@ -453,8 +487,6 @@ def test_save_wine_references_replaces_existing(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(ref1)
-    register_wine_reference(ref2)
     save_wine_references([serialize_wine_reference(ref1), serialize_wine_reference(ref2)])
     
     # Save only one reference (should remove the other)
@@ -466,11 +498,10 @@ def test_save_wine_references_replaces_existing(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(ref3)
     save_wine_references([serialize_wine_reference(ref3)])
     
     # Verify only the new reference exists
-    loaded = load_wine_references()
+    loaded = get_all_wine_references()
     assert len(loaded) == 1
     assert loaded[0]['name'] == 'Reference 3'
 
@@ -479,7 +510,7 @@ def test_save_wine_references_replaces_existing(dynamodb_tables):
 
 def test_load_wine_instances_empty(dynamodb_tables):
     """Test loading wine instances when table is empty"""
-    instances = load_wine_instances()
+    instances = get_all_wine_instances()
     assert instances == []
     assert isinstance(instances, list)
 
@@ -495,13 +526,10 @@ def test_save_and_load_wine_instances(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
-    
     # Create a wine instance
     instance = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         price=45.99,
         purchase_date="2024-01-15",
         drink_by_date="2030-01-15",
@@ -517,7 +545,7 @@ def test_save_and_load_wine_instances(dynamodb_tables):
     save_wine_instances([instance_data])
     
     # Load and verify
-    loaded = load_wine_instances()
+    loaded = get_all_wine_instances()
     assert len(loaded) == 1
     assert loaded[0]['id'] == instance.id
     assert loaded[0]['referenceId'] == reference.id
@@ -537,14 +565,12 @@ def test_save_multiple_wine_instances(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     instances = []
     for i in range(3):
         instance = WineInstance(
             id=generate_id(),
             reference=reference,
-            location=None,
             price=50.0 + i,
             version=1,
             created_at=get_current_timestamp(),
@@ -554,7 +580,7 @@ def test_save_multiple_wine_instances(dynamodb_tables):
     
     save_wine_instances(instances)
     
-    loaded = load_wine_instances()
+    loaded = get_all_wine_instances()
     assert len(loaded) == 3
     # DynamoDB returns Decimals, so convert for comparison
     assert {float(inst['price']) for inst in loaded} == {50.0, 51.0, 52.0}
@@ -571,12 +597,10 @@ def test_get_wine_instance_by_id(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     instance = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         price=99.99,
         version=1,
         created_at=get_current_timestamp(),
@@ -609,12 +633,10 @@ def test_update_wine_instance(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     instance = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         price=50.0,
         version=1,
         created_at=get_current_timestamp(),
@@ -646,12 +668,10 @@ def test_delete_wine_instance(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     instance = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -666,7 +686,7 @@ def test_delete_wine_instance(dynamodb_tables):
     assert found is None
     
     # Verify table is empty
-    all_instances = load_wine_instances()
+    all_instances = get_all_wine_instances()
     assert len(all_instances) == 0
 
 
@@ -681,13 +701,11 @@ def test_save_wine_instances_replaces_existing(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     # Create and save initial instances
     inst1 = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -695,7 +713,6 @@ def test_save_wine_instances_replaces_existing(dynamodb_tables):
     inst2 = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -706,7 +723,6 @@ def test_save_wine_instances_replaces_existing(dynamodb_tables):
     inst3 = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -714,24 +730,13 @@ def test_save_wine_instances_replaces_existing(dynamodb_tables):
     save_wine_instances([serialize_wine_instance(inst3)])
     
     # Verify only the new instance exists
-    loaded = load_wine_instances()
+    loaded = get_all_wine_instances()
     assert len(loaded) == 1
     assert loaded[0]['id'] == inst3.id
 
 
-def test_wine_instance_with_location(dynamodb_tables):
-    """Test saving and loading wine instance with cellar location"""
-    # Create cellar
-    cellar = Cellar(
-        id=generate_id(),
-        name="Test Cellar",
-        shelves=[Shelf(positions=10, is_double=False)],
-        version=1,
-        created_at=get_current_timestamp(),
-        updated_at=get_current_timestamp()
-    )
-    save_cellars([serialize_cellar(cellar)])
-    
+def test_wine_instance_with_coravined(dynamodb_tables):
+    """Test saving and loading wine instance with coravined field"""
     # Create reference
     reference = WineReference(
         id=generate_id(),
@@ -741,15 +746,13 @@ def test_wine_instance_with_location(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
-    # Create instance with location
-    shelf = cellar.shelves[0]
-    location = (cellar, shelf, 0, True)
+    # Create instance with coravined
     instance = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=location,
+        coravined=True,
+        coravined_date=get_current_timestamp(),
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -757,13 +760,10 @@ def test_wine_instance_with_location(dynamodb_tables):
     
     # Save and verify
     save_wine_instances([serialize_wine_instance(instance)])
-    loaded = load_wine_instances()
+    loaded = get_all_wine_instances()
     assert len(loaded) == 1
-    assert loaded[0]['location'] is not None
-    assert loaded[0]['location']['cellarId'] == cellar.id
-    assert loaded[0]['location']['shelfIndex'] == 0
-    assert loaded[0]['location']['position'] == 0
-    assert loaded[0]['location']['isFront'] is True
+    assert loaded[0]['coravined'] is True
+    assert loaded[0]['coravinedDate'] is not None
 
 
 # ==================== Integration Tests ====================
@@ -813,7 +813,6 @@ def test_full_crud_cycle_wine_reference(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     save_wine_references([serialize_wine_reference(reference)])
     
     # Read
@@ -825,7 +824,6 @@ def test_full_crud_cycle_wine_reference(dynamodb_tables):
     reference.name = "Updated CRUD Wine"
     reference.version = 2
     reference.updated_at = get_current_timestamp()
-    register_wine_reference(reference)
     update_wine_reference(serialize_wine_reference(reference))
     
     found = get_wine_reference_by_id(reference.id)
@@ -849,13 +847,11 @@ def test_full_crud_cycle_wine_instance(dynamodb_tables):
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
     )
-    register_wine_reference(reference)
     
     # Create instance
     instance = WineInstance(
         id=generate_id(),
         reference=reference,
-        location=None,
         price=50.0,
         version=1,
         created_at=get_current_timestamp(),

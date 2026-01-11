@@ -43,7 +43,7 @@ def get_dynamodb_client():
 
 
 # Cellar storage functions
-def load_cellars() -> List[Dict[str, Any]]:
+def get_all_cellars() -> List[Dict[str, Any]]:
     """Load all cellars from DynamoDB as serialized dictionaries"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(CELLARS_TABLE)
@@ -56,37 +56,13 @@ def load_cellars() -> List[Dict[str, Any]]:
             return []
         raise
 
-
-def create_cellar(cellar: Dict[str, Any]) -> Dict[str, Any]:
+def put_cellar(cellar: Dict[str, Any]) -> Dict[str, Any]:
     """Create a new cellar in DynamoDB"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(CELLARS_TABLE)
     item = _prepare_item(cellar)
     table.put_item(Item=item)
     return item
-
-
-def save_cellars(cellars: List[Dict[str, Any]]):
-    """Save cellars to DynamoDB (accepts serialized dictionaries) - DEPRECATED: Use create_cellar/update_cellar instead"""
-    dynamodb = get_dynamodb_resource()
-    table = dynamodb.Table(CELLARS_TABLE)
-    
-    # Get all existing cellar IDs
-    existing = load_cellars()
-    existing_ids = {item['id'] for item in existing}
-    new_ids = {c['id'] for c in cellars}
-    
-    # Delete cellars that are no longer in the new list
-    for item in existing:
-        if item['id'] not in new_ids:
-            table.delete_item(Key={'id': item['id']})
-    
-    # Put all cellars (DynamoDB put overwrites existing items)
-    with table.batch_writer() as batch:
-        for cellar in cellars:
-            # Convert any sets/lists to proper types for DynamoDB
-            batch.put_item(Item=_prepare_item(cellar))
-
 
 def get_cellar_by_id(cellar_id: str) -> Optional[Dict[str, Any]]:
     """Get a single cellar by ID from DynamoDB"""
@@ -99,15 +75,6 @@ def get_cellar_by_id(cellar_id: str) -> Optional[Dict[str, Any]]:
     except ClientError:
         return None
 
-
-def update_cellar(cellar: Dict[str, Any]):
-    """Update a single cellar in DynamoDB"""
-    dynamodb = get_dynamodb_resource()
-    table = dynamodb.Table(CELLARS_TABLE)
-    
-    table.put_item(Item=_prepare_item(cellar))
-
-
 def delete_cellar(cellar_id: str):
     """Delete a cellar from DynamoDB"""
     dynamodb = get_dynamodb_resource()
@@ -115,9 +82,8 @@ def delete_cellar(cellar_id: str):
     
     table.delete_item(Key={'id': cellar_id})
 
-
 # Wine Reference storage functions
-def load_wine_references() -> List[Dict[str, Any]]:
+def get_all_wine_references() -> List[Dict[str, Any]]:
     """Load all wine references from DynamoDB as serialized dictionaries"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_REFERENCES_TABLE)
@@ -130,27 +96,11 @@ def load_wine_references() -> List[Dict[str, Any]]:
             return []
         raise
 
-
-def save_wine_references(references: List[Dict[str, Any]]):
+def put_wine_reference(reference: Dict[str, Any]):
     """Save wine references to DynamoDB (accepts serialized dictionaries)"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_REFERENCES_TABLE)
-    
-    # Get all existing reference IDs
-    existing = load_wine_references()
-    existing_ids = {item['id'] for item in existing}
-    new_ids = {r['id'] for r in references}
-    
-    # Delete references that are no longer in the new list
-    for item in existing:
-        if item['id'] not in new_ids:
-            table.delete_item(Key={'id': item['id']})
-    
-    # Put all references
-    with table.batch_writer() as batch:
-        for reference in references:
-            batch.put_item(Item=_prepare_item(reference))
-
+    table.put_item(Item=_prepare_item(reference))
 
 def get_wine_reference_by_id(reference_id: str) -> Optional[Dict[str, Any]]:
     """Get a single wine reference by ID from DynamoDB"""
@@ -163,25 +113,15 @@ def get_wine_reference_by_id(reference_id: str) -> Optional[Dict[str, Any]]:
     except ClientError:
         return None
 
-
-def update_wine_reference(reference: Dict[str, Any]):
-    """Update a single wine reference in DynamoDB"""
-    dynamodb = get_dynamodb_resource()
-    table = dynamodb.Table(WINE_REFERENCES_TABLE)
-    
-    table.put_item(Item=_prepare_item(reference))
-
-
 def delete_wine_reference(reference_id: str):
     """Delete a wine reference from DynamoDB"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_REFERENCES_TABLE)
-    
     table.delete_item(Key={'id': reference_id})
 
 
 # Wine Instance storage functions
-def load_wine_instances() -> List[Dict[str, Any]]:
+def get_all_wine_instances() -> List[Dict[str, Any]]:
     """Load all wine instances from DynamoDB as serialized dictionaries"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_INSTANCES_TABLE)
@@ -199,16 +139,6 @@ def save_wine_instances(instances: List[Dict[str, Any]]):
     """Save wine instances to DynamoDB (accepts serialized dictionaries)"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_INSTANCES_TABLE)
-    
-    # Get all existing instance IDs
-    existing = load_wine_instances()
-    existing_ids = {item['id'] for item in existing}
-    new_ids = {i['id'] for i in instances}
-    
-    # Delete instances that are no longer in the new list
-    for item in existing:
-        if item['id'] not in new_ids:
-            table.delete_item(Key={'id': item['id']})
     
     # Put all instances
     with table.batch_writer() as batch:
@@ -228,7 +158,7 @@ def get_wine_instance_by_id(instance_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def update_wine_instance(instance: Dict[str, Any]):
+def put_wine_instance(instance: Dict[str, Any]):
     """Update a single wine instance in DynamoDB"""
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_INSTANCES_TABLE)

@@ -1,6 +1,6 @@
 """Tests for data models"""
 import pytest
-from server.models import Shelf, Cellar, WineReference, WineInstance, register_wine_reference, clear_wine_references_registry
+from server.models import Shelf, Cellar, WineReference, WineInstance
 
 
 def test_shelf_initialization():
@@ -41,10 +41,7 @@ def test_shelf_get_wine_at():
     assert shelf.get_wine_at('single', 0) is None
     
     # Set a wine instance
-    from server.models import WineInstance, WineReference
-    clear_wine_references_registry()
     ref = WineReference(id='ref1', name='Test Wine', type='Red')
-    register_wine_reference(ref)
     instance = WineInstance(id='inst1', reference=ref)
     
     shelf.set_wine_at('single', 0, instance)
@@ -72,48 +69,27 @@ def test_wine_reference_get_unique_key():
     assert ref1.get_unique_key() != ref3.get_unique_key()
 
 
-def test_wine_reference_registry():
-    """Test WineReference global registry"""
-    clear_wine_references_registry()
-    
+def test_wine_instance_set_consumed():
+    """Test WineInstance set_consumed method"""
     ref = WineReference(id='ref1', name='Test Wine', type='Red')
-    register_wine_reference(ref)
+    instance = WineInstance(id='inst1', reference=ref)
     
-    from server.models import get_wine_reference
-    retrieved = get_wine_reference('ref1')
-    assert retrieved == ref
-    assert retrieved.id == 'ref1'
+    assert instance.consumed is False
+    assert instance.consumed_date is None
+    
+    instance.set_consumed()
+    assert instance.consumed is True
+    assert instance.consumed_date is not None
 
 
-def test_wine_instance_location():
-    """Test WineInstance location tuple"""
-    clear_wine_references_registry()
-    
+def test_wine_instance_set_coravined():
+    """Test WineInstance set_coravined method"""
     ref = WineReference(id='ref1', name='Test Wine', type='Red')
-    register_wine_reference(ref)
+    instance = WineInstance(id='inst1', reference=ref)
     
-    cellar = Cellar(id='cellar1', name='Test Cellar', shelves=[Shelf(positions=10, is_double=False)])
-    shelf = cellar.shelves[0]
+    assert instance.coravined is False
+    assert instance.coravined_date is None
     
-    instance = WineInstance(
-        id='inst1',
-        reference=ref,
-        location=(cellar, shelf, 5, True)
-    )
-    
-    assert instance.location is not None
-    cellar_obj, shelf_obj, position, is_front = instance.location
-    assert cellar_obj.id == 'cellar1'
-    assert position == 5
-    assert is_front is True
-
-
-def test_wine_instance_unshelved():
-    """Test WineInstance with no location (unshelved)"""
-    clear_wine_references_registry()
-    
-    ref = WineReference(id='ref1', name='Test Wine', type='Red')
-    register_wine_reference(ref)
-    
-    instance = WineInstance(id='inst1', reference=ref, location=None)
-    assert instance.location is None
+    instance.set_coravined()
+    assert instance.coravined is True
+    assert instance.coravined_date is not None

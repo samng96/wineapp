@@ -1,29 +1,13 @@
 """Data models and type definitions for WineApp"""
-from typing import List, Optional, Dict, Any, Tuple, TYPE_CHECKING
+from typing import List, Optional, Dict, Any, Tuple, TYPE_CHECKING, Callable
 from dataclasses import dataclass, field
+from server.utils import get_current_timestamp
 
 if TYPE_CHECKING:
     # Forward references for type checking
     WineInstance = 'WineInstance'
     Cellar = 'Cellar'
     Shelf = 'Shelf'
-
-# Global registry for WineReferences (keyed by ID)
-_wine_references_registry: Dict[str, 'WineReference'] = {}
-
-def get_wine_reference(reference_id: str) -> Optional['WineReference']:
-    """Get a WineReference from the global registry by ID (returns object, not ID)"""
-    return _wine_references_registry.get(reference_id)
-
-def register_wine_reference(reference: 'WineReference'):
-    """Register a WineReference in the global registry"""
-    _wine_references_registry[reference.id] = reference
-
-def clear_wine_references_registry():
-    """Clear the global WineReference registry (mainly for testing)"""
-    global _wine_references_registry
-    _wine_references_registry.clear()
-
 
 @dataclass
 class Shelf:
@@ -151,16 +135,31 @@ class Cellar:
         shelf = self._get_shelf(shelf_index)
         shelf.set_wine_at(side, position, instance)
     
-    def remove_wine_from_position(self, shelf_index: int, side: str, position: int):
-        """Remove wine from a position"""
-        if not self.is_position_valid(shelf_index, side, position):
-            raise ValueError(f"Invalid position: shelf_index={shelf_index}, side={side}, position={position}")
-        if self.is_position_available(shelf_index, side, position):
-            raise ValueError(f"Position is empty: shelf_index={shelf_index}, side={side}, position={position}")
-        
-        shelf = self._get_shelf(shelf_index)
-        shelf.set_wine_at(side, position, None)
+    def remove_wine_from_cellar(self, instance: 'WineInstance'):
+        """Remove wine from a cellar"""
+        for shelf in self.shelves:
+            if shelf.is_double:
+                sides = ['front', 'back']
+            else:
+                sides = ['single']
+            for side in sides:
+                for position in range(shelf.positions):
+                    if shelf.get_wine_at(side, position) == instance:
+                        shelf.set_wine_at(side, position, None)
+                        return  # Wine instance found and removed, exit early
 
+    def is_wine_instance_in_cellar(self, instance: 'WineInstance') -> bool: 
+        """Check if a wine instance is in this cellar"""
+        for shelf in self.shelves:
+            if shelf.is_double:
+                sides = ['front', 'back']
+            else:
+                sides = ['single']
+            for side in sides:
+                for position in range(shelf.positions):
+                    if shelf.get_wine_at(side, position) == instance:
+                        return True
+        return False
 
 @dataclass
 class WineReference:
@@ -184,20 +183,27 @@ class WineReference:
         """Get unique key for deduplication (name, vintage, producer)"""
         return (self.name, self.vintage, self.producer)
 
-
 @dataclass
 class WineInstance:
     """Represents a wine instance (physical bottle)"""
     id: str
     reference: 'WineReference'  # WineReference object (not ID - loaded from global registry)
-    location: Optional[Tuple['Cellar', 'Shelf', int, bool]] = None  # (Cellar, Shelf, Position, IsFront) or None for unshelved
     price: Optional[float] = None
     purchase_date: Optional[str] = None  # ISO 8601 date
     drink_by_date: Optional[str] = None  # ISO 8601 date
     consumed: bool = False
     consumed_date: Optional[str] = None  # ISO 8601 timestamp
+    coravined: bool = False
+    coravined_date: Optional[str] = None  # ISO 8601 timestamp
     stored_date: Optional[str] = None  # ISO 8601 timestamp
     version: int = 1
     created_at: Optional[str] = None  # ISO 8601 timestamp
     updated_at: Optional[str] = None  # ISO 8601 timestamp
-    
+
+    def set_consumed(self):
+        self.consumed = True
+        self.consumed_date = get_current_timestamp()
+
+    def set_coravined(self):
+        self.coravined = True
+        self.coravined_date = get_current_timestamp()

@@ -2,7 +2,6 @@
 from typing import List, Optional, Dict, Any
 from server.models import (
     Shelf, Cellar, WineReference, WineInstance,
-    get_wine_reference, register_wine_reference
 )
 
 
@@ -24,7 +23,7 @@ def serialize_shelf_wine_positions(shelf: Shelf) -> Dict[str, List[Optional[str]
 
 
 def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[Dict[str, List[Optional[str]]]] = None, 
-                                  wine_instances: Optional[Dict[str, WineInstance]] = None) -> Shelf:
+                                  wine_instances_dict: Optional[Dict[str, WineInstance]] = None) -> Shelf:
     """
     Create Shelf from tuple format [Positions, IsDouble]
     wine_positions_ids: Dict with instance IDs (from JSON)
@@ -57,15 +56,15 @@ def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[
         wine_positions = [[None] * positions]
     
     # Populate with WineInstance objects if provided
-    if wine_positions_ids and wine_instances:
+    if wine_positions_ids and wine_instances_dict:
         if is_double:
             if 'front' in wine_positions_ids:
-                wine_positions[0] = [wine_instances.get(id) if id else None for id in wine_positions_ids['front']]
+                wine_positions[0] = [wine_instances_dict.get(id) if id else None for id in wine_positions_ids['front']]
             if 'back' in wine_positions_ids:
-                wine_positions[1] = [wine_instances.get(id) if id else None for id in wine_positions_ids['back']]
+                wine_positions[1] = [wine_instances_dict.get(id) if id else None for id in wine_positions_ids['back']]
         else:
             if 'single' in wine_positions_ids:
-                wine_positions[0] = [wine_instances.get(id) if id else None for id in wine_positions_ids['single']]
+                wine_positions[0] = [wine_instances_dict.get(id) if id else None for id in wine_positions_ids['single']]
     
     return Shelf(positions=positions, is_double=is_double, wine_positions=wine_positions)
 
@@ -91,20 +90,21 @@ def serialize_cellar(cellar: Cellar) -> Dict[str, Any]:
     }
 
 
-def deserialize_cellar(data: Dict[str, Any], wine_instances: Optional[Dict[str, WineInstance]] = None) -> Cellar:
+def deserialize_cellar(data: Dict[str, Any], wine_instances: List[WineInstance]) -> Cellar:
     """
     Create Cellar from dictionary
-    wine_instances: Optional dict mapping instance IDs to WineInstance objects for resolving IDs
+    wine_instances: List of WineInstance objects
     """
     shelves_data = data.get('shelves', [])
     wine_positions_data = data.get('winePositions', {})
+    wine_instances_dict = {inst.id: inst for inst in wine_instances}
     
     # Create shelves with their wine positions
     shelves = []
     for i, shelf_tuple in enumerate(shelves_data):
         shelf_key = str(i)
         wine_positions_ids = wine_positions_data.get(shelf_key, {})
-        shelves.append(deserialize_shelf_from_tuple(shelf_tuple, wine_positions_ids, wine_instances))
+        shelves.append(deserialize_shelf_from_tuple(shelf_tuple, wine_positions_ids, wine_instances_dict))
     
     # Handle Decimal from DynamoDB for version and capacity
     from decimal import Decimal
@@ -177,43 +177,22 @@ def deserialize_wine_reference(data: Dict[str, Any]) -> WineReference:
         created_at=data.get('createdAt'),
         updated_at=data.get('updatedAt')
     )
-    # Auto-register in global registry
-    register_wine_reference(reference)
     return reference
 
 
 # WineInstance serialization
 def serialize_wine_instance(instance: WineInstance) -> Dict[str, Any]:
     """Serialize WineInstance to dictionary format for JSON (extracts IDs from objects)"""
-    # Serialize location
-    location_dict = None
-    if instance.location is not None:
-        cellar, shelf, position, is_front = instance.location
-        # Find shelf index in cellar
-        shelf_index = None
-        for i, s in enumerate(cellar.shelves):
-            if s is shelf:
-                shelf_index = i
-                break
-        if shelf_index is None:
-            raise ValueError(f"Shelf not found in cellar {cellar.id}")
-        
-        location_dict = {
-            'cellarId': cellar.id,  # Extract ID from Cellar object
-            'shelfIndex': shelf_index,
-            'position': position,
-            'isFront': is_front
-        }
-    
     return {
         'id': instance.id,
         'referenceId': instance.reference.id,  # Extract ID from WineReference object
-        'location': location_dict,
         'price': instance.price,
         'purchaseDate': instance.purchase_date,
         'drinkByDate': instance.drink_by_date,
         'consumed': instance.consumed,
         'consumedDate': instance.consumed_date,
+        'coravined': instance.coravined,
+        'coravinedDate': instance.coravined_date,
         'storedDate': instance.stored_date,
         'version': instance.version,
         'createdAt': instance.created_at,
@@ -221,54 +200,30 @@ def serialize_wine_instance(instance: WineInstance) -> Dict[str, Any]:
     }
 
 
-def deserialize_wine_instance(data: Dict[str, Any], cellars: Optional[List[Cellar]] = None) -> WineInstance:
+def deserialize_wine_instance(data: Dict[str, Any], reference: WineReference) -> WineInstance:
     """
     Create WineInstance from dictionary, looking up WineReference from global registry
-    cellars: Optional list of Cellar objects for resolving location (if None, location will be None)
     """
-    reference_id = data['referenceId']
-    reference = get_wine_reference(reference_id)
-    if not reference:
-        raise ValueError(f"WineReference with ID '{reference_id}' not found in registry")
-    
-    # Deserialize location
-    location = None
-    location_data = data.get('location')
-    if location_data and cellars:
-        cellar_id = location_data.get('cellarId')
-        shelf_index = location_data.get('shelfIndex')
-        position = location_data.get('position')
-        is_front = location_data.get('isFront')
-        
-        if cellar_id is not None and shelf_index is not None and position is not None and is_front is not None:
-            # Find cellar
-            cellar = next((c for c in cellars if c.id == cellar_id), None)
-            if not cellar:
-                return None
-            
-            # Get shelf
-            if shelf_index < 0 or shelf_index >= len(cellar.shelves):
-                raise ValueError(f"Shelf index {shelf_index} out of range for cellar {cellar_id}")
-            shelf = cellar.shelves[shelf_index]
-            
-            location = (cellar, shelf, pos, is_front)
+    assert reference is not None
     
     # Handle Decimal from DynamoDB for version
     from decimal import Decimal
     version_val = data.get('version', 1)
     version = int(version_val) if isinstance(version_val, Decimal) else version_val
     
-    return WineInstance(
+    instance = WineInstance(
         id=data['id'],
         reference=reference,  # Store WineReference object
-        location=location,
         price=data.get('price'),
         purchase_date=data.get('purchaseDate'),
         drink_by_date=data.get('drinkByDate'),
         consumed=data.get('consumed', False),
         consumed_date=data.get('consumedDate'),
+        coravined=data.get('coravined', False),
+        coravined_date=data.get('coravinedDate'),
         stored_date=data.get('storedDate'),
         version=version,
         created_at=data.get('createdAt'),
-        updated_at=data.get('updatedAt')
-    )
+        updated_at=data.get('updatedAt'))
+
+    return instance
