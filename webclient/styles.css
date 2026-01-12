@@ -268,8 +268,8 @@ body {
 }
 
 .filter-icon-btn {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 4px;
     border: none !important;
     outline: none !important;
@@ -832,7 +832,7 @@ body {
     font-weight: 600;
     margin: 0;
     color: #333;
-    font-variant: small-caps;
+    text-transform: uppercase;
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1915,6 +1915,29 @@ body {
 .filter-search-input:focus {
     outline: none;
     border-color: #6200ea;
+}
+
+.reset-filters-btn {
+    padding: 10px 16px;
+    background: #6200ea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+    align-self: flex-end;
+}
+
+.reset-filters-btn:hover {
+    background: #7c3aed;
+}
+
+.reset-filters-btn:active {
+    background: #4a00c0;
 }
 
 .filter-actions {
