@@ -376,6 +376,7 @@ def test_save_multiple_wine_references(dynamodb_tables):
             id=generate_id(),
             name=f"Wine {i}",
             type="Red" if i % 2 == 0 else "White",
+            vintage=2018 + i,
             version=1,
             created_at=get_current_timestamp(),
             updated_at=get_current_timestamp()
@@ -396,6 +397,7 @@ def test_get_wine_reference_by_id(dynamodb_tables):
         id=generate_id(),
         name="Specific Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -422,6 +424,7 @@ def test_update_wine_reference(dynamodb_tables):
         id=generate_id(),
         name="Original Name",
         type="Red",
+        vintage=2018,
         rating=3,
         version=1,
         created_at=get_current_timestamp(),
@@ -450,6 +453,7 @@ def test_delete_wine_reference(dynamodb_tables):
         id=generate_id(),
         name="To Delete",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -475,6 +479,7 @@ def test_save_wine_references_replaces_existing(dynamodb_tables):
         id=generate_id(),
         name="Reference 1",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -483,6 +488,7 @@ def test_save_wine_references_replaces_existing(dynamodb_tables):
         id=generate_id(),
         name="Reference 2",
         type="White",
+        vintage=2019,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -494,6 +500,7 @@ def test_save_wine_references_replaces_existing(dynamodb_tables):
         id=generate_id(),
         name="Reference 3",
         type="Red",
+        vintage=2020,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -522,6 +529,7 @@ def test_save_and_load_wine_instances(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -561,6 +569,7 @@ def test_save_multiple_wine_instances(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -593,6 +602,7 @@ def test_get_wine_instance_by_id(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -629,6 +639,7 @@ def test_update_wine_instance(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -664,6 +675,7 @@ def test_delete_wine_instance(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -697,6 +709,7 @@ def test_save_wine_instances_replaces_existing(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -742,6 +755,7 @@ def test_wine_instance_with_coravined(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -809,6 +823,7 @@ def test_full_crud_cycle_wine_reference(dynamodb_tables):
         id=generate_id(),
         name="CRUD Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()
@@ -843,6 +858,7 @@ def test_full_crud_cycle_wine_instance(dynamodb_tables):
         id=generate_id(),
         name="Test Wine",
         type="Red",
+        vintage=2018,
         version=1,
         created_at=get_current_timestamp(),
         updated_at=get_current_timestamp()

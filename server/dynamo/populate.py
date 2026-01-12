@@ -349,7 +349,7 @@ def get_wine_label_url(wine_name, producer, vintage):
 
 
 def create_wine_instances(references, cellars):
-    """Create 65 wine instances (50 red, 15 white) and assign them to cellars randomly"""
+    """Create 75 wine instances (50 red, 15 white shelved, 10 unshelved) and assign 65 to cellars randomly"""
     instances = []
     timestamp = get_current_timestamp()
     
@@ -403,17 +403,11 @@ def create_wine_instances(references, cellars):
             
             # Get a random available position
             cellar, shelf_index, side, position = available_positions[instance_count]
-            shelf = cellar.shelves[shelf_index]
-            is_front = (side == 'front') if shelf.is_double else True
-            
-            # Create location tuple
-            location = (cellar, shelf, position, is_front)
             
             # Create instance
             instance = WineInstance(
                 id=generate_id(),
                 reference=reference,
-                location=location,
                 price=round(50.0 + (instance_count * 2.5), 2),  # Varying prices
                 purchase_date="2024-01-15",
                 drink_by_date="2030-01-15",
@@ -468,11 +462,45 @@ def create_wine_instances(references, cellars):
         instance_count += 1
         white_reference_index += 1
     
+    # Create 10 unshelved wine instances (not assigned to any cellar position)
+    # Mix of red and white wines
+    unshelved_reference_index = 0
+    all_references = red_references + white_references
+    
+    for unshelved_count in range(10):
+        # Cycle through all references (mix of red and white)
+        reference = all_references[unshelved_reference_index % len(all_references)]
+        
+        # Create instance without assigning to any cellar position
+        instance = WineInstance(
+            id=generate_id(),
+            reference=reference,
+            price=round(40.0 + (unshelved_count * 3.0), 2),  # Varying prices for unshelved wines
+            purchase_date="2024-01-15",
+            drink_by_date="2030-01-15",
+            consumed=False,
+            consumed_date=None,
+            stored_date=timestamp,
+            version=1,
+            created_at=timestamp,
+            updated_at=timestamp
+        )
+        
+        instances.append(instance)
+        instance_count += 1
+        unshelved_reference_index += 1
+    
     return instances
 
 
 def main():
     """Main function to populate all data"""
+    # Clear all existing data first
+    print("Clearing all existing data...")
+    from server.dynamo.clear_all_data import clear_all_tables
+    clear_all_tables()
+    print("Data cleared.\n")
+    
     print("Creating cellars...")
     cellars = create_cellars()
     print(f"Created {len(cellars)} cellars")
@@ -485,7 +513,9 @@ def main():
     instances = create_wine_instances(references, cellars)
     red_count = sum(1 for inst in instances if inst.reference.type == 'Red')
     white_count = sum(1 for inst in instances if inst.reference.type == 'White')
-    print(f"Created {len(instances)} wine instances ({red_count} red, {white_count} white)")
+    shelved_count = len(instances) - 10  # 10 are unshelved
+    unshelved_count = 10
+    print(f"Created {len(instances)} wine instances ({red_count} red, {white_count} white, {shelved_count} shelved, {unshelved_count} unshelved)")
     
     # Serialize and save to DynamoDB
     print("Saving data to DynamoDB...")

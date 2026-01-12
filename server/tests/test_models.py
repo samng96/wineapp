@@ -41,7 +41,7 @@ def test_shelf_get_wine_at():
     assert shelf.get_wine_at('single', 0) is None
     
     # Set a wine instance
-    ref = WineReference(id='ref1', name='Test Wine', type='Red')
+    ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
     instance = WineInstance(id='inst1', reference=ref)
     
     shelf.set_wine_at('single', 0, instance)
@@ -71,7 +71,7 @@ def test_wine_reference_get_unique_key():
 
 def test_wine_instance_set_consumed():
     """Test WineInstance set_consumed method"""
-    ref = WineReference(id='ref1', name='Test Wine', type='Red')
+    ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
     instance = WineInstance(id='inst1', reference=ref)
     
     assert instance.consumed is False
@@ -84,7 +84,7 @@ def test_wine_instance_set_consumed():
 
 def test_wine_instance_set_coravined():
     """Test WineInstance set_coravined method"""
-    ref = WineReference(id='ref1', name='Test Wine', type='Red')
+    ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
     instance = WineInstance(id='inst1', reference=ref)
     
     assert instance.coravined is False
