@@ -16,50 +16,65 @@ from server.dynamo.storage import (
 
 def search_vivino_images_scrape(query):
     """
-    Search Bing Images specifically for Vivino wine label images
-    Uses site:vivino.com to restrict results to Vivino only
-    Focuses on labels by adding 'label' to the search query
+    Search WineSearcher for wine label images
+    Uses WineSearcher to find wine label images
     """
     try:
-        # Search specifically on Vivino for wine labels
-        search_query = quote(f'site:vivino.com {query} wine label')
-        url = f"https://www.bing.com/images/search?q={search_query}&safe=active"
+        # Search WineSearcher for wine
+        # WineSearcher search URL format: /find/{query}
+        search_query = quote(query.lower().replace(' ', '-'))
+        url = f"https://www.wine-searcher.com/find/{search_query}"
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive'
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.wine-searcher.com/'
         }
         
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         html = response.text
         
-        # Method 1: Look for "murl":"URL" pattern (Bing's embedded image data)
-        matches = re.findall(r'"murl":"(https?://[^"]+)"', html)
-        vivino_urls = []
+        # Method 1: Look for img tags with src or data-src containing image URLs
+        # WineSearcher typically uses img tags with wine images
+        img_patterns = [
+            r'<img[^>]+(?:src|data-src)=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|gif|webp))["\']',
+            r'background-image:\s*url\(["\']?(https?://[^"\'()]+\.(?:jpg|jpeg|png|gif|webp))["\']?\)',
+        ]
         
-        for match in matches[:30]:  # Check first 30 matches
-            match_lower = match.lower()
-            if ('bing' not in match_lower and 'live.com' not in match_lower and 
-                'microsoft' not in match_lower):
-                if 'vivino.com' in match_lower:
-                    if any(ext in match_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'image' in match_lower or 'label' in match_lower:
-                        vivino_urls.append(match)
+        for pattern in img_patterns:
+            matches = re.findall(pattern, html, re.IGNORECASE)
+            if matches:
+                # Filter out WineSearcher's own assets and prefer wine label images
+                for match in matches[:20]:
+                    match_lower = match.lower()
+                    # Skip WineSearcher assets, logos, icons
+                    if ('wine-searcher.com' not in match_lower and 
+                        'logo' not in match_lower and
+                        'icon' not in match_lower and
+                        'button' not in match_lower):
+                        # Prefer images with 'label', 'bottle', 'wine' in URL
+                        if any(keyword in match_lower for keyword in ['label', 'bottle', 'wine']):
+                            return match
+                # If no keyword match, return first valid image
+                for match in matches[:10]:
+                    match_lower = match.lower()
+                    if ('wine-searcher.com' not in match_lower and 
+                        'logo' not in match_lower and
+                        'icon' not in match_lower):
+                        return match
         
-        if vivino_urls:
-            return vivino_urls[0]
-        
-        # Method 2: Look for Vivino CDN URLs
-        vivino_cdn_pattern = r'https?://[^\s"<>\)]*images\.vivino\.com[^\s"<>\)]+'
-        matches = re.findall(vivino_cdn_pattern, html, re.IGNORECASE)
+        # Method 2: Look for JSON data with image URLs
+        json_pattern = r'"(?:imageUrl|image_url|imgUrl|img_url|labelImage|label_image|wineImage)":\s*["\'](https?://[^"\']+\.(?:jpg|jpeg|png|gif|webp))["\']'
+        matches = re.findall(json_pattern, html, re.IGNORECASE)
         if matches:
-            for match in matches:
-                if any(ext in match.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'label' in match.lower():
+            for match in matches[:5]:
+                match_lower = match.lower()
+                if 'wine-searcher.com' not in match_lower:
                     return match
-            return matches[0]
         
         return None
     except Exception as e:
@@ -67,7 +82,7 @@ def search_vivino_images_scrape(query):
 
 
 def get_wine_label_url(wine_name, producer, vintage):
-    """Get a wine label image URL from Vivino via Google Images search"""
+    """Get a wine label image URL from WineSearcher"""
     # Build search query from wine information
     query_parts = []
     if wine_name:
