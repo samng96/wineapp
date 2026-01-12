@@ -186,4 +186,39 @@ export class Cellar {
         const shelf = this._getShelf(shelfIndex);
         shelf.setWineAt(side, position, null);
     }
+
+    /**
+     * Check if a wine instance is in this cellar
+     * @param {WineInstance} instance - Wine instance to check
+     * @returns {boolean} True if instance is in this cellar
+     */
+    isWineInstanceInCellar(instance) {
+        // Check winePositions data structure (from API)
+        if (this.winePositions) {
+            for (const shelfIndex in this.winePositions) {
+                const shelfPositions = this.winePositions[shelfIndex];
+                for (const side of ['front', 'back', 'single']) {
+                    const positions = shelfPositions[side] || [];
+                    if (positions.includes(instance.id)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // Also check shelves if they have WineInstance objects
+        for (const shelf of this.shelves) {
+            if (shelf.winePositions) {
+                for (const row of shelf.winePositions) {
+                    for (const wine of row) {
+                        if (wine && wine.id === instance.id) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
 }

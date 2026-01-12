@@ -205,6 +205,22 @@ def _consume_wine_instance(instance_id: str):
     return jsonify(serialize_wine_instance(instance))
 
 
+@wine_instances_bp.route('/wine-instances/<instance_id>/coravin', methods=['POST'])
+def _coravin_wine_instance(instance_id: str):
+    """Mark a wine instance as coravined"""
+    instance = find_wine_instance_by_id(instance_id)
+    if not instance:
+        return jsonify({'error': 'Wine instance not found'}), 404
+    
+    # Update version and timestamp
+    instance.set_coravined()
+    instance.version += 1
+    instance.updated_at = get_current_timestamp()
+    
+    _update_and_save_wine_instance(instance)
+    return jsonify(serialize_wine_instance(instance))
+
+
 """
 Delete a wine instance
 

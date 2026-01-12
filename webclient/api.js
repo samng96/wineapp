@@ -23,13 +23,13 @@ class API {
         }
     }
 
-    static async post(endpoint, data) {
+    static async post(endpoint, data = null) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data),
+            body: data ? JSON.stringify(data) : undefined,
         });
         if (!response.ok) {
             const error = await response.json().catch(() => ({ error: response.statusText }));
@@ -68,6 +68,72 @@ class API {
         }
         // If no JSON, return success message
         return { message: 'Deleted successfully' };
+    }
+
+    // Wine Instance API methods
+    
+    /**
+     * Mark a wine instance as consumed
+     * @param {string} instanceId - Wine instance ID
+     * @returns {Promise<Object>} Updated wine instance
+     */
+    static async consumeWineInstance(instanceId) {
+        return await this.post(`/wine-instances/${instanceId}/consume`);
+    }
+
+    /**
+     * Mark a wine instance as coravined
+     * @param {string} instanceId - Wine instance ID
+     * @returns {Promise<Object>} Updated wine instance
+     */
+    static async coravinWineInstance(instanceId) {
+        return await this.post(`/wine-instances/${instanceId}/coravin`);
+    }
+
+    /**
+     * Update wine instance location
+     * @param {string} instanceId - Wine instance ID
+     * @param {Object} locationData - Location data with oldCellarId (optional), newCellarId, shelfIndex, side, position
+     * @returns {Promise<Object>} Updated wine instance
+     */
+    static async updateWineInstanceLocation(instanceId, locationData) {
+        return await this.put(`/wine-instances/${instanceId}/location`, locationData);
+    }
+
+    /**
+     * Update wine instance properties (price, purchaseDate, drinkByDate)
+     * @param {string} instanceId - Wine instance ID
+     * @param {Object} updateData - Data to update (price, purchaseDate, drinkByDate)
+     * @returns {Promise<Object>} Updated wine instance
+     */
+    static async updateWineInstance(instanceId, updateData) {
+        return await this.put(`/wine-instances/${instanceId}`, updateData);
+    }
+
+    /**
+     * Create a new wine instance
+     * @param {Object} instanceData - Instance data with referenceId, price (optional), purchaseDate (optional), drinkByDate (optional), location (optional)
+     * @returns {Promise<Object>} Created wine instance
+     */
+    static async createWineInstance(instanceData) {
+        return await this.post('/wine-instances', instanceData);
+    }
+
+    /**
+     * Delete a wine instance
+     * @param {string} instanceId - Wine instance ID
+     * @returns {Promise<Object>} Deletion confirmation
+     */
+    static async deleteWineInstance(instanceId) {
+        return await this.delete(`/wine-instances/${instanceId}`);
+    }
+
+    /**
+     * Get all unshelved wine instances
+     * @returns {Promise<Array>} Array of unshelved wine instances
+     */
+    static async getUnshelvedWineInstances() {
+        return await this.get('/unshelved');
     }
 }
 
