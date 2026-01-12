@@ -14,62 +14,80 @@ from server.dynamo.storage import (
 )
 
 
-def search_vivino_direct(wine_name, producer=None, vintage=None):
+def search_vivino_images_scrape(query):
     """
-    Search Vivino directly for wine and get label image URL
-    Uses Vivino's search API/endpoint
+    Search Google Images specifically for Vivino wine label images
+    Uses site:vivino.com to restrict results to Vivino only
+    Focuses on labels by adding 'label' to the search query
     """
     try:
-        # Build search query
-        query_parts = []
-        if wine_name:
-            query_parts.append(wine_name)
-        if producer:
-            query_parts.append(producer)
-        if vintage:
-            query_parts.append(str(vintage))
-        
-        search_query = ' '.join(query_parts)
-        encoded_query = quote(search_query)
-        
-        # Vivino search API endpoint
-        search_url = f"https://www.vivino.com/api/vintage_search?q={encoded_query}"
+        # Search specifically on Vivino for wine labels
+        search_query = quote(f'site:vivino.com {query} wine label')
+        url = f"https://www.google.com/search?q={search_query}&tbm=isch&safe=active"
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.vivino.com/'
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive'
         }
         
-        response = requests.get(search_url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+        html = response.text
         
-        if response.status_code == 200:
-            data = response.json()
-            
-            # Try to extract image URL from the response
-            if 'matches' in data and len(data['matches']) > 0:
-                match = data['matches'][0]  # Take first match
-                if 'vintage' in match and 'image' in match['vintage']:
-                    image_url = match['vintage']['image']
-                    if image_url:
-                        return image_url
-                # Try alternative paths
-                if 'image' in match:
-                    return match['image']
-                if 'vintage' in match and 'wine' in match['vintage'] and 'image' in match['vintage']['wine']:
-                    return match['vintage']['wine']['image']
+        # Method 1: Look for "ou":"URL" pattern (Google's embedded image data)
+        matches = re.findall(r'"ou":"(https?://[^"]+)"', html)
+        vivino_urls = []
+        
+        for match in matches[:30]:  # Check first 30 matches
+            match_lower = match.lower()
+            if ('google' not in match_lower and 'gstatic' not in match_lower and 
+                'doubleclick' not in match_lower):
+                if 'vivino.com' in match_lower:
+                    if any(ext in match_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'image' in match_lower or 'label' in match_lower:
+                        vivino_urls.append(match)
+        
+        if vivino_urls:
+            return vivino_urls[0]
+        
+        # Method 2: Look for Vivino CDN URLs
+        vivino_cdn_pattern = r'https?://[^\s"<>\)]*images\.vivino\.com[^\s"<>\)]+'
+        matches = re.findall(vivino_cdn_pattern, html, re.IGNORECASE)
+        if matches:
+            for match in matches:
+                if any(ext in match.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'label' in match.lower():
+                    return match
+            return matches[0]
         
         return None
     except Exception as e:
-        print(f"  Warning: Error searching Vivino directly for '{search_query}': {e}")
         return None
 
 
 def get_wine_label_url(wine_name, producer, vintage):
-    """Get a wine label image URL from Vivino directly"""
-    image_url = search_vivino_direct(wine_name, producer, vintage)
-    return image_url
+    """Get a wine label image URL from Vivino via Google Images search"""
+    # Build search query from wine information
+    query_parts = []
+    if wine_name:
+        query_parts.append(wine_name)
+    if producer:
+        query_parts.append(producer)
+    if vintage:
+        query_parts.append(str(vintage))
+    
+    query = ' '.join(query_parts)
+    
+    # Search for Vivino label image
+    image_url = search_vivino_images_scrape(query)
+    
+    if image_url:
+        return image_url
+    
+    # Fallback: if no Vivino image found, return None or a placeholder
+    # The caller should handle None appropriately
+    return None
 
 
 # Sample wine data
