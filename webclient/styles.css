@@ -259,10 +259,73 @@ body {
     transition: background 0.2s;
     flex-shrink: 0;
     line-height: 1;
+    padding: 0;
+    overflow: hidden;
 }
 
 .icon-btn:hover {
     background: #7c3aed;
+}
+
+.filter-icon-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    padding: 0;
+}
+
+.filter-icon-btn:hover {
+    background: transparent !important;
+}
+
+.filter-icon-btn img,
+.filter-icon-btn span {
+    border: none !important;
+    outline: none !important;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+.filter-icon-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 0;
+    border: none !important;
+    outline: none !important;
+    text-decoration: none;
+    display: block;
+    background: transparent;
+}
+
+.filter-icon-img.filter-icon {
+    display: block;
+}
+
+.filter-icon-img.filter-icon.hidden {
+    display: none;
+}
+
+.filter-arrow-icon {
+    font-size: 14px;
+    color: #333;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.filter-arrow-icon.hidden {
+    display: none !important;
+}
+
+.filter-icon-btn .filter-arrow-icon:not(.hidden) {
+    display: flex !important;
 }
 
 /* Labels Toggle Switch */
@@ -1667,61 +1730,29 @@ body {
 
 /* Filter Panel */
 .filter-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-    padding-top: 60px;
-    padding-right: 16px;
-    padding-left: 16px;
-    padding-bottom: 16px;
-    overflow-y: auto;
-    animation: fadeIn 0.2s ease-out;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
 }
 
 .filter-panel.hidden {
-    display: none;
+    max-height: 0;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.filter-panel:not(.hidden) {
+    max-height: 600px;
 }
 
 .filter-panel-content {
-    background: white;
-    border-radius: 8px 8px 0 0;
     padding: 20px;
     width: 100%;
-    max-width: 400px;
-    max-height: calc(100vh - 80px);
     overflow-y: auto;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     gap: 20px;
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
 }
 
 .filter-section {

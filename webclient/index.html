@@ -40,16 +40,14 @@
                 <div class="view-header">
                     <h2>Wines</h2>
                     <div class="view-header-actions">
-                        <button id="wines-filter-btn" class="icon-btn" title="Filter">🔍</button>
+                        <button id="wines-filter-btn" class="icon-btn filter-icon-btn" title="Filter">
+                            <img src="assets/filter-icon.jpg" alt="Filter" class="filter-icon-img filter-icon" />
+                            <span class="filter-arrow-icon hidden">▲</span>
+                        </button>
                     </div>
                 </div>
-                <div id="wines-list" class="list-container">
-                    <!-- Wines will be populated here -->
-                </div>
-            </div>
-
-            <!-- Wines Filter Panel -->
-            <div id="wines-filter-panel" class="filter-panel hidden">
+                <!-- Wines Filter Panel -->
+                <div id="wines-filter-panel" class="filter-panel hidden">
                 <div class="filter-panel-content">
                     <div class="filter-section">
                         <label class="filter-label">Wine Type</label>
@@ -99,6 +97,10 @@
                     <div class="filter-actions">
                         <button id="filter-apply-btn" class="btn-primary">Apply</button>
                     </div>
+                </div>
+                </div>
+                <div id="wines-list" class="list-container">
+                    <!-- Wines will be populated here -->
                 </div>
             </div>
 
