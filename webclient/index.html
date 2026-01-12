@@ -39,9 +39,66 @@
             <div id="wines-view" class="view">
                 <div class="view-header">
                     <h2>Wines</h2>
+                    <div class="view-header-actions">
+                        <button id="wines-filter-btn" class="icon-btn" title="Filter">🔍</button>
+                    </div>
                 </div>
                 <div id="wines-list" class="list-container">
                     <!-- Wines will be populated here -->
+                </div>
+            </div>
+
+            <!-- Wines Filter Panel -->
+            <div id="wines-filter-panel" class="filter-panel hidden">
+                <div class="filter-panel-content">
+                    <div class="filter-section">
+                        <label class="filter-label">Wine Type</label>
+                        <div class="filter-dropdown">
+                            <button class="filter-dropdown-toggle" id="wine-type-toggle">
+                                <span id="wine-type-selected">All Types</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="filter-dropdown-menu" id="wine-type-menu">
+                                <!-- Wine type checkboxes will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-label">Varietal</label>
+                        <div class="filter-dropdown">
+                            <button class="filter-dropdown-toggle" id="varietal-toggle">
+                                <span id="varietal-selected">All Varietals</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="filter-dropdown-menu" id="varietal-menu">
+                                <!-- Varietal checkboxes will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" id="filter-consumed" class="filter-checkbox">
+                            <span>Consumed wines</span>
+                        </label>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" id="filter-unshelved" class="filter-checkbox">
+                            <span>Unshelved wines</span>
+                        </label>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-label">Search</label>
+                        <input type="text" id="filter-search" class="filter-search-input" placeholder="Search wines...">
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="filter-apply-btn" class="btn-primary">Apply</button>
+                    </div>
                 </div>
             </div>
 

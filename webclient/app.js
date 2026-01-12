@@ -3,6 +3,7 @@ import { Cellar } from './models/Cellar.js';
 import { WineReference } from './models/WineReference.js';
 import { WineInstance } from './models/WineInstance.js';
 import { CellarManager } from './cellarManager.js';
+import { WineManager } from './wineManager.js';
 
 class WineApp {
     constructor() {
@@ -20,6 +21,7 @@ class WineApp {
         this.setupMenu();
         this.setupSearch();
         this.initCellarManager();
+        this.initWineManager();
         this.showView('home');
     }
 
@@ -28,6 +30,14 @@ class WineApp {
             window.cellarManager = new CellarManager();
         } catch (error) {
             console.error('Error initializing CellarManager:', error);
+        }
+    }
+
+    initWineManager() {
+        try {
+            window.wineManager = new WineManager();
+        } catch (error) {
+            console.error('Error initializing WineManager:', error);
         }
     }
 
@@ -142,6 +152,11 @@ class WineApp {
         // Reload cellar data when viewing cellar page
         if (viewName === 'cellar' && window.cellarManager) {
             window.cellarManager.loadCellars();
+        }
+
+        // Load wines when viewing wines page
+        if (viewName === 'wines' && window.wineManager) {
+            window.wineManager.loadWines();
         }
     }
 

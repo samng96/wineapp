@@ -45,4 +45,29 @@ export class WineReference {
     getUniqueKey() {
         return [this.name, this.vintage, this.producer];
     }
+
+    /**
+     * Create a WineReference instance from API response dictionary
+     * @param {Object} dict - Dictionary from API response
+     * @returns {WineReference} WineReference instance
+     */
+    static fromDict(dict) {
+        return new WineReference(
+            dict.id,
+            dict.name,
+            dict.type,
+            dict.vintage,
+            dict.producer,
+            dict.varietals,
+            dict.region,
+            dict.country,
+            dict.rating,
+            dict.tastingNotes,
+            dict.labelImageUrl,
+            dict.version || 1,
+            dict.createdAt,
+            dict.updatedAt
+        );
+    }
 }
+
