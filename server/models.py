@@ -167,7 +167,7 @@ class WineReference:
     id: str
     name: str
     type: str  # Red, White, Rosé, Sparkling, etc.
-    vintage: Optional[int] = None
+    vintage: int
     producer: Optional[str] = None
     varietals: Optional[List[str]] = None
     region: Optional[str] = None
