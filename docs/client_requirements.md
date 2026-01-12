@@ -31,17 +31,20 @@ We'll also want a /data folder that stores local cached copies of the downloaded
 ## Searching and Filtering
 A lot of the wine management flows depend on filtering. Filters are additive, and can be checked on/off. Searching is just a specific filter, which is the "search" filter that returns items where something in the item matches the search term. 
 
-We have the following filters:
-  - Type (Red, White, Rosé, etc.)
+**Currently Implemented Filters:**
+  - Type (Red, White, Rosé, etc.) - checkbox-based dropdown with "Select all" option
+  - Varietals - checkbox-based dropdown with "Select all" option
+  - Whether consumed - checkbox filter
+  - Unshelved or not - checkbox filter
+  - Search text - free-form text search (case-insensitive and accent-insensitive)
+
+**Planned Filters (not yet implemented):**
   - Vintage range
   - Rating
   - Country/Region
-  - Whether consumed
-  - Varietals
   - Producer
   - Date range added to the cellar
   - Price range
-  - Unshelved or not
   - In a specific cellar
 
 ## Functional requirements
@@ -49,10 +52,9 @@ We have the following filters:
 We'll eventually need an auth page to start, but for the time being we can jump straight into the app, assuming a singleton user.
 
 The main navigation will be done a bottom bar. That bottom bar will contain:
-- Cellar - takes the user to cellar management
-- Photo - takes the user to the Add Wines section
-- Wines - takes the user to the search page, no filter
-- Unshelved - takes the user to the search page, with filter = "Unshelved Wines" applied.
+- Cellars - takes the user to cellar management
+- Add wines - takes the user to the Add Wines section
+- Wines - takes the user to the wines list view with filtering capabilities
 - Search bar - takes the user to the search page with search term applied
 - 3 dot hamburger menu - brings up the additional menu that has the following items:
     - Settings
@@ -66,20 +68,83 @@ The home view needs several components. For now, just have a simple splash scree
 ### 2. Cellar management
 The cellar management screen starts by showing all the cellars the user has. From here, the user can add new cellars, edit them (they can only edit the cellar temperature and the name of the cellar), and remove them.
 
-Each cellar that apperas shows the name that is editable, the number of shelves, the total capacity (ie used/total), and what the cellar's temperature is set to. Hovering over the text for the number of bottles displays a breakdown by type of the bottles stored.
+Each cellar that appears shows the name (displayed in ALL CAPS), the number of shelves, the total capacity (ie used/total), and what the cellar's temperature is set to. Hovering over the text for the number of bottles displays a breakdown by type of the bottles stored.
 
 UI placement:
 - Top bar showing a plus sign on the right side that when clicked pops up a dialog to create a new cellar
-- Main page is just a list view of all the cellars that the user has. Next to the cellar, there is an edit icon and a delete icon. Clicking the edit icon pops up a dialog to edit the editable fileds of a cellar, and clicking the delete icon prompts an "are you sure?" before deleting.
+- Main page is just a list view of all the cellars that the user has. Each cellar card has a three-dot menu button that shows options to edit or delete the cellar.
+  - Edit option: pops up a dialog to edit the editable fields of a cellar
+  - Delete option: prompts an "are you sure?" before deleting
+- Cellar cards display a preview of the first 3 wine label images
+- Cellar cards show a bottle layout preview matching the actual cellar layout (double-stacked for double shelves, single-stacked for single shelves, staggered by shelf row)
 
-### 3. Search page
+### 3. Wines View
+The wines view displays all wine instances in the user's inventory with comprehensive filtering capabilities.
 
-### 3. Wine Instance management
+#### 3.1 Filter Panel
+A collapsible filter panel is accessible via a filter icon button in the top right of the view header. When opened, it displays the following filters:
+
+**Wine Type Filter:**
+- Dropdown menu with checkboxes for each wine type (Red, White, etc.)
+- "Select all" checkbox at the top that controls all type selections
+- All types are checked by default
+- When "Select all" is checked/unchecked, all type checkboxes follow
+- When individual types are unchecked, "Select all" automatically unchecks if not all are selected
+
+**Varietal Filter:**
+- Dropdown menu with checkboxes for each unique varietal found in the wine collection
+- "Select all" checkbox at the top that controls all varietal selections
+- All varietals are checked by default
+- Same behavior as Wine Type filter
+
+**Consumed Wines Filter:**
+- Checkbox to show/hide consumed wines
+- Off by default
+- Mutually exclusive with Unshelved wines (checking one unchecks the other)
+
+**Unshelved Wines Filter:**
+- Checkbox to show/hide unshelved wines (not assigned to any cellar position)
+- Off by default
+- Mutually exclusive with Consumed wines (checking one unchecks the other)
+
+**Search Filter:**
+- Text input for free-form search
+- Searches across wine name, producer, region, country, type, and varietals
+- Case-insensitive and accent-insensitive (e.g., "cafe" matches "Café", "CAFÉ", etc.)
+- Updates results in real-time as user types (with debounce)
+
+**Reset Filters Button:**
+- Button aligned to the right side of the filter panel
+- Resets all filters to default values:
+  - All wine types checked
+  - All varietals checked
+  - Consumed wines unchecked
+  - Unshelved wines unchecked
+  - Search text cleared
+
+#### 3.2 Filter Behavior
+- All filters are live - changes are applied immediately without an "Apply" button
+- Filter availability updates dynamically:
+  - Unchecked filter options that would yield zero results are grayed out (disabled)
+  - The "Select all" checkbox is never grayed out
+- When a filter selection becomes invalid due to other filter changes:
+  - The invalid selection is automatically unchecked
+  - The option is grayed out
+- Wine Type and Varietal dropdowns are displayed side-by-side in separate columns
+- Only one dropdown can be open at a time (opening one closes the other)
+- Clicking outside a dropdown closes it
+
+#### 3.3 Wine List Display
+- Displays all wine instances matching the current filter criteria
+- Shows key information: name, type, vintage, producer, varietals, location, and status
+- Updates dynamically as filters change
+
+#### 3.4 Wine Instance management
 Users should be able to add new wines to their inventory. They should be able to do this by scanning the label of the wine, having the app look up the wine online (via InVintory or TotalWine or some other service) to auto-populate the wine's details.
 - When we add a wine, user should be able to determine if they've purchased the wine before; if so, we should refer to the same instance and have it keep tally of each purchase/consumption date.
 - This likely means we need a singleton that tracks each wine reference, and then a separate entity for instances.
 
-#### 1.2 View Wines
+#### 3.5 View Wines - Instances and References
 Users should be able to view all wines in their inventory. When viewing a wine, the user should be able to:
 - See how many instances of the given wine they have
 - See where each instance is located (ie which cellar)
@@ -88,12 +153,12 @@ Users should be able to view all wines in their inventory. When viewing a wine, 
 
 Users should also be able to see all the consumed wine of this reference type. This should be a togglable filter.
 
-#### 1.3 Edit Wine
+#### 3.6 Edit Wine
 Users should be able to edit existing wine entries. It should be differentiable when they're editing the wine reference vs the wine instance. 
 
 Update any field including quantity (when drinking/consuming). When consumed, the instance should be marked as consumed and should no longer occupy space in the cellar. It should still be tagged to the reference, and should still be searchable with the specific filter turned on.
 
-#### 1.4 Delete Wine
+#### 3.7 Delete Wine
 Users should be able to remove wines from their inventory. This is different than consuming - this removes the entry altogether (ie a hard delete). 
 
 Include confirmation to prevent accidental deletion
