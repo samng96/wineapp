@@ -16,14 +16,14 @@ from server.dynamo.storage import (
 
 def search_vivino_images_scrape(query):
     """
-    Search Google Images specifically for Vivino wine label images
+    Search Bing Images specifically for Vivino wine label images
     Uses site:vivino.com to restrict results to Vivino only
     Focuses on labels by adding 'label' to the search query
     """
     try:
         # Search specifically on Vivino for wine labels
         search_query = quote(f'site:vivino.com {query} wine label')
-        url = f"https://www.google.com/search?q={search_query}&tbm=isch&safe=active"
+        url = f"https://www.bing.com/images/search?q={search_query}&safe=active"
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -37,14 +37,14 @@ def search_vivino_images_scrape(query):
         response.raise_for_status()
         html = response.text
         
-        # Method 1: Look for "ou":"URL" pattern (Google's embedded image data)
-        matches = re.findall(r'"ou":"(https?://[^"]+)"', html)
+        # Method 1: Look for "murl":"URL" pattern (Bing's embedded image data)
+        matches = re.findall(r'"murl":"(https?://[^"]+)"', html)
         vivino_urls = []
         
         for match in matches[:30]:  # Check first 30 matches
             match_lower = match.lower()
-            if ('google' not in match_lower and 'gstatic' not in match_lower and 
-                'doubleclick' not in match_lower):
+            if ('bing' not in match_lower and 'live.com' not in match_lower and 
+                'microsoft' not in match_lower):
                 if 'vivino.com' in match_lower:
                     if any(ext in match_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']) or 'image' in match_lower or 'label' in match_lower:
                         vivino_urls.append(match)
@@ -92,59 +92,59 @@ def get_wine_label_url(wine_name, producer, vintage):
 
 # Sample wine data
 RED_WINES = [
-    {"name": "Caymus Cabernet Sauvignon", "vintage": 2019, "producer": "Caymus Vineyards", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Opus One", "vintage": 2018, "producer": "Opus One Winery", "varietals": ["Cabernet Sauvignon", "Cabernet Franc", "Merlot"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Screaming Eagle Cabernet Sauvignon", "vintage": 2017, "producer": "Screaming Eagle", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Domaine de la Romanée-Conti", "vintage": 2018, "producer": "DRC", "varietals": ["Pinot Noir"], "region": "Burgundy", "country": "France"},
-    {"name": "Château Margaux", "vintage": 2015, "producer": "Château Margaux", "varietals": ["Cabernet Sauvignon", "Merlot"], "region": "Bordeaux", "country": "France"},
-    {"name": "Château Lafite Rothschild", "vintage": 2016, "producer": "Château Lafite Rothschild", "varietals": ["Cabernet Sauvignon", "Merlot"], "region": "Bordeaux", "country": "France"},
-    {"name": "Penfolds Grange", "vintage": 2017, "producer": "Penfolds", "varietals": ["Shiraz"], "region": "South Australia", "country": "Australia"},
-    {"name": "Sassicaia", "vintage": 2018, "producer": "Tenuta San Guido", "varietals": ["Cabernet Sauvignon", "Cabernet Franc"], "region": "Tuscany", "country": "Italy"},
-    {"name": "Tignanello", "vintage": 2019, "producer": "Antinori", "varietals": ["Sangiovese", "Cabernet Sauvignon"], "region": "Tuscany", "country": "Italy"},
-    {"name": "Vega Sicilia Unico", "vintage": 2012, "producer": "Vega Sicilia", "varietals": ["Tempranillo", "Cabernet Sauvignon"], "region": "Ribera del Duero", "country": "Spain"},
-    {"name": "Silver Oak Cabernet Sauvignon", "vintage": 2018, "producer": "Silver Oak", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Jordan Cabernet Sauvignon", "vintage": 2017, "producer": "Jordan Vineyard", "varietals": ["Cabernet Sauvignon"], "region": "Sonoma County", "country": "United States"},
-    {"name": "Stag's Leap Wine Cellars Cask 23", "vintage": 2016, "producer": "Stag's Leap Wine Cellars", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Ridge Monte Bello", "vintage": 2018, "producer": "Ridge Vineyards", "varietals": ["Cabernet Sauvignon"], "region": "Santa Cruz Mountains", "country": "United States"},
-    {"name": "Shafer Hillside Select", "vintage": 2017, "producer": "Shafer Vineyards", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Château Pétrus", "vintage": 2015, "producer": "Château Pétrus", "varietals": ["Merlot"], "region": "Pomerol", "country": "France"},
-    {"name": "Château Cheval Blanc", "vintage": 2016, "producer": "Château Cheval Blanc", "varietals": ["Cabernet Franc", "Merlot"], "region": "Saint-Émilion", "country": "France"},
-    {"name": "Dom Pérignon", "vintage": 2012, "producer": "Moët & Chandon", "varietals": ["Chardonnay", "Pinot Noir"], "region": "Champagne", "country": "France"},
-    {"name": "Cristal", "vintage": 2013, "producer": "Louis Roederer", "varietals": ["Chardonnay", "Pinot Noir"], "region": "Champagne", "country": "France"},
-    {"name": "Krug Grande Cuvée", "vintage": 2014, "producer": "Krug", "varietals": ["Chardonnay", "Pinot Noir", "Pinot Meunier"], "region": "Champagne", "country": "France"},
-    {"name": "Burgundy Pinot Noir", "vintage": 2018, "producer": "Domaine de la Romanée-Conti", "varietals": ["Pinot Noir"], "region": "Burgundy", "country": "France"},
-    {"name": "Barolo", "vintage": 2016, "producer": "Giacomo Conterno", "varietals": ["Nebbiolo"], "region": "Piedmont", "country": "Italy"},
-    {"name": "Brunello di Montalcino", "vintage": 2015, "producer": "Biondi-Santi", "varietals": ["Sangiovese"], "region": "Tuscany", "country": "Italy"},
-    {"name": "Amarone della Valpolicella", "vintage": 2017, "producer": "Allegrini", "varietals": ["Corvina", "Rondinella"], "region": "Veneto", "country": "Italy"},
-    {"name": "Chianti Classico", "vintage": 2018, "producer": "Castello di Brolio", "varietals": ["Sangiovese"], "region": "Tuscany", "country": "Italy"},
-    {"name": "Rioja Reserva", "vintage": 2015, "producer": "Marqués de Riscal", "varietals": ["Tempranillo"], "region": "Rioja", "country": "Spain"},
-    {"name": "Priorat", "vintage": 2017, "producer": "Clos Mogador", "varietals": ["Garnacha", "Carignan"], "region": "Catalonia", "country": "Spain"},
-    {"name": "Ribera del Duero", "vintage": 2016, "producer": "Pesquera", "varietals": ["Tempranillo"], "region": "Ribera del Duero", "country": "Spain"},
-    {"name": "Malbec Reserva", "vintage": 2018, "producer": "Catena Zapata", "varietals": ["Malbec"], "region": "Mendoza", "country": "Argentina"},
-    {"name": "Carmenère", "vintage": 2017, "producer": "Concha y Toro", "varietals": ["Carmenère"], "region": "Colchagua Valley", "country": "Chile"},
-    {"name": "Pinot Noir", "vintage": 2019, "producer": "Domaine Drouhin", "varietals": ["Pinot Noir"], "region": "Willamette Valley", "country": "United States"},
-    {"name": "Zinfandel", "vintage": 2018, "producer": "Ridge Vineyards", "varietals": ["Zinfandel"], "region": "Sonoma County", "country": "United States"},
-    {"name": "Syrah", "vintage": 2017, "producer": "Sine Qua Non", "varietals": ["Syrah"], "region": "Central Coast", "country": "United States"},
-    {"name": "Merlot", "vintage": 2018, "producer": "Duckhorn Vineyards", "varietals": ["Merlot"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Cabernet Franc", "vintage": 2017, "producer": "Lang & Reed", "varietals": ["Cabernet Franc"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Grenache", "vintage": 2019, "producer": "Tablas Creek", "varietals": ["Grenache"], "region": "Paso Robles", "country": "United States"},
-    {"name": "Mourvèdre", "vintage": 2018, "producer": "Tablas Creek", "varietals": ["Mourvèdre"], "region": "Paso Robles", "country": "United States"},
+    {"name": "Caymus Cabernet Sauvignon", "vintage": 2019, "producer": "Caymus Vineyards", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/en/caymus-vineyards-cabernet-sauvignon/w/66284"},
+    {"name": "Opus One", "vintage": 2018, "producer": "Opus One Winery", "varietals": ["Cabernet Sauvignon", "Cabernet Franc", "Merlot"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/francis-ford-coppola-winery-eleanor-red-wine/w/1283092?year=2018"},
+    {"name": "Screaming Eagle Cabernet Sauvignon", "vintage": 2017, "producer": "Screaming Eagle", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/moutai-cabernet-sauvignon-wine-of-china/w/1468807?year=2017"},
+    {"name": "Domaine de la Romanée-Conti", "vintage": 2018, "producer": "DRC", "varietals": ["Pinot Noir"], "region": "Burgundy", "country": "France", "label_image_url": "https://www.vivino.com/US/en/domaine-de-la-cadette-l-ermitage-bourgogne/w/1197039?year=2018"},
+    {"name": "Château Margaux", "vintage": 2015, "producer": "Château Margaux", "varietals": ["Cabernet Sauvignon", "Merlot"], "region": "Bordeaux", "country": "France", "label_image_url": "https://www.vivino.com/US/en/rene-renon-chateau-charmant-margaux-margaux-red-wine/w/1762595?year=1984"},
+    {"name": "Château Lafite Rothschild", "vintage": 2016, "producer": "Château Lafite Rothschild", "varietals": ["Cabernet Sauvignon", "Merlot"], "region": "Bordeaux", "country": "France", "label_image_url": "https://www.vivino.com/chateau-lafite-rothschild-carruades-de-lafite-pauillac/w/23793"},
+    {"name": "Penfolds Grange", "vintage": 2017, "producer": "Penfolds", "varietals": ["Shiraz"], "region": "South Australia", "country": "Australia", "label_image_url": "https://www.vivino.com/penfolds-grange/w/1136930?year=1999"},
+    {"name": "Sassicaia", "vintage": 2018, "producer": "Tenuta San Guido", "varietals": ["Cabernet Sauvignon", "Cabernet Franc"], "region": "Tuscany", "country": "Italy", "label_image_url": "https://www.vivino.com/US/es/tenuta-san-guido-sassicaia/w/5078?year=2019"},
+    {"name": "Tignanello", "vintage": 2019, "producer": "Antinori", "varietals": ["Sangiovese", "Cabernet Sauvignon"], "region": "Tuscany", "country": "Italy", "label_image_url": "https://www.vivino.com/antinori-tuscany-tignanello/w/1652?year=2016"},
+    {"name": "Vega Sicilia Unico", "vintage": 2012, "producer": "Vega Sicilia", "varietals": ["Tempranillo", "Cabernet Sauvignon"], "region": "Ribera del Duero", "country": "Spain", "label_image_url": "https://www.vivino.com/US/en/vega-del-cega-vega-del-cega-valdepenas-blanco/w/1259759?year=2019"},
+    {"name": "Silver Oak Cabernet Sauvignon", "vintage": 2018, "producer": "Silver Oak", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/silver-oak-cabernet-sauvignon-bonny-s-vineyard/w/3190858"},
+    {"name": "Jordan Cabernet Sauvignon", "vintage": 2017, "producer": "Jordan Vineyard", "varietals": ["Cabernet Sauvignon"], "region": "Sonoma County", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/edna-valley-vineyard-cabernet-sauvignon/w/1614113?year=2017"},
+    {"name": "Stag's Leap Wine Cellars Cask 23", "vintage": 2016, "producer": "Stag's Leap Wine Cellars", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/stag-s-leap-wine-cellars-hands-of-time-red/w/1394956"},
+    {"name": "Ridge Monte Bello", "vintage": 2018, "producer": "Ridge Vineyards", "varietals": ["Cabernet Sauvignon"], "region": "Santa Cruz Mountains", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/ridge-vineyards-monte-bello-chardonnay/w/1219214?year=2018"},
+    {"name": "Shafer Hillside Select", "vintage": 2017, "producer": "Shafer Vineyards", "varietals": ["Cabernet Sauvignon"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/en/shafer-hillside-select-cabernet-sauvignon/w/5274"},
+    {"name": "Château Pétrus", "vintage": 2015, "producer": "Château Pétrus", "varietals": ["Merlot"], "region": "Pomerol", "country": "France", "label_image_url": "https://www.vivino.com/en/le-chatelet-black-label/w/2643865"},
+    {"name": "Château Cheval Blanc", "vintage": 2016, "producer": "Château Cheval Blanc", "varietals": ["Cabernet Franc", "Merlot"], "region": "Saint-Émilion", "country": "France", "label_image_url": "https://www.vivino.com/chateau-cheval-blanc-le-petit-cheval-bordeaux-blanc-bordeaux/w/5313010"},
+    {"name": "Dom Pérignon", "vintage": 2012, "producer": "Moët & Chandon", "varietals": ["Chardonnay", "Pinot Noir"], "region": "Champagne", "country": "France", "label_image_url": "https://www.vivino.com/AU/en/chandon-australia-brut-vintage-methode-traditionnelle/w/1146478"},
+    {"name": "Cristal", "vintage": 2013, "producer": "Louis Roederer", "varietals": ["Chardonnay", "Pinot Noir"], "region": "Champagne", "country": "France", "label_image_url": "https://www.vivino.com/US/en/louis-roederer-cristal-rose-brut-champagne-millesime/w/74306?year=2013"},
+    {"name": "Krug Grande Cuvée", "vintage": 2014, "producer": "Krug", "varietals": ["Chardonnay", "Pinot Noir", "Pinot Meunier"], "region": "Champagne", "country": "France", "label_image_url": "https://www.vivino.com/en/krug-grande-cuvee/w/7122486"},
+    {"name": "Burgundy Pinot Noir", "vintage": 2018, "producer": "Domaine de la Romanée-Conti", "varietals": ["Pinot Noir"], "region": "Burgundy", "country": "France", "label_image_url": "https://www.vivino.com/US/en/domaine-de-la-denante-bourgogne-pinot-noir/w/6790938?year=2020"},
+    {"name": "Barolo", "vintage": 2016, "producer": "Giacomo Conterno", "varietals": ["Nebbiolo"], "region": "Piedmont", "country": "Italy", "label_image_url": "https://www.vivino.com/US/en/giacomo-conterno-barolo-cerretta/w/3127311?year=2015"},
+    {"name": "Brunello di Montalcino", "vintage": 2015, "producer": "Biondi-Santi", "varietals": ["Sangiovese"], "region": "Tuscany", "country": "Italy", "label_image_url": "https://www.vivino.com/en/biondi-santi-brunello-di-montalcino/w/1558589"},
+    {"name": "Amarone della Valpolicella", "vintage": 2017, "producer": "Allegrini", "varietals": ["Corvina", "Rondinella"], "region": "Veneto", "country": "Italy", "label_image_url": "https://www.vivino.com/US/en/allegrini-veneto-amarone-della-valpolicella-classico/w/8195?year=2007"},
+    {"name": "Chianti Classico", "vintage": 2018, "producer": "Castello di Brolio", "varietals": ["Sangiovese"], "region": "Tuscany", "country": "Italy", "label_image_url": "https://www.vivino.com/ricasoli-castello-di-brolio-vin-santo-del-chianti-classico/w/1565715"},
+    {"name": "Rioja Reserva", "vintage": 2015, "producer": "Marqués de Riscal", "varietals": ["Tempranillo"], "region": "Rioja", "country": "Spain", "label_image_url": "https://www.vivino.com/CA/en/marques-de-riscal-rioja-reserva/w/1163903?year=2019"},
+    {"name": "Priorat", "vintage": 2017, "producer": "Clos Mogador", "varietals": ["Garnacha", "Carignan"], "region": "Catalonia", "country": "Spain", "label_image_url": "https://www.vivino.com/clos-mogador-manyetes/w/1188549"},
+    {"name": "Ribera del Duero", "vintage": 2016, "producer": "Pesquera", "varietals": ["Tempranillo"], "region": "Ribera del Duero", "country": "Spain", "label_image_url": "https://www.vivino.com/toplists/wine_style_awards_2016_spanish-ribera-del-duero-red"},
+    {"name": "Malbec Reserva", "vintage": 2018, "producer": "Catena Zapata", "varietals": ["Malbec"], "region": "Mendoza", "country": "Argentina", "label_image_url": "https://www.vivino.com/US/en/catena-zapata-nicasia-vineyard-altamira-malbec/w/68744?year=2003"},
+    {"name": "Carmenère", "vintage": 2017, "producer": "Concha y Toro", "varietals": ["Carmenère"], "region": "Colchagua Valley", "country": "Chile", "label_image_url": "https://www.vivino.com/US/en/concha-y-toro-chardonnay/w/1725986?year=2019"},
+    {"name": "Pinot Noir", "vintage": 2019, "producer": "Domaine Drouhin", "varietals": ["Pinot Noir"], "region": "Willamette Valley", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/joseph-drouhin-bourgogne-pinot-noir/w/1191260?year=2019"},
+    {"name": "Zinfandel", "vintage": 2018, "producer": "Ridge Vineyards", "varietals": ["Zinfandel"], "region": "Sonoma County", "country": "United States", "label_image_url": "https://www.vivino.com/US/es/ridge-vineyards-bedrock-zinfandel/w/11746394"},
+    {"name": "Syrah", "vintage": 2017, "producer": "Sine Qua Non", "varietals": ["Syrah"], "region": "Central Coast", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/sine-qua-non-eleven-confessions-syrah/w/11591411"},
+    {"name": "Merlot", "vintage": 2018, "producer": "Duckhorn Vineyards", "varietals": ["Merlot"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/duckhorn-three-palms-vineyard-merlot/w/1128389?year=2018"},
+    {"name": "Cabernet Franc", "vintage": 2017, "producer": "Lang & Reed", "varietals": ["Cabernet Franc"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/lang-and-reed-wine-company-premiere-napa-valley-cabernet-franc/w/10892899"},
+    {"name": "Grenache", "vintage": 2019, "producer": "Tablas Creek", "varietals": ["Grenache"], "region": "Paso Robles", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/tablas-creek-vineyard-grenache/w/2565412?year=2020"},
+    {"name": "Mourvèdre", "vintage": 2018, "producer": "Tablas Creek", "varietals": ["Mourvèdre"], "region": "Paso Robles", "country": "United States", "label_image_url": "https://www.vivino.com/tablas-creek-vineyard-patelin-de-tablas-rose/w/2457883"},
     {"name": "Petite Sirah", "vintage": 2017, "producer": "Ridge Vineyards", "varietals": ["Petite Sirah"], "region": "Sonoma County", "country": "United States"},
-    {"name": "Sangiovese", "vintage": 2018, "producer": "Castello di Amorosa", "varietals": ["Sangiovese"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Tempranillo", "vintage": 2019, "producer": "Tablas Creek", "varietals": ["Tempranillo"], "region": "Paso Robles", "country": "United States"},
+    {"name": "Sangiovese", "vintage": 2018, "producer": "Castello di Amorosa", "varietals": ["Sangiovese"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/en/castello-di-amorosa-sangiovese/w/1714586"},
+    {"name": "Tempranillo", "vintage": 2019, "producer": "Tablas Creek", "varietals": ["Tempranillo"], "region": "Paso Robles", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/abacela-fiesta-tempranillo/w/2874736?year=2019"},
 ]
 
 WHITE_WINES = [
-    {"name": "Domaine Leflaive Montrachet", "vintage": 2018, "producer": "Domaine Leflaive", "varietals": ["Chardonnay"], "region": "Burgundy", "country": "France"},
-    {"name": "Kistler Chardonnay", "vintage": 2019, "producer": "Kistler Vineyards", "varietals": ["Chardonnay"], "region": "Sonoma County", "country": "United States"},
-    {"name": "Rombauer Chardonnay", "vintage": 2018, "producer": "Rombauer Vineyards", "varietals": ["Chardonnay"], "region": "Napa Valley", "country": "United States"},
-    {"name": "Cloudy Bay Sauvignon Blanc", "vintage": 2020, "producer": "Cloudy Bay", "varietals": ["Sauvignon Blanc"], "region": "Marlborough", "country": "New Zealand"},
-    {"name": "Sancerre", "vintage": 2019, "producer": "Domaine Vacheron", "varietals": ["Sauvignon Blanc"], "region": "Loire Valley", "country": "France"},
-    {"name": "Riesling", "vintage": 2018, "producer": "Dr. Loosen", "varietals": ["Riesling"], "region": "Mosel", "country": "Germany"},
-    {"name": "Gewürztraminer", "vintage": 2019, "producer": "Trimbach", "varietals": ["Gewürztraminer"], "region": "Alsace", "country": "France"},
-    {"name": "Pinot Grigio", "vintage": 2020, "producer": "Santa Margherita", "varietals": ["Pinot Grigio"], "region": "Veneto", "country": "Italy"},
-    {"name": "Viognier", "vintage": 2018, "producer": "Condrieu", "varietals": ["Viognier"], "region": "Rhône Valley", "country": "France"},
-    {"name": "Albariño", "vintage": 2019, "producer": "Bodegas Martín Códax", "varietals": ["Albariño"], "region": "Rías Baixas", "country": "Spain"},
+    {"name": "Domaine Leflaive Montrachet", "vintage": 2018, "producer": "Domaine Leflaive", "varietals": ["Chardonnay"], "region": "Burgundy", "country": "France", "label_image_url": "https://www.vivino.com/en/domaine-leflaive-leflaive-associes-puligny-montrachet/w/7540902"},
+    {"name": "Kistler Chardonnay", "vintage": 2019, "producer": "Kistler Vineyards", "varietals": ["Chardonnay"], "region": "Sonoma County", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/pellegrini-vineyards-estate-grown-stainless-steel-chardonnay/w/14109?year=2019"},
+    {"name": "Rombauer Chardonnay", "vintage": 2018, "producer": "Rombauer Vineyards", "varietals": ["Chardonnay"], "region": "Napa Valley", "country": "United States", "label_image_url": "https://www.vivino.com/US/en/mascota-vineyards-mendoza-opi-chardonnay/w/2085675?year=2018"},
+    {"name": "Cloudy Bay Sauvignon Blanc", "vintage": 2020, "producer": "Cloudy Bay", "varietals": ["Sauvignon Blanc"], "region": "Marlborough", "country": "New Zealand", "label_image_url": "https://www.vivino.com/US/en/cloudy-bay-sauvignon-blanc/w/18978?year=2020"},
+    {"name": "Sancerre", "vintage": 2019, "producer": "Domaine Vacheron", "varietals": ["Sauvignon Blanc"], "region": "Loire Valley", "country": "France", "label_image_url": "https://www.vivino.com/US/en/le-garenne-sancerre-blanc/w/9659773?year=2019"},
+    {"name": "Riesling", "vintage": 2018, "producer": "Dr. Loosen", "varietals": ["Riesling"], "region": "Mosel", "country": "Germany", "label_image_url": "https://www.vivino.com/US/en/dr-loosen-riesling-villa-loosen/w/1568115?year=2018"},
+    {"name": "Gewürztraminer", "vintage": 2019, "producer": "Trimbach", "varietals": ["Gewürztraminer"], "region": "Alsace", "country": "France", "label_image_url": "https://www.vivino.com/US/en/trimbach-alsace-muscat-alsace-reserve/w/63704?year=2019"},
+    {"name": "Pinot Grigio", "vintage": 2020, "producer": "Santa Margherita", "varietals": ["Pinot Grigio"], "region": "Veneto", "country": "Italy", "label_image_url": "https://www.vivino.com/US/en/santa-margherita-laudato-pinot-grigio/w/7971213?year=2018"},
+    {"name": "Viognier", "vintage": 2018, "producer": "Condrieu", "varietals": ["Viognier"], "region": "Rhône Valley", "country": "France", "label_image_url": "https://www.vivino.com/US/en/le-paradou-viognier/w/16489?year=2018"},
+    {"name": "Albariño", "vintage": 2019, "producer": "Bodegas Martín Códax", "varietals": ["Albariño"], "region": "Rías Baixas", "country": "Spain", "label_image_url": "https://www.vivino.com/US/en/bodegas-martin-codax-rias-baixas-albarino-el-jardin-de-ana/w/1285971?year=2019"},
 ]
 
 
@@ -202,17 +202,22 @@ def create_wine_references():
     all_wines = RED_WINES + WHITE_WINES
     total_wines = len(all_wines)
 
-    print(f"Fetching Vivino label images for {total_wines} wines...")
-    print("This may take a while due to rate limiting...\n")
+    print(f"Processing {total_wines} wines...")
+    print("Using hardcoded label_image_url if available, otherwise attempting to fetch...\n")
 
     # Create 40 red wine references
     for i, wine_data in enumerate(RED_WINES, 1):
-        print(f"[{i}/{len(RED_WINES)}] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
-        label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
-        if label_url:
-            print(f"  ✓ Found: {label_url[:60]}...")
+        print(f"[{i}/{len(RED_WINES)}] Processing: {wine_data['name']} {wine_data['vintage']}")
+        # Use hardcoded label_image_url if available, otherwise try to fetch
+        label_url = wine_data.get("label_image_url")
+        if not label_url:
+            label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
+            if label_url:
+                print(f"  ✓ Found: {label_url[:60]}...")
+            else:
+                print(f"  ✗ No image found - using None")
         else:
-            print(f"  ✗ No image found - using None")
+            print(f"  ✓ Using hardcoded URL: {label_url[:60]}...")
 
         reference = WineReference(
             id=generate_id(),
@@ -237,12 +242,17 @@ def create_wine_references():
     
     # Create 10 white wine references
     for i, wine_data in enumerate(WHITE_WINES, 1):
-        print(f"[{i}/{len(WHITE_WINES)}] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
-        label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
-        if label_url:
-            print(f"  ✓ Found: {label_url[:60]}...")
+        print(f"[{i}/{len(WHITE_WINES)}] Processing: {wine_data['name']} {wine_data['vintage']}")
+        # Use hardcoded label_image_url if available, otherwise try to fetch
+        label_url = wine_data.get("label_image_url")
+        if not label_url:
+            label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
+            if label_url:
+                print(f"  ✓ Found: {label_url[:60]}...")
+            else:
+                print(f"  ✗ No image found - using None")
         else:
-            print(f"  ✗ No image found - using None")
+            print(f"  ✓ Using hardcoded URL: {label_url[:60]}...")
 
         reference = WineReference(
             id=generate_id(),
