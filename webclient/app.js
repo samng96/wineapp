@@ -22,7 +22,20 @@ class WineApp {
         this.setupSearch();
         this.initCellarManager();
         this.initWineManager();
+        this.initWineDetailView();
         this.showView('home');
+    }
+    
+    initWineDetailView() {
+        try {
+            import('./wineDetailView.js').then(({ getWineDetailView }) => {
+                getWineDetailView(); // Initialize the singleton
+            }).catch(error => {
+                console.error('Error initializing wine detail view:', error);
+            });
+        } catch (error) {
+            console.error('Error loading wine detail view module:', error);
+        }
     }
 
     initCellarManager() {

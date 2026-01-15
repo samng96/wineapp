@@ -1134,6 +1134,24 @@ class CellarManager {
                 const y = rect.top;
                 wineCard.positionCard(x, y);
             });
+            
+            // Add click handler to open wine detail modal
+            position.addEventListener('click', async (e) => {
+                // Don't open modal if clicking on rating stars in the card
+                if (e.target.closest('.rating-star')) {
+                    return;
+                }
+                
+                if (wineReference) {
+                    // Dynamically import and show wine detail view
+                    import('./wineDetailView.js').then(({ getWineDetailView }) => {
+                        const wineDetailView = getWineDetailView();
+                        wineDetailView.show(wineReference, instance);
+                    }).catch(error => {
+                        console.error('Error loading wine detail view:', error);
+                    });
+                }
+            });
         });
         
         // Also handle hover on the card itself to keep it visible

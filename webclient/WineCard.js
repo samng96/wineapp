@@ -132,9 +132,35 @@ class WineCard {
 
         // Set up rating star click handlers
         this.setupRatingStarHandlers();
+        
+        // Set up click handler to open wine detail modal
+        this.setupCardClickHandler();
 
         // Position the card
         this.positionCard(x, y);
+    }
+    
+    setupCardClickHandler() {
+        // Add click handler to the card to open wine detail modal
+        this.card.addEventListener('click', (e) => {
+            // Don't open modal if clicking on rating stars
+            if (e.target.closest('.rating-star')) {
+                return;
+            }
+            
+            const ref = this.getCurrentReference();
+            const instance = this.getCurrentInstance();
+            
+            if (ref) {
+                // Dynamically import and show wine detail view
+                import('./wineDetailView.js').then(({ getWineDetailView }) => {
+                    const wineDetailView = getWineDetailView();
+                    wineDetailView.show(ref, instance);
+                }).catch(error => {
+                    console.error('Error loading wine detail view:', error);
+                });
+            }
+        });
     }
     
     setupRatingStarHandlers() {

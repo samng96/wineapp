@@ -145,6 +145,16 @@ class API {
     static async updateWineReferenceRating(referenceId, rating) {
         return await this.put(`/wine-references/${referenceId}`, { rating });
     }
+
+    /**
+     * Update wine reference
+     * @param {string} referenceId - Wine reference ID
+     * @param {Object} updateData - Data to update (rating, tastingNotes, etc.)
+     * @returns {Promise<Object>} Updated wine reference
+     */
+    static async updateWineReference(referenceId, updateData) {
+        return await this.put(`/wine-references/${referenceId}`, updateData);
+    }
 }
 
 export { API };

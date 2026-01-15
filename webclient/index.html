@@ -285,5 +285,51 @@
             alert('Failed to load app.js. Check console for details.');
         });
     </script>
+    
+    <!-- Wine Detail Modal -->
+    <div id="wine-detail-modal" class="wine-detail-modal hidden">
+        <div class="wine-detail-overlay"></div>
+        <div class="wine-detail-content">
+            <div class="wine-detail-header">
+                <h2 id="wine-detail-title">Wine Details</h2>
+                <button id="wine-detail-close" class="wine-detail-close-btn" title="Close">×</button>
+            </div>
+            <div class="wine-detail-body">
+                <div class="wine-detail-main">
+                    <div class="wine-detail-image-section">
+                        <img id="wine-detail-image" src="" alt="Wine label" class="wine-detail-image" />
+                    </div>
+                    <div class="wine-detail-info-section">
+                        <div class="wine-detail-name-section">
+                            <h3 id="wine-detail-name"></h3>
+                            <div id="wine-detail-meta" class="wine-detail-meta"></div>
+                        </div>
+                        <div class="wine-detail-rating-section">
+                            <label class="wine-detail-label">Rating:</label>
+                            <div id="wine-detail-rating" class="wine-detail-rating-stars"></div>
+                        </div>
+                        <div class="wine-detail-tasting-notes-section">
+                            <label class="wine-detail-label" for="wine-detail-tasting-notes">Tasting Notes:</label>
+                            <textarea id="wine-detail-tasting-notes" class="wine-detail-textarea" rows="6" placeholder="Add your tasting notes here..."></textarea>
+                            <button id="wine-detail-save-notes" class="wine-detail-save-btn">Save Notes</button>
+                        </div>
+                        <div class="wine-detail-vivino-section">
+                            <h4 class="wine-detail-section-title">Additional Information</h4>
+                            <div id="wine-detail-vivino-info" class="wine-detail-vivino-info">
+                                <div class="wine-detail-info-item">
+                                    <span class="wine-detail-info-label">Time to Drink:</span>
+                                    <span id="wine-detail-drink-time" class="wine-detail-info-value">Not available</span>
+                                </div>
+                                <div class="wine-detail-info-item">
+                                    <span class="wine-detail-info-label">Drink Window:</span>
+                                    <span id="wine-detail-drink-window" class="wine-detail-info-value">Not available</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
