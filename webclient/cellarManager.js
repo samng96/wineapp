@@ -978,7 +978,8 @@ class CellarManager {
             }
         } catch (error) {
             console.error('Error loading cellar detail:', error);
-            alert('Failed to load cellar details. Please try again.');
+            console.error('Error stack:', error.stack);
+            alert(`Failed to load cellar details: ${error.message || 'Unknown error'}. Please check the console for details.`);
         }
     }
 
@@ -1071,10 +1072,15 @@ class CellarManager {
         this.setupResizeHandler(container, cellar);
         
         // Set up wine card hover handlers
-        this.setupWineCardHovers(referenceMap);
+        this.setupWineCardHovers(referenceMap, instanceMap, cellar);
     }
 
-    setupWineCardHovers(referenceMap) {
+    setupWineCardHovers(referenceMap, instanceMap, cellar) {
+        if (!referenceMap || !instanceMap || !cellar) {
+            console.warn('setupWineCardHovers called with missing parameters:', { referenceMap, instanceMap, cellar });
+            return;
+        }
+        
         const wineCard = getWineCard();
         const winePositions = document.querySelectorAll('.wine-position[data-wine-reference-id]');
         
@@ -1086,13 +1092,36 @@ class CellarManager {
             if (!wineReference) return;
             
             // Get wine instance if available
-            const instanceId = position.id ? position.id.split('-').pop() : null;
+            const instanceId = position.getAttribute('data-wine-instance-id');
+            const instance = instanceId && instanceMap && instanceMap[instanceId] ? instanceMap[instanceId] : null;
+            
+            // Find location info for this instance
+            let locationInfo = null;
+            try {
+                if (instance && cellar) {
+                    locationInfo = this.findInstanceLocationInCellar(instance, cellar);
+                }
+            } catch (error) {
+                console.error('Error finding location info:', error);
+            }
+            
+            // Get all instances for counting additional bottles
+            // Instances from API have referenceId, not reference object
+            const allInstances = instanceMap ? Object.values(instanceMap).filter(inst => inst && (inst.referenceId || (inst.reference && inst.reference.id))) : [];
             
             position.addEventListener('mouseenter', (e) => {
-                const rect = position.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = rect.top;
-                wineCard.show(wineReference, null, x, y);
+                try {
+                    const rect = position.getBoundingClientRect();
+                    const x = rect.left + rect.width / 2;
+                    const y = rect.top;
+                    wineCard.show(wineReference, instance, x, y, {
+                        cellars: cellar ? [cellar] : [],
+                        allInstances: allInstances,
+                        locationInfo: locationInfo
+                    });
+                } catch (error) {
+                    console.error('Error showing wine card:', error);
+                }
             });
             
             position.addEventListener('mouseleave', () => {
@@ -1210,7 +1239,7 @@ class CellarManager {
             if (wineImage) {
                 return `
                     <div class="wine-position circle single" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName}" 
-                         data-wine-reference-id="${wineRefId}">
+                         data-wine-reference-id="${wineRefId}" data-wine-instance-id="${instanceId || ''}">
                         <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
                     </div>
                 `;
@@ -1227,7 +1256,7 @@ class CellarManager {
                 const wineTypeClass = this.getWineTypeClass(wineType);
                 return `
                     <div class="wine-position circle single vintage-mode ${wineTypeClass}" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName} (${vintage})"
-                         data-wine-reference-id="${wineRefId}">
+                         data-wine-reference-id="${wineRefId}" data-wine-instance-id="${instanceId || ''}">
                         <span class="vintage-text">${vintage}</span>
                     </div>
                 `;
@@ -1270,6 +1299,38 @@ class CellarManager {
         }
     }
 
+    findInstanceLocationInCellar(instance, cellar) {
+        /**
+         * Find the location of a wine instance within a specific cellar
+         * Returns object with { cellar, shelfIndex, side, position } or null if not in this cellar
+         */
+        if (!cellar || !cellar.winePositions || !instance || !instance.id) return null;
+        
+        try {
+            for (const shelfIndex in cellar.winePositions) {
+                const shelfPositions = cellar.winePositions[shelfIndex];
+                if (!shelfPositions) continue;
+                
+                for (const side of ['front', 'back', 'single']) {
+                    const positions = shelfPositions[side] || [];
+                    const position = positions.indexOf(instance.id);
+                    if (position !== -1) {
+                        return {
+                            cellar,
+                            shelfIndex: parseInt(shelfIndex),
+                            side,
+                            position
+                        };
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error in findInstanceLocationInCellar:', error);
+            return null;
+        }
+        return null;
+    }
+
     renderStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, shelfIndex, position) {
         const frontWine = frontInstanceId && instanceMap[frontInstanceId] ? referenceMap[instanceMap[frontInstanceId].referenceId] : null;
         const backWine = backInstanceId && instanceMap[backInstanceId] ? referenceMap[instanceMap[backInstanceId].referenceId] : null;
@@ -1307,7 +1368,7 @@ class CellarManager {
                 <div class="wine-position-container staggered" data-position="${position}" title="${title}">
                     ${frontImage ? `
                         <div class="wine-position circle stagger-front" id="${frontPositionId}" style="left: ${frontCenterX - radius}px;"
-                             data-wine-reference-id="${frontWine ? frontWine.id : ''}">
+                             data-wine-reference-id="${frontWine ? frontWine.id : ''}" data-wine-instance-id="${frontInstanceId || ''}">
                             <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
                         </div>
                     ` : `
@@ -1317,7 +1378,7 @@ class CellarManager {
                     `}
                     ${backImage ? `
                         <div class="wine-position circle stagger-back" id="${backPositionId}" style="left: ${backCenterX - radius}px;"
-                             data-wine-reference-id="${backWine ? backWine.id : ''}">
+                             data-wine-reference-id="${backWine ? backWine.id : ''}" data-wine-instance-id="${backInstanceId || ''}">
                             <img src="${backImage}" alt="${backName}" class="wine-label-image" />
                         </div>
                     ` : `
@@ -1336,7 +1397,7 @@ class CellarManager {
                 <div class="wine-position-container staggered" data-position="${position}" title="${title}">
                     ${frontWine && frontVintage ? `
                         <div class="wine-position circle stagger-front vintage-mode ${frontTypeClass}" id="${frontPositionId}" style="left: ${frontCenterX - radius}px;"
-                             data-wine-reference-id="${frontWine.id}">
+                             data-wine-reference-id="${frontWine.id}" data-wine-instance-id="${frontInstanceId || ''}">
                             <span class="vintage-text">${frontVintage}</span>
                         </div>
                     ` : `
@@ -1346,7 +1407,7 @@ class CellarManager {
                     `}
                     ${backWine && backVintage ? `
                         <div class="wine-position circle stagger-back vintage-mode ${backTypeClass}" id="${backPositionId}" style="left: ${backCenterX - radius}px;"
-                             data-wine-reference-id="${backWine.id}">
+                             data-wine-reference-id="${backWine.id}" data-wine-instance-id="${backInstanceId || ''}">
                             <span class="vintage-text">${backVintage}</span>
                         </div>
                     ` : `

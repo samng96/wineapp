@@ -16,7 +16,7 @@ class WineCard {
         document.body.appendChild(this.card);
     }
 
-    show(wineReference, wineInstance = null, x = 0, y = 0) {
+    show(wineReference, wineInstance = null, x = 0, y = 0, options = {}) {
         if (!wineReference) return;
 
         // Clear any pending hide timeout
@@ -25,85 +25,88 @@ class WineCard {
             this.hideTimeout = null;
         }
 
-        // Build card content
-        const labelImage = wineReference.labelImageUrl || '';
-        const name = wineReference.name || 'Unknown Wine';
-        const producer = wineReference.producer || '';
-        const vintage = wineReference.vintage || 'NV';
-        const type = wineReference.type || '';
-        const region = wineReference.region || '';
-        const country = wineReference.country || '';
-        const varietals = wineReference.varietals || [];
-        const rating = wineReference.rating || null;
-        const tastingNotes = wineReference.tastingNotes || '';
+        // Extract data
+        const ref = wineReference;
+        const instance = wineInstance;
+        const cellars = options.cellars || [];
+        const allInstances = options.allInstances || [];
+        const locationInfo = options.locationInfo || null;
+
+        // Count bottles stored for this reference
+        const bottlesStored = this.countBottlesStored(ref.id, allInstances);
+        
+        // Count other bottles (excluding this instance if not consumed)
+        const otherBottlesCount = instance && bottlesStored > 0 && !instance.consumed ? bottlesStored - 1 : bottlesStored;
+        
+        // Format location string
+        let locationStr = 'Unshelved';
+        if (locationInfo) {
+            const { cellar, shelfIndex, side, position } = locationInfo;
+            const sideDisplay = side === 'single' ? '' : side === 'front' ? 'Front' : 'Back';
+            const sideText = sideDisplay ? `, ${sideDisplay}` : '';
+            locationStr = `${cellar.name}, Shelf ${shelfIndex + 1}${sideText}, Position ${position + 1}`;
+        }
+        
+        // Get country flag
+        const flag = this.getCountryFlag(ref.country);
+        
+        // Format wine type
+        const wineTypeDisplay = ref.type ? `${ref.type} Wine` : '';
+        
+        // Format region and country
+        const regionText = ref.region ? `${ref.region}, ` : '';
+        const countryText = ref.country ? `<b>${this.escapeHtml(ref.country)}</b>` : '';
 
         let html = '<div class="wine-card-content">';
         
         // Left side - Label image
         html += '<div class="wine-card-image">';
-        if (labelImage) {
-            html += `<img src="${this.escapeHtml(labelImage)}" alt="${this.escapeHtml(name)}" />`;
+        if (ref.labelImageUrl) {
+            html += `<img src="${this.escapeHtml(ref.labelImageUrl)}" alt="${this.escapeHtml(ref.name)}" />`;
         } else {
-            html += '<div class="wine-card-image-placeholder">No Image</div>';
+            html += '<div class="wine-card-image-placeholder">🍷</div>';
         }
         html += '</div>';
 
-        // Right side - Details
+        // Right side - Details (matching wine list format)
         html += '<div class="wine-card-details">';
         
-        // Name
-        html += `<h3 class="wine-card-name">${this.escapeHtml(name)}</h3>`;
+        // Vintage and Name
+        html += '<div class="wine-card-name">';
+        if (ref.vintage) {
+            html += `<span class="wine-card-vintage">${ref.vintage}</span> `;
+        }
+        html += `<span class="wine-card-title">${this.escapeHtml(ref.name)}</span>`;
+        html += '</div>';
         
         // Producer
-        if (producer) {
-            html += `<div class="wine-card-producer">${this.escapeHtml(producer)}</div>`;
+        if (ref.producer) {
+            html += `<div class="wine-card-producer">${this.escapeHtml(ref.producer)}</div>`;
         }
         
-        // Vintage and Type
-        html += '<div class="wine-card-meta">';
-        html += `<span class="wine-card-vintage">${vintage === 'NV' ? 'Non-Vintage' : vintage}</span>`;
-        if (type) {
-            html += `<span class="wine-card-type">${this.escapeHtml(type)}</span>`;
+        // Country info with flag
+        html += '<div class="wine-card-country-info">';
+        if (flag) {
+            html += `<span class="wine-card-flag">${flag}</span> `;
+        }
+        if (wineTypeDisplay) {
+            html += `<span>${this.escapeHtml(wineTypeDisplay)}</span>`;
+        }
+        if (ref.region || ref.country) {
+            html += ` <span class="wine-card-separator">•</span> ${regionText}${countryText}`;
         }
         html += '</div>';
-
-        // Region and Country
-        if (region || country) {
-            html += '<div class="wine-card-location">';
-            if (region) html += `<span>${this.escapeHtml(region)}</span>`;
-            if (region && country) html += '<span>, </span>';
-            if (country) html += `<span>${this.escapeHtml(country)}</span>`;
-            html += '</div>';
+        
+        // Storage info
+        html += '<div class="wine-card-storage">';
+        html += `<span>Stored: ${instance && instance.storedDate ? this.formatStoredDate(instance.storedDate) : 'N/A'}${otherBottlesCount > 0 ? ',' : ''}</span>`;
+        if (otherBottlesCount > 0) {
+            html += `<span>${otherBottlesCount} additional bottle${otherBottlesCount !== 1 ? 's' : ''} owned</span>`;
         }
-
-        // Varietals
-        if (varietals.length > 0) {
-            html += `<div class="wine-card-varietals">${varietals.map(v => this.escapeHtml(v)).join(', ')}</div>`;
-        }
-
-        // Rating
-        if (rating !== null && rating !== undefined) {
-            html += '<div class="wine-card-rating">';
-            html += '<span class="wine-card-rating-label">Rating: </span>';
-            html += '<span class="wine-card-rating-value">';
-            // If rating is a number, show stars; otherwise show as text
-            if (typeof rating === 'number') {
-                html += '<span class="wine-card-rating-stars">';
-                for (let i = 0; i < 5; i++) {
-                    html += `<span class="star ${i < Math.round(rating) ? 'filled' : ''}">★</span>`;
-                }
-                html += '</span>';
-            } else {
-                html += `<span>${this.escapeHtml(String(rating))}</span>`;
-            }
-            html += '</span>';
-            html += '</div>';
-        }
-
-        // Tasting Notes
-        if (tastingNotes) {
-            html += `<div class="wine-card-notes">${this.escapeHtml(tastingNotes)}</div>`;
-        }
+        html += '</div>';
+        
+        // Location
+        html += `<div class="wine-card-location">Location: ${this.escapeHtml(locationStr)}</div>`;
 
         html += '</div>'; // wine-card-details
         html += '</div>'; // wine-card-content
@@ -113,6 +116,69 @@ class WineCard {
 
         // Position the card
         this.positionCard(x, y);
+    }
+
+    getCountryFlag(country) {
+        if (!country) return '';
+        
+        const countryMap = {
+            'United States': '🇺🇸',
+            'US': '🇺🇸',
+            'USA': '🇺🇸',
+            'U.S.A.': '🇺🇸',
+            'France': '🇫🇷',
+            'Italy': '🇮🇹',
+            'Spain': '🇪🇸',
+            'Australia': '🇦🇺',
+            'Chile': '🇨🇱',
+            'Argentina': '🇦🇷',
+            'Germany': '🇩🇪',
+            'Portugal': '🇵🇹',
+            'South Africa': '🇿🇦',
+            'New Zealand': '🇳🇿',
+            'Canada': '🇨🇦',
+            'Greece': '🇬🇷',
+            'Austria': '🇦🇹',
+            'Hungary': '🇭🇺',
+            'Romania': '🇷🇴',
+            'Bulgaria': '🇧🇬',
+            'Croatia': '🇭🇷',
+            'Slovenia': '🇸🇮',
+            'Georgia': '🇬🇪',
+            'Lebanon': '🇱🇧',
+            'Israel': '🇮🇱',
+            'Turkey': '🇹🇷',
+            'Brazil': '🇧🇷',
+            'Uruguay': '🇺🇾',
+            'Mexico': '🇲🇽',
+            'Japan': '🇯🇵',
+            'China': '🇨🇳',
+            'India': '🇮🇳',
+            'United Kingdom': '🇬🇧',
+            'UK': '🇬🇧',
+            'England': '🇬🇧'
+        };
+        
+        const normalizedCountry = country.trim();
+        return countryMap[normalizedCountry] || '';
+    }
+
+    countBottlesStored(referenceId, allInstances) {
+        return allInstances.filter(inst => {
+            // Handle both WineInstance objects (with reference.id) and plain API objects (with referenceId)
+            const instRefId = inst.reference ? inst.reference.id : inst.referenceId;
+            return instRefId === referenceId && !inst.consumed;
+        }).length;
+    }
+
+    formatStoredDate(storedDate) {
+        if (!storedDate) return 'N/A';
+        try {
+            const date = new Date(storedDate);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) {
+            return storedDate;
+        }
     }
 
     positionCard(x, y) {
