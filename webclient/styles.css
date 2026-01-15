@@ -1061,10 +1061,13 @@ body {
     flex: 1;
     max-width: 150px;
     margin: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 #nav-search-input {
-    width: 100%;
+    flex: 1;
     padding: 6px 10px;
     border: 1px solid #e0e0e0;
     border-radius: 20px;
@@ -1074,6 +1077,28 @@ body {
 #nav-search-input:focus {
     outline: none;
     border-color: #6200ea;
+}
+
+.nav-search-btn {
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.nav-search-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-search-icon {
+    font-size: 16px;
+    line-height: 1;
 }
 
 /* Menu Overlay */

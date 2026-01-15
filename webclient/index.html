@@ -86,8 +86,15 @@
 
                     <div class="filter-section">
                         <label class="filter-checkbox-label">
-                            <input type="checkbox" id="filter-unshelved" class="filter-checkbox">
+                            <input type="checkbox" id="filter-unshelved" class="filter-checkbox" checked>
                             <span>Unshelved wines</span>
+                        </label>
+                    </div>
+
+                    <div class="filter-section">
+                        <label class="filter-checkbox-label">
+                            <input type="checkbox" id="filter-shelved" class="filter-checkbox" checked>
+                            <span>Shelved wines</span>
                         </label>
                     </div>
 
@@ -154,6 +161,9 @@
             </button>
             <div class="nav-search">
                 <input type="text" id="nav-search-input" placeholder="Search...">
+                <button type="button" id="nav-search-btn" class="nav-search-btn" title="Search">
+                    <span class="nav-search-icon">🔍</span>
+                </button>
             </div>
             <button class="nav-btn" id="menu-btn" title="Menu">
                 <span class="nav-icon">⋯</span>

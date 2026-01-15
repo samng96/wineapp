@@ -105,25 +105,52 @@ class WineApp {
 
     setupSearch() {
         const navSearchInput = document.getElementById('nav-search-input');
+        const navSearchBtn = document.getElementById('nav-search-btn');
         const searchInput = document.getElementById('search-input');
 
-        navSearchInput.addEventListener('focus', () => {
-            this.showView('search');
-            searchInput.focus();
+        // Remove the focus handler that changes pages
+        // navSearchInput.addEventListener('focus', () => {
+        //     this.showView('search');
+        //     searchInput.focus();
+        // });
+
+        // Handle Enter key on nav search input
+        navSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.performNavSearch();
+            }
         });
 
-        navSearchInput.addEventListener('input', (e) => {
-            searchInput.value = e.target.value;
-            this.performSearch(e.target.value);
-        });
+        // Handle search button click
+        if (navSearchBtn) {
+            navSearchBtn.addEventListener('click', () => {
+                this.performNavSearch();
+            });
+        }
 
-        searchInput.addEventListener('input', (e) => {
-            navSearchInput.value = e.target.value;
-            this.performSearch(e.target.value);
-        });
+        // Keep input syncing for search view (if it exists)
+        if (searchInput) {
+            navSearchInput.addEventListener('input', (e) => {
+                searchInput.value = e.target.value;
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                navSearchInput.value = e.target.value;
+                this.performSearch(e.target.value);
+            });
+        }
     }
 
-    showView(viewName) {
+    performNavSearch() {
+        const navSearchInput = document.getElementById('nav-search-input');
+        const searchTerm = navSearchInput.value.trim();
+        
+        // Navigate to wines page with search term
+        this.showView('wines', { searchTerm: searchTerm });
+    }
+
+    showView(viewName, options = {}) {
         // Hide all views
         document.querySelectorAll('.view').forEach(view => {
             view.classList.remove('active');
@@ -156,7 +183,7 @@ class WineApp {
 
         // Load wines when viewing wines page
         if (viewName === 'wines' && window.wineManager) {
-            window.wineManager.loadWines();
+            window.wineManager.loadWines(options.searchTerm);
         }
     }
 
