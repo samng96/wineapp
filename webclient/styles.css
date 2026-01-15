@@ -1024,8 +1024,9 @@ body {
     justify-content: space-around;
     padding: 8px 0;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    z-index: 1002; /* Above modal (z-index: 1001) so nav is always clickable */
     flex-shrink: 0; /* Don't shrink the nav bar */
+    min-height: 60px; /* Ensure consistent height */
 }
 
 .nav-btn {
@@ -2247,12 +2248,14 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    bottom: 60px; /* Stop at the top of the bottom nav bar */
-    z-index: 1001; /* Above bottom nav (z-index: 1000) */
+    bottom: 0;
+    z-index: 1001; /* Below bottom nav (z-index: 1002) so nav is always clickable */
     display: flex;
     align-items: flex-end;
     justify-content: center;
     pointer-events: none;
+    padding-bottom: 84px; /* Leave space for bottom nav bar */
+    box-sizing: border-box;
 }
 
 .wine-detail-modal.hidden {
@@ -2264,7 +2267,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: 120px; /* Stop at the top of the bottom nav bar */
     background: rgba(0, 0, 0, 0.5);
     opacity: 0;
     transition: opacity 0.3s ease;

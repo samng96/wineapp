@@ -70,6 +70,18 @@ class WineApp {
                 e.preventDefault();
                 e.stopPropagation();
                 
+                // Close wine detail modal if open
+                const wineDetailModal = document.getElementById('wine-detail-modal');
+                if (wineDetailModal && !wineDetailModal.classList.contains('hidden')) {
+                    // Dynamically import and close the modal
+                    import('./wineDetailView.js').then(({ getWineDetailView }) => {
+                        const wineDetailView = getWineDetailView();
+                        wineDetailView.hide();
+                    }).catch(error => {
+                        console.error('Error closing wine detail view:', error);
+                    });
+                }
+                
                 if (viewName === 'photo') {
                     alert('Add Wines feature coming soon!');
                     return;
