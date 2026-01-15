@@ -2132,6 +2132,47 @@ body {
 .wine-item-location {
     font-size: 12px;
     color: #666;
+    margin-bottom: 0;
+}
+
+.wine-item-rating {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wine-item-rating-label {
+    font-weight: 500;
+}
+
+.wine-item-rating-stars {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.rating-star {
+    color: #ddd;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.1s;
+    user-select: none;
+    line-height: 1;
+}
+
+.rating-star:hover {
+    color: #ffc107;
+    transform: scale(1.1);
+}
+
+.rating-star.filled {
+    color: #ffc107;
+}
+
+.rating-star.filled:hover {
+    color: #ff9800;
 }
 
 /* Responsive */

@@ -135,6 +135,16 @@ class API {
     static async getUnshelvedWineInstances() {
         return await this.get('/unshelved');
     }
+
+    /**
+     * Update wine reference rating
+     * @param {string} referenceId - Wine reference ID
+     * @param {number} rating - Rating from 1-5
+     * @returns {Promise<Object>} Updated wine reference
+     */
+    static async updateWineReferenceRating(referenceId, rating) {
+        return await this.put(`/wine-references/${referenceId}`, { rating });
+    }
 }
 
 export { API };
