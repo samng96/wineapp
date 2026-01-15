@@ -1661,19 +1661,10 @@ body {
 }
 
 .wine-card-name {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
     margin-bottom: 0;
 }
 
 .wine-card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-}
-
-.wine-card-vintage {
     font-size: 16px;
     font-weight: 600;
     color: #333;
@@ -1742,6 +1733,10 @@ body {
     margin-bottom: 0;
 }
 
+.wine-card-storage-label {
+    font-weight: 500;
+}
+
 .wine-card-location {
     font-size: 12px;
     color: #666;
@@ -1756,29 +1751,44 @@ body {
 }
 
 .wine-card-rating {
+    font-size: 12px;
+    color: #666;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 6px;
+    margin-top: 0;
 }
 
 .wine-card-rating-label {
-    font-size: 12px;
-    color: #666;
+    font-weight: 500;
 }
 
 .wine-card-rating-stars {
     display: flex;
     gap: 2px;
+    align-items: center;
 }
 
-.wine-card-rating-stars .star {
+.wine-card-rating-stars .rating-star {
     color: #ddd;
-    font-size: 14px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.1s;
+    user-select: none;
+    line-height: 1;
 }
 
-.wine-card-rating-stars .star.filled {
+.wine-card-rating-stars .rating-star:hover {
     color: #ffc107;
+    transform: scale(1.1);
+}
+
+.wine-card-rating-stars .rating-star.filled {
+    color: #ffc107;
+}
+
+.wine-card-rating-stars .rating-star.filled:hover {
+    color: #ff9800;
 }
 
 .wine-card-notes {
@@ -2129,10 +2139,18 @@ body {
     margin-bottom: 0;
 }
 
+.wine-item-storage-label {
+    font-weight: 500;
+}
+
 .wine-item-location {
     font-size: 12px;
     color: #666;
     margin-bottom: 0;
+}
+
+.wine-item-location-label {
+    font-weight: 500;
 }
 
 .wine-item-rating {

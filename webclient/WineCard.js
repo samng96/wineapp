@@ -25,6 +25,11 @@ class WineCard {
             this.hideTimeout = null;
         }
 
+        // Store current data for rating updates
+        this._currentReference = wineReference;
+        this._currentInstance = wineInstance;
+        this._currentOptions = options;
+
         // Extract data
         const ref = wineReference;
         const instance = wineInstance;
@@ -55,7 +60,7 @@ class WineCard {
         
         // Format region and country
         const regionText = ref.region ? `${ref.region}, ` : '';
-        const countryText = ref.country ? `<b>${this.escapeHtml(ref.country)}</b>` : '';
+        const countryText = ref.country ? `${this.escapeHtml(ref.country)}` : '';
 
         let html = '<div class="wine-card-content">';
         
@@ -71,12 +76,13 @@ class WineCard {
         // Right side - Details (matching wine list format)
         html += '<div class="wine-card-details">';
         
-        // Vintage and Name
+        // Vintage and Name (vintage is part of the title, not separate)
         html += '<div class="wine-card-name">';
         if (ref.vintage) {
-            html += `<span class="wine-card-vintage">${ref.vintage}</span> `;
+            html += `<span class="wine-card-title">${ref.vintage} ${this.escapeHtml(ref.name)}</span>`;
+        } else {
+            html += `<span class="wine-card-title">${this.escapeHtml(ref.name)}</span>`;
         }
-        html += `<span class="wine-card-title">${this.escapeHtml(ref.name)}</span>`;
         html += '</div>';
         
         // Producer
@@ -87,26 +93,36 @@ class WineCard {
         // Country info with flag
         html += '<div class="wine-card-country-info">';
         if (flag) {
-            html += `<span class="wine-card-flag">${flag}</span> `;
+            html += `${flag} `;
         }
         if (wineTypeDisplay) {
-            html += `<span>${this.escapeHtml(wineTypeDisplay)}</span>`;
+            html += `${this.escapeHtml(wineTypeDisplay)}`;
         }
         if (ref.region || ref.country) {
-            html += ` <span class="wine-card-separator">•</span> ${regionText}${countryText}`;
+            html += ` • ${regionText}${countryText}`;
         }
         html += '</div>';
         
         // Storage info
         html += '<div class="wine-card-storage">';
-        html += `<span>Stored: ${instance && instance.storedDate ? this.formatStoredDate(instance.storedDate) : 'N/A'}${otherBottlesCount > 0 ? ',' : ''}</span>`;
+        html += `<span class="wine-card-storage-label">Stored: </span><span>${instance && instance.storedDate ? this.formatStoredDate(instance.storedDate) : 'N/A'}${otherBottlesCount > 0 ? ',' : ''}</span>`;
         if (otherBottlesCount > 0) {
-            html += `<span>${otherBottlesCount} additional bottle${otherBottlesCount !== 1 ? 's' : ''} owned</span>`;
+            html += `<span> ${otherBottlesCount} additional bottle${otherBottlesCount !== 1 ? 's' : ''} owned</span>`;
         }
         html += '</div>';
         
-        // Location
-        html += `<div class="wine-card-location">Location: ${this.escapeHtml(locationStr)}</div>`;
+        // Rating stars
+        html += `<div class="wine-card-rating" data-reference-id="${ref.id}">`;
+        html += '<span class="wine-card-rating-label">Rating: </span>';
+        html += '<span class="wine-card-rating-stars">';
+        html += [1, 2, 3, 4, 5].map(star => 
+            `<span class="rating-star ${star <= (ref.rating || 0) ? 'filled' : ''}" 
+                  data-rating="${star}" 
+                  data-reference-id="${ref.id}"
+                  title="Rate ${star} star${star !== 1 ? 's' : ''}">★</span>`
+        ).join('');
+        html += '</span>';
+        html += '</div>';
 
         html += '</div>'; // wine-card-details
         html += '</div>'; // wine-card-content
@@ -114,8 +130,59 @@ class WineCard {
         this.card.innerHTML = html;
         this.card.classList.remove('hidden');
 
+        // Set up rating star click handlers
+        this.setupRatingStarHandlers();
+
         // Position the card
         this.positionCard(x, y);
+    }
+    
+    setupRatingStarHandlers() {
+        const ratingStars = this.card.querySelectorAll('.rating-star');
+        ratingStars.forEach(star => {
+            star.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const rating = parseInt(star.getAttribute('data-rating'));
+                const referenceId = star.getAttribute('data-reference-id');
+                
+                if (!referenceId || !rating) return;
+                
+                try {
+                    // Update rating via API
+                    await API.updateWineReferenceRating(referenceId, rating);
+                    
+                    // Update the reference object passed to this card
+                    // Note: We need to update the reference that was passed in
+                    // Since we don't have direct access to it, we'll re-render with updated rating
+                    const ref = this.getCurrentReference();
+                    if (ref) {
+                        ref.rating = rating;
+                        // Re-render the card with updated rating
+                        this.show(ref, this.getCurrentInstance(), 
+                                 parseFloat(this.card.style.left) || 0, 
+                                 parseFloat(this.card.style.top) || 0,
+                                 this.getCurrentOptions());
+                    }
+                } catch (error) {
+                    console.error('Error updating rating:', error);
+                    alert(`Failed to update rating: ${error.message || 'Unknown error'}`);
+                }
+            });
+        });
+    }
+    
+    getCurrentReference() {
+        // Try to get reference from the card's data attribute or from the options
+        // For now, we'll need to store it when showing
+        return this._currentReference || null;
+    }
+    
+    getCurrentInstance() {
+        return this._currentInstance || null;
+    }
+    
+    getCurrentOptions() {
+        return this._currentOptions || {};
     }
 
     getCountryFlag(country) {
