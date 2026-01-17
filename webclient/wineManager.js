@@ -472,6 +472,11 @@ class WineManager {
         // Filter instances using current selections
         this.filteredInstances = this.wineInstances.filter(instance => {
             // Filter by consumed/unshelved/shelved
+            // If all three are unchecked, show no wines
+            if (!showConsumed && !showUnshelved && !showShelved) {
+                return false;
+            }
+            
             let matchesAnyStatus = false;
             
             if (showConsumed && instance.consumed) {
@@ -486,11 +491,9 @@ class WineManager {
                 matchesAnyStatus = true;
             }
             
-            // Only filter by status if at least one is checked
-            if (showConsumed || showUnshelved || showShelved) {
-                if (!matchesAnyStatus) {
-                    return false;
-                }
+            // If wine doesn't match any checked status filter, exclude it
+            if (!matchesAnyStatus) {
+                return false;
             }
 
             const ref = instance.reference;
