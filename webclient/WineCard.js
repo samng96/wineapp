@@ -1,6 +1,8 @@
 /**
  * Wine Card Component - Reusable hover card for displaying wine details
  */
+import { API } from './api.js';
+
 class WineCard {
     constructor() {
         this.card = null;

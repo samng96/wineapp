@@ -635,11 +635,12 @@ class WineManager {
             `;
         }).join('');
         
-        // Set up rating star click handlers
-        this.setupRatingStarHandlers();
-        
         // Set up click handlers to open wine detail modal
         this.setupWineItemClickHandlers();
+        
+        // Set up rating star click handlers AFTER wine item handlers
+        // (setupWineItemClickHandlers clones nodes, so we need to attach handlers after)
+        this.setupRatingStarHandlers();
     }
     
     setupWineItemClickHandlers() {
@@ -673,7 +674,10 @@ class WineManager {
     }
     
     setupRatingStarHandlers() {
-        const ratingStars = document.querySelectorAll('.rating-star');
+        const winesList = document.getElementById('wines-list');
+        if (!winesList) return;
+        
+        const ratingStars = winesList.querySelectorAll('.rating-star');
         ratingStars.forEach(star => {
             star.addEventListener('click', async (e) => {
                 e.stopPropagation();
