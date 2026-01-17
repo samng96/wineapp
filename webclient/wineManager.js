@@ -13,10 +13,13 @@ class WineManager {
         this.currentFilters = {
             wineTypes: [],
             varietals: [],
+            countries: [],
             showConsumed: false,
             showUnshelved: true,
             showShelved: true,
-            searchText: ''
+            searchText: '',
+            sortBy: 'name',
+            sortOrder: 'asc'
         };
         
         this.setupEventListeners();
@@ -85,6 +88,67 @@ class WineManager {
             });
         }
 
+        // Country dropdown
+        const countryToggle = document.getElementById('country-toggle');
+        const countryMenu = document.getElementById('country-menu');
+        if (countryToggle && countryMenu) {
+            countryToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const dropdown = countryToggle.closest('.filter-dropdown');
+                const isActive = dropdown.classList.contains('active');
+                
+                // Close all other dropdowns first
+                document.querySelectorAll('.filter-dropdown').forEach(d => {
+                    if (d !== dropdown) {
+                        d.classList.remove('active');
+                    }
+                });
+                
+                // Toggle this dropdown
+                dropdown.classList.toggle('active');
+            });
+        }
+
+        // Sort dropdown
+        const sortToggle = document.getElementById('sort-toggle');
+        const sortMenu = document.getElementById('sort-menu');
+        if (sortToggle && sortMenu) {
+            sortToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const dropdown = sortToggle.closest('.filter-dropdown');
+                const isActive = dropdown.classList.contains('active');
+                
+                // Close all other dropdowns first
+                document.querySelectorAll('.filter-dropdown').forEach(d => {
+                    if (d !== dropdown) {
+                        d.classList.remove('active');
+                    }
+                });
+                
+                // Toggle this dropdown
+                dropdown.classList.toggle('active');
+            });
+        }
+
+        // Sort order button
+        const sortOrderBtn = document.getElementById('sort-order-btn');
+        if (sortOrderBtn) {
+            // Initialize sort order button state
+            sortOrderBtn.classList.add('ascending');
+            
+            sortOrderBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isAscending = sortOrderBtn.classList.contains('ascending');
+                if (isAscending) {
+                    sortOrderBtn.classList.remove('ascending');
+                    sortOrderBtn.classList.add('descending');
+                } else {
+                    sortOrderBtn.classList.remove('descending');
+                    sortOrderBtn.classList.add('ascending');
+                }
+                this.applyFilters();
+            });
+        }
 
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
@@ -114,6 +178,14 @@ class WineManager {
                     cb.checked = isChecked;
                 });
                 this.updateSelectAllState('varietal');
+                this.updateFilterLabels();
+                this.applyFilters();
+            } else if (e.target.id === 'filter-country-select-all') {
+                const isChecked = e.target.checked;
+                document.querySelectorAll('#country-menu input[type="checkbox"][data-filter="country"]').forEach(cb => {
+                    cb.checked = isChecked;
+                });
+                this.updateSelectAllState('country');
                 this.updateFilterLabels();
                 this.applyFilters();
             } else if (e.target.matches('#wine-type-menu input[type="checkbox"][data-filter="wineType"]')) {
@@ -229,6 +301,13 @@ class WineManager {
                 .filter(v => v)
         )).sort();
 
+        // Get unique countries
+        const countriesArray = Array.from(new Set(
+            this.wineReferences
+                .map(ref => ref.country)
+                .filter(country => country)
+        )).sort();
+
         // Populate wine type dropdown
         const wineTypeMenu = document.getElementById('wine-type-menu');
         if (wineTypeMenu) {
@@ -278,6 +357,32 @@ class WineManager {
                     <label for="filter-varietal-${varietal}">${this.escapeHtml(varietal)}</label>
                 `;
                 varietalMenu.appendChild(item);
+            });
+        }
+
+        // Populate country dropdown
+        const countryMenu = document.getElementById('country-menu');
+        if (countryMenu) {
+            countryMenu.innerHTML = '';
+            
+            // Add "Select all" checkbox at the top
+            const selectAllItem = document.createElement('div');
+            selectAllItem.className = 'filter-checkbox-item filter-select-all';
+            selectAllItem.innerHTML = `
+                <input type="checkbox" id="filter-country-select-all" data-filter="country-select-all" checked>
+                <label for="filter-country-select-all">Select all</label>
+            `;
+            countryMenu.appendChild(selectAllItem);
+            
+            // Add all countries with checked=true
+            countriesArray.forEach(country => {
+                const item = document.createElement('div');
+                item.className = 'filter-checkbox-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="filter-country-${country}" value="${this.escapeHtml(country)}" data-filter="country" checked>
+                    <label for="filter-country-${country}">${this.escapeHtml(country)}</label>
+                `;
+                countryMenu.appendChild(item);
             });
         }
     }
@@ -340,19 +445,30 @@ class WineManager {
             .map(cb => cb.value);
         const selectedVarietals = Array.from(document.querySelectorAll('#varietal-menu input[type="checkbox"][data-filter="varietal"]:checked'))
             .map(cb => cb.value);
+        const selectedCountries = Array.from(document.querySelectorAll('#country-menu input[type="checkbox"][data-filter="country"]:checked'))
+            .map(cb => cb.value);
         const showConsumed = document.getElementById('filter-consumed')?.checked || false;
         const showUnshelved = document.getElementById('filter-unshelved')?.checked || false;
         const showShelved = document.getElementById('filter-shelved')?.checked || false;
         const searchText = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+        
+        // Get sort values
+        const sortByRadio = document.querySelector('#sort-menu input[type="radio"][name="sort"]:checked');
+        const sortBy = sortByRadio ? sortByRadio.value : 'name';
+        const sortOrderBtn = document.getElementById('sort-order-btn');
+        const sortOrder = sortOrderBtn && sortOrderBtn.classList.contains('descending') ? 'desc' : 'asc';
 
         // Update current filters
         this.currentFilters = {
             wineTypes: selectedTypes,
             varietals: selectedVarietals,
+            countries: selectedCountries,
             showConsumed,
             showUnshelved,
             showShelved,
-            searchText
+            searchText,
+            sortBy,
+            sortOrder
         };
 
         // Filter instances using current selections
@@ -405,6 +521,16 @@ class WineManager {
                 return false;
             }
 
+            // Filter by country
+            // If no countries selected, exclude all wines
+            if (selectedCountries.length === 0) {
+                return false;
+            }
+            // If countries selected, only show matching wines
+            if (!selectedCountries.includes(ref.country)) {
+                return false;
+            }
+
             // Filter by search text (case insensitive and accent insensitive)
             if (searchText) {
                 const searchableText = [
@@ -425,6 +551,46 @@ class WineManager {
             return true;
         });
 
+        // Apply sorting
+        this.filteredInstances.sort((a, b) => {
+            const refA = a.reference;
+            const refB = b.reference;
+            let compareValue = 0;
+
+            switch (sortBy) {
+                case 'name':
+                    compareValue = (refA.name || '').localeCompare(refB.name || '');
+                    break;
+                case 'type':
+                    compareValue = (refA.type || '').localeCompare(refB.type || '');
+                    break;
+                case 'vintage':
+                    const vintageA = refA.vintage || 0;
+                    const vintageB = refB.vintage || 0;
+                    compareValue = vintageA - vintageB;
+                    break;
+                case 'stored':
+                    const storedA = a.storedDate ? new Date(a.storedDate).getTime() : 0;
+                    const storedB = b.storedDate ? new Date(b.storedDate).getTime() : 0;
+                    compareValue = storedA - storedB;
+                    break;
+                case 'drinkby':
+                    const drinkByA = a.drinkByDate ? new Date(a.drinkByDate).getTime() : 0;
+                    const drinkByB = b.drinkByDate ? new Date(b.drinkByDate).getTime() : 0;
+                    compareValue = drinkByA - drinkByB;
+                    break;
+                case 'rating':
+                    const ratingA = refA.rating || 0;
+                    const ratingB = refB.rating || 0;
+                    compareValue = ratingA - ratingB;
+                    break;
+                default:
+                    compareValue = 0;
+            }
+
+            return sortOrder === 'desc' ? -compareValue : compareValue;
+        });
+
         // Update filter labels
         this.updateFilterLabels();
 
@@ -436,10 +602,12 @@ class WineManager {
         // Get all available options
         const allWineTypes = Array.from(document.querySelectorAll('#wine-type-menu input[type="checkbox"][data-filter="wineType"]')).map(cb => cb.value);
         const allVarietals = Array.from(document.querySelectorAll('#varietal-menu input[type="checkbox"][data-filter="varietal"]')).map(cb => cb.value);
+        const allCountries = Array.from(document.querySelectorAll('#country-menu input[type="checkbox"][data-filter="country"]')).map(cb => cb.value);
         
         // Get selected counts from current filters
         const selectedTypesCount = this.currentFilters.wineTypes.length;
         const selectedVarietalsCount = this.currentFilters.varietals.length;
+        const selectedCountriesCount = this.currentFilters.countries.length;
         
         // Update wine type label
         const wineTypeSelected = document.getElementById('wine-type-selected');
@@ -450,6 +618,18 @@ class WineManager {
                 wineTypeSelected.textContent = 'All Types';
             } else {
                 wineTypeSelected.textContent = `${selectedTypesCount} selected`;
+            }
+        }
+
+        // Update country label
+        const countrySelected = document.getElementById('country-selected');
+        if (countrySelected) {
+            if (selectedCountriesCount === 0) {
+                countrySelected.textContent = '0 selected';
+            } else if (selectedCountriesCount === allCountries.length) {
+                countrySelected.textContent = 'All Countries';
+            } else {
+                countrySelected.textContent = `${selectedCountriesCount} selected`;
             }
         }
 
@@ -482,6 +662,15 @@ class WineManager {
             wineTypeSelectAll.checked = true;
         }
         
+        // Reset country checkboxes - check all
+        document.querySelectorAll('#country-menu input[type="checkbox"][data-filter="country"]').forEach(cb => {
+            cb.checked = true;
+        });
+        const countrySelectAll = document.getElementById('filter-country-select-all');
+        if (countrySelectAll) {
+            countrySelectAll.checked = true;
+        }
+        
         // Reset varietal checkboxes - check all
         document.querySelectorAll('#varietal-menu input[type="checkbox"][data-filter="varietal"]').forEach(cb => {
             cb.checked = true;
@@ -489,6 +678,23 @@ class WineManager {
         const varietalSelectAll = document.getElementById('filter-varietal-select-all');
         if (varietalSelectAll) {
             varietalSelectAll.checked = true;
+        }
+        
+        // Reset sort to Name
+        const sortNameRadio = document.getElementById('sort-name');
+        if (sortNameRadio) {
+            sortNameRadio.checked = true;
+        }
+        const sortSelected = document.getElementById('sort-selected');
+        if (sortSelected) {
+            sortSelected.textContent = 'Name';
+        }
+        
+        // Reset sort order to ascending
+        const sortOrderBtn = document.getElementById('sort-order-btn');
+        if (sortOrderBtn) {
+            sortOrderBtn.classList.remove('descending');
+            sortOrderBtn.classList.add('ascending');
         }
         
         // Update filter labels
