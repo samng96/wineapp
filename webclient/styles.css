@@ -1868,8 +1868,25 @@ body {
     gap: 8px;
 }
 
-.filter-sort-container .filter-dropdown {
+.filter-sort-select {
     flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: border-color 0.2s;
+}
+
+.filter-sort-select:hover {
+    border-color: #6200ea;
+}
+
+.filter-sort-select:focus {
+    outline: none;
+    border-color: #6200ea;
 }
 
 .sort-order-btn {

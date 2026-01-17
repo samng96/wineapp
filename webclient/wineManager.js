@@ -109,24 +109,11 @@ class WineManager {
             });
         }
 
-        // Sort dropdown
-        const sortToggle = document.getElementById('sort-toggle');
-        const sortMenu = document.getElementById('sort-menu');
-        if (sortToggle && sortMenu) {
-            sortToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const dropdown = sortToggle.closest('.filter-dropdown');
-                const isActive = dropdown.classList.contains('active');
-                
-                // Close all other dropdowns first
-                document.querySelectorAll('.filter-dropdown').forEach(d => {
-                    if (d !== dropdown) {
-                        d.classList.remove('active');
-                    }
-                });
-                
-                // Toggle this dropdown
-                dropdown.classList.toggle('active');
+        // Sort select dropdown
+        const sortSelect = document.getElementById('sort-select');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.applyFilters();
             });
         }
 
@@ -194,6 +181,10 @@ class WineManager {
                 this.applyFilters();
             } else if (e.target.matches('#varietal-menu input[type="checkbox"][data-filter="varietal"]')) {
                 this.updateSelectAllState('varietal');
+                this.updateFilterLabels();
+                this.applyFilters();
+            } else if (e.target.matches('#country-menu input[type="checkbox"][data-filter="country"]')) {
+                this.updateSelectAllState('country');
                 this.updateFilterLabels();
                 this.applyFilters();
             } else if (e.target.matches('#filter-consumed') ||
@@ -402,6 +393,13 @@ class WineManager {
                 const allChecked = allCheckboxes.every(cb => cb.checked);
                 selectAllCheckbox.checked = allChecked;
             }
+        } else if (filterType === 'country') {
+            const allCheckboxes = Array.from(document.querySelectorAll('#country-menu input[type="checkbox"][data-filter="country"]'));
+            const selectAllCheckbox = document.getElementById('filter-country-select-all');
+            if (selectAllCheckbox && allCheckboxes.length > 0) {
+                const allChecked = allCheckboxes.every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            }
         }
     }
 
@@ -453,8 +451,8 @@ class WineManager {
         const searchText = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
         
         // Get sort values
-        const sortByRadio = document.querySelector('#sort-menu input[type="radio"][name="sort"]:checked');
-        const sortBy = sortByRadio ? sortByRadio.value : 'name';
+        const sortSelect = document.getElementById('sort-select');
+        const sortBy = sortSelect ? sortSelect.value : 'name';
         const sortOrderBtn = document.getElementById('sort-order-btn');
         const sortOrder = sortOrderBtn && sortOrderBtn.classList.contains('descending') ? 'desc' : 'asc';
 
@@ -681,13 +679,9 @@ class WineManager {
         }
         
         // Reset sort to Name
-        const sortNameRadio = document.getElementById('sort-name');
-        if (sortNameRadio) {
-            sortNameRadio.checked = true;
-        }
-        const sortSelected = document.getElementById('sort-selected');
-        if (sortSelected) {
-            sortSelected.textContent = 'Name';
+        const sortSelect = document.getElementById('sort-select');
+        if (sortSelect) {
+            sortSelect.value = 'name';
         }
         
         // Reset sort order to ascending
@@ -746,6 +740,19 @@ class WineManager {
         } else if (filterType === 'varietal') {
             const allCheckboxes = Array.from(document.querySelectorAll('#varietal-menu input[type="checkbox"][data-filter="varietal"]'));
             const selectAllCheckbox = document.getElementById('filter-varietal-select-all');
+            if (selectAllCheckbox && allCheckboxes.length > 0) {
+                const allChecked = allCheckboxes.every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+                // Ensure "Select all" is never disabled or grayed out
+                selectAllCheckbox.disabled = false;
+                const selectAllLabel = selectAllCheckbox.nextElementSibling;
+                if (selectAllLabel) {
+                    selectAllLabel.classList.remove('filter-disabled');
+                }
+            }
+        } else if (filterType === 'country') {
+            const allCheckboxes = Array.from(document.querySelectorAll('#country-menu input[type="checkbox"][data-filter="country"]'));
+            const selectAllCheckbox = document.getElementById('filter-country-select-all');
             if (selectAllCheckbox && allCheckboxes.length > 0) {
                 const allChecked = allCheckboxes.every(cb => cb.checked);
                 selectAllCheckbox.checked = allChecked;

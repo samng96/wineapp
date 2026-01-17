@@ -52,38 +52,14 @@
                     <div class="filter-section">
                         <label class="filter-label">Sort by</label>
                         <div class="filter-sort-container">
-                            <div class="filter-dropdown">
-                                <button class="filter-dropdown-toggle" id="sort-toggle">
-                                    <span id="sort-selected">Name</span>
-                                    <span class="dropdown-arrow">▼</span>
-                                </button>
-                                <div class="filter-dropdown-menu" id="sort-menu">
-                                    <div class="filter-checkbox-item">
-                                        <input type="radio" name="sort" id="sort-name" value="name" checked>
-                                        <label for="sort-name">Name</label>
-                                    </div>
-                                    <div class="filter-checkbox-item">
-                                        <input type="radio" name="sort" id="sort-type" value="type">
-                                        <label for="sort-type">Wine Type</label>
-                                    </div>
-                                    <div class="filter-checkbox-item">
-                                        <input type="radio" name="sort" id="sort-vintage" value="vintage">
-                                        <label for="sort-vintage">Vintage</label>
-                                    </div>
-                                    <div class="filter-checkbox-item">
-                                        <input type="radio" name="sort" id="sort-stored" value="stored">
-                                        <label for="sort-stored">Stored date</label>
-                                    </div>
-                                    <div class="filter-checkbox-item">
-                                        <input type="radio" name="sort" id="sort-drinkby" value="drinkby">
-                                        <label for="sort-drinkby">Drink by date</label>
-                                    </div>
-                                    <div class="filter-checkbox-item">
-                                        <input type="radio" name="sort" id="sort-rating" value="rating">
-                                        <label for="sort-rating">Rating</label>
-                                    </div>
-                                </div>
-                            </div>
+                            <select id="sort-select" class="filter-sort-select">
+                                <option value="name" selected>Name</option>
+                                <option value="type">Wine Type</option>
+                                <option value="vintage">Vintage</option>
+                                <option value="stored">Stored date</option>
+                                <option value="drinkby">Drink by date</option>
+                                <option value="rating">Rating</option>
+                            </select>
                             <button id="sort-order-btn" class="sort-order-btn" title="Toggle sort order">
                                 <span class="sort-order-icon">▲</span>
                             </button>
