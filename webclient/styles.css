@@ -2213,6 +2213,12 @@ body {
     font-weight: 500;
 }
 
+.wine-item-consumed {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
 .wine-item-coravined {
     font-size: 12px;
     color: #666;
