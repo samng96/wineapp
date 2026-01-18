@@ -125,6 +125,9 @@ class WineDetailView {
         // Rating stars
         this.renderRatingStars();
 
+        // Storage info (Stored and Coravined dates)
+        this.renderStorageInfo();
+
         // Tasting notes
         const notesEl = document.getElementById('wine-detail-tasting-notes');
         if (notesEl) {
@@ -227,6 +230,47 @@ class WineDetailView {
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save Notes';
             }
+        }
+    }
+
+    renderStorageInfo() {
+        const instance = this.currentInstance;
+        
+        // Stored date
+        const storedDateEl = document.getElementById('wine-detail-stored-date');
+        if (storedDateEl) {
+            if (instance && instance.storedDate) {
+                storedDateEl.textContent = this.formatStoredDate(instance.storedDate);
+            } else {
+                storedDateEl.textContent = 'N/A';
+            }
+        }
+
+        // Coravined date (only show if coravined)
+        const coravinedItemEl = document.getElementById('wine-detail-coravined-item');
+        const coravinedDateEl = document.getElementById('wine-detail-coravined-date');
+        
+        if (instance && instance.coravined && instance.coravinedDate) {
+            if (coravinedItemEl) {
+                coravinedItemEl.style.display = 'flex';
+            }
+            if (coravinedDateEl) {
+                coravinedDateEl.textContent = this.formatStoredDate(instance.coravinedDate);
+            }
+        } else {
+            if (coravinedItemEl) {
+                coravinedItemEl.style.display = 'none';
+            }
+        }
+    }
+
+    formatStoredDate(storedDate) {
+        if (!storedDate) return 'N/A';
+        try {
+            const date = new Date(storedDate);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) {
+            return storedDate;
         }
     }
 

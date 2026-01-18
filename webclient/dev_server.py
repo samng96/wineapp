@@ -11,10 +11,22 @@ class NoCacheHTTPRequestHandler(SimpleHTTPRequestHandler):
     
     def end_headers(self):
         # Add no-cache headers for development
-        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        # Use more aggressive headers to prevent browser caching, especially for ES6 modules
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', '0')
+        # Add ETag and Last-Modified headers to help with cache validation
+        import time
+        self.send_header('ETag', str(time.time()))
+        self.send_header('Last-Modified', self.date_time_string())
         super().end_headers()
+    
+    def guess_type(self, path):
+        """Override to ensure proper MIME types for JS modules"""
+        mimetype = super().guess_type(path)
+        if path.endswith('.js'):
+            return 'application/javascript'
+        return mimetype
 
     def log_message(self, format, *args):
         # Suppress some of the verbose logging

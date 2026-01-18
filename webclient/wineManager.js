@@ -854,6 +854,9 @@ class WineManager {
                             <span class="wine-item-storage-label">Stored: </span><span>${instance.storedDate ? this.formatStoredDate(instance.storedDate) : 'N/A'}${otherBottlesCount > 0 ? ',' : ''}</span>
                             ${otherBottlesCount > 0 ? `<span>${otherBottlesCount} additional bottle${otherBottlesCount !== 1 ? 's' : ''} owned</span>` : ''}
                         </div>
+                        <div class="wine-item-coravined">
+                            ${instance.coravined && instance.coravinedDate ? `<span class="wine-item-storage-label">Coravined: </span><span>${this.formatStoredDate(instance.coravinedDate)}</span>` : ''}
+                        </div>
                         <div class="wine-item-location">
                             <span class="wine-item-location-label">Location: </span>${this.escapeHtml(locationStr)}
                         </div>
