@@ -113,6 +113,13 @@ class WineCard {
         }
         html += '</div>';
         
+        // Coravined date (only show if coravined)
+        if (instance && instance.coravined && instance.coravinedDate) {
+            html += '<div class="wine-card-coravined">';
+            html += `<span class="wine-card-storage-label">Coravined: </span><span>${this.formatStoredDate(instance.coravinedDate)}</span>`;
+            html += '</div>';
+        }
+        
         // Rating stars
         html += `<div class="wine-card-rating" data-reference-id="${ref.id}">`;
         html += '<span class="wine-card-rating-label">Rating: </span>';

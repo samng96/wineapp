@@ -1732,11 +1732,17 @@ body {
 .wine-card-storage {
     font-size: 12px;
     color: #666;
-    margin-bottom: 0;
+    margin-bottom: 3px;
 }
 
 .wine-card-storage-label {
     font-weight: 500;
+}
+
+.wine-card-coravined {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 3px;
 }
 
 .wine-card-location {
