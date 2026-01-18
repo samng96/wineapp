@@ -37,6 +37,12 @@ class WineDetailView {
             saveBtn.addEventListener('click', () => this.saveTastingNotes());
         }
 
+        // Coravin button
+        const coravinBtn = document.getElementById('wine-detail-coravin-btn');
+        if (coravinBtn) {
+            coravinBtn.addEventListener('click', () => this.openWithCoravin());
+        }
+
         // Close modal when clicking on bottom nav bar
         const bottomNav = document.getElementById('bottom-nav');
         if (bottomNav) {
@@ -246,20 +252,72 @@ class WineDetailView {
             }
         }
 
-        // Coravined date (only show if coravined)
+        // Coravined date or button
         const coravinedItemEl = document.getElementById('wine-detail-coravined-item');
         const coravinedDateEl = document.getElementById('wine-detail-coravined-date');
+        const coravinButtonItemEl = document.getElementById('wine-detail-coravin-button-item');
         
         if (instance && instance.coravined && instance.coravinedDate) {
+            // Show coravined date
             if (coravinedItemEl) {
                 coravinedItemEl.style.display = 'flex';
             }
             if (coravinedDateEl) {
                 coravinedDateEl.textContent = this.formatStoredDate(instance.coravinedDate);
             }
-        } else {
+            if (coravinButtonItemEl) {
+                coravinButtonItemEl.style.display = 'none';
+            }
+        } else if (instance && !instance.consumed) {
+            // Show "Open with a Coravin" button (only if not consumed)
             if (coravinedItemEl) {
                 coravinedItemEl.style.display = 'none';
+            }
+            if (coravinButtonItemEl) {
+                coravinButtonItemEl.style.display = 'flex';
+            }
+        } else {
+            // Hide both (consumed wine)
+            if (coravinedItemEl) {
+                coravinedItemEl.style.display = 'none';
+            }
+            if (coravinButtonItemEl) {
+                coravinButtonItemEl.style.display = 'none';
+            }
+        }
+    }
+
+    async openWithCoravin() {
+        if (!this.currentInstance) return;
+
+        // Show confirmation dialog
+        const confirmed = confirm('Are you sure you want to open this wine with a Coravin?');
+        if (!confirmed) return;
+
+        const coravinBtn = document.getElementById('wine-detail-coravin-btn');
+        if (coravinBtn) {
+            coravinBtn.disabled = true;
+            coravinBtn.textContent = 'Marking...';
+        }
+
+        try {
+            // Call API to mark as coravined
+            await API.coravinWineInstance(this.currentInstance.id);
+
+            // Update local instance
+            this.currentInstance.coravined = true;
+            this.currentInstance.coravinedDate = new Date().toISOString();
+
+            // Re-render storage info to show date instead of button
+            this.renderStorageInfo();
+        } catch (error) {
+            console.error('Error marking wine as coravined:', error);
+            alert(`Failed to mark wine as coravined: ${error.message || 'Unknown error'}`);
+            
+            // Reset button
+            if (coravinBtn) {
+                coravinBtn.disabled = false;
+                coravinBtn.textContent = 'Open with a Coravin';
             }
         }
     }

@@ -2550,6 +2550,27 @@ body {
     cursor: not-allowed;
 }
 
+.wine-detail-coravin-btn {
+    padding: 8px 16px;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.wine-detail-coravin-btn:hover {
+    background: #1565c0;
+}
+
+.wine-detail-coravin-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
 .wine-detail-section-title {
     margin: 0 0 16px 0;
     font-size: 18px;
