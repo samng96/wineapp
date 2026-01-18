@@ -1745,6 +1745,12 @@ body {
     margin-bottom: 3px;
 }
 
+.wine-card-consumed {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
 .wine-card-location {
     font-size: 12px;
     color: #666;

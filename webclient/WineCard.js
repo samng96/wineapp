@@ -120,6 +120,13 @@ class WineCard {
             html += '</div>';
         }
         
+        // Consumed date (only show if consumed)
+        if (instance && instance.consumed && instance.consumedDate) {
+            html += '<div class="wine-card-consumed">';
+            html += `<span class="wine-card-storage-label">Consumed: </span><span>${this.formatStoredDate(instance.consumedDate)}</span>`;
+            html += '</div>';
+        }
+        
         // Rating stars
         html += `<div class="wine-card-rating" data-reference-id="${ref.id}">`;
         html += '<span class="wine-card-rating-label">Rating: </span>';
