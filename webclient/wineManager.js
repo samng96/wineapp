@@ -119,9 +119,11 @@ class WineManager {
 
         // Sort order button
         const sortOrderBtn = document.getElementById('sort-order-btn');
-        if (sortOrderBtn) {
+        const sortOrderIcon = sortOrderBtn ? sortOrderBtn.querySelector('.sort-order-icon') : null;
+        if (sortOrderBtn && sortOrderIcon) {
             // Initialize sort order button state
             sortOrderBtn.classList.add('ascending');
+            sortOrderIcon.textContent = '▲';
             
             sortOrderBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -129,9 +131,11 @@ class WineManager {
                 if (isAscending) {
                     sortOrderBtn.classList.remove('ascending');
                     sortOrderBtn.classList.add('descending');
+                    sortOrderIcon.textContent = '▼';
                 } else {
                     sortOrderBtn.classList.remove('descending');
                     sortOrderBtn.classList.add('ascending');
+                    sortOrderIcon.textContent = '▲';
                 }
                 this.applyFilters();
             });
@@ -689,9 +693,13 @@ class WineManager {
         
         // Reset sort order to ascending
         const sortOrderBtn = document.getElementById('sort-order-btn');
+        const sortOrderIcon = sortOrderBtn ? sortOrderBtn.querySelector('.sort-order-icon') : null;
         if (sortOrderBtn) {
             sortOrderBtn.classList.remove('descending');
             sortOrderBtn.classList.add('ascending');
+            if (sortOrderIcon) {
+                sortOrderIcon.textContent = '▲';
+            }
         }
         
         // Update filter labels
