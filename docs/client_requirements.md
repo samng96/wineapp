@@ -241,7 +241,19 @@ When a wine is marked as consumed:
 7. Wine appears in "consumed" filter if that's checked
 8. Action buttons (Coravin, Drink) are hidden in detail view
 
-#### 3.9 Delete Wine
+#### 3.9 Assigning a wine to a new location
+There are two ways that a user can assign a wine to a new location. They can:
+
+- Move a wine from one location in a cellar to another
+- Add a wine that they're just purchasing/adding to their inventory.
+
+When they're assigning a wine to a new location, there should be a banner of the wine that they're currently assigning. There should be a button on that banner that allows them to unshelve the bottle (ie unassign it from any cellar). Clicking on an empty location should assign the wine instance to that location. Clicking on a location that's already occupied should be a no-op.
+
+Whatever the entry method, the flow should be the same. The user is presented with a navigation view identical to their cellar view, can move to a different cellar, and can select an empty slot in any cellar that they have. 
+
+This view we create needs to be flexible - when we're in a moving situation, upon completion of the assignment, we need the completion handler to remove the instance from the previous location. When we're in an add situation, we need to be able to multi-add, so we need to be able to do the assignment, and then move to the next bottle to assign until all the bottles have been assigned. 
+
+#### 8 Delete Wine
 Users should be able to remove wines from their inventory. This is different than consuming - this removes the entry altogether (ie a hard delete). 
 
 Include confirmation to prevent accidental deletion
