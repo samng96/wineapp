@@ -856,9 +856,9 @@ class WineManager {
                         </div>
                         ${instance.coravined && instance.coravinedDate ? `<div class="wine-item-coravined"><span class="wine-item-storage-label">Coravined: </span><span>${this.formatStoredDate(instance.coravinedDate)}</span></div>` : ''}
                         ${instance.consumed && instance.consumedDate ? `<div class="wine-item-consumed"><span class="wine-item-storage-label">Consumed: </span><span>${this.formatStoredDate(instance.consumedDate)}</span></div>` : ''}
-                        <div class="wine-item-location">
+                        ${!instance.consumed ? `<div class="wine-item-location">
                             <span class="wine-item-location-label">Location: </span>${this.escapeHtml(locationStr)}
-                        </div>
+                        </div>` : ''}
                         <div class="wine-item-rating" data-reference-id="${ref.id}">
                             <span class="wine-item-rating-label">Rating: </span>
                             <span class="wine-item-rating-stars">

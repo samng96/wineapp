@@ -370,8 +370,63 @@ class WineDetailView {
         }
 
         try {
+            // Find the wine's current location in cellars (if any)
+            let cellarLocation = null;
+            if (window.cellarManager && window.cellarManager.cellars) {
+                const cellars = window.cellarManager.cellars;
+                for (const cellar of cellars) {
+                    if (cellar.winePositions) {
+                        for (const shelfIndex in cellar.winePositions) {
+                            const shelfPositions = cellar.winePositions[shelfIndex];
+                            for (const side of ['front', 'back', 'single']) {
+                                const positions = shelfPositions[side] || [];
+                                const position = positions.indexOf(this.currentInstance.id);
+                                if (position !== -1) {
+                                    cellarLocation = {
+                                        cellarId: cellar.id,
+                                        shelfIndex: parseInt(shelfIndex),
+                                        side,
+                                        position
+                                    };
+                                    break;
+                                }
+                            }
+                            if (cellarLocation) break;
+                        }
+                    }
+                    if (cellarLocation) break;
+                }
+            }
+
             // Call API to mark as consumed
             await API.consumeWineInstance(this.currentInstance.id);
+
+            // Remove from cellar location if it was shelved
+            if (cellarLocation) {
+                try {
+                    await API.updateWineInstanceLocation(this.currentInstance.id, {
+                        oldCellarId: cellarLocation.cellarId,
+                        newCellarId: null,  // Remove from cellar
+                        shelfIndex: null,
+                        side: null,
+                        position: null
+                    });
+
+                    // Update local cellar data structure
+                    if (window.cellarManager && window.cellarManager.cellars) {
+                        const cellar = window.cellarManager.cellars.find(c => c.id === cellarLocation.cellarId);
+                        if (cellar && cellar.winePositions) {
+                            const shelfPositions = cellar.winePositions[cellarLocation.shelfIndex];
+                            if (shelfPositions && shelfPositions[cellarLocation.side]) {
+                                shelfPositions[cellarLocation.side][cellarLocation.position] = null;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error removing wine from cellar:', error);
+                    // Continue anyway - the wine is still marked as consumed
+                }
+            }
 
             // Update local instance
             this.currentInstance.consumed = true;
@@ -379,6 +434,20 @@ class WineDetailView {
 
             // Re-render storage info to show consumed date instead of buttons
             this.renderStorageInfo();
+
+            // Trigger a reload of both cellar and wine views
+            if (window.cellarManager) {
+                // If viewing a specific cellar, reload that cellar detail view
+                if (window.cellarManager.currentCellar) {
+                    await window.cellarManager.showCellarDetail(window.cellarManager.currentCellar.id);
+                } else {
+                    // Otherwise reload the cellar list
+                    window.cellarManager.loadCellars();
+                }
+            }
+            if (window.wineManager) {
+                window.wineManager.loadWines();
+            }
         } catch (error) {
             console.error('Error marking wine as consumed:', error);
             alert(`Failed to mark wine as consumed: ${error.message || 'Unknown error'}`);

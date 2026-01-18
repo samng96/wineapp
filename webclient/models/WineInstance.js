@@ -41,10 +41,16 @@ export class WineInstance {
      * Check if the wine instance is unshelved (not in any cellar)
      * Note: Location is no longer stored on the instance itself.
      * An instance is unshelved if it's not found in any cellar's shelves.
+     * Consumed wines are never considered unshelved.
      * @param {Array<Cellar>} cellars - Array of all cellars to check
      * @returns {boolean} True if unshelved
      */
     isUnshelved(cellars = []) {
+        // Consumed wines are not unshelved - they're consumed
+        if (this.consumed) {
+            return false;
+        }
+        
         // Check if this instance is in any cellar
         for (const cellar of cellars) {
             if (cellar.isWineInstanceInCellar && cellar.isWineInstanceInCellar(this)) {
