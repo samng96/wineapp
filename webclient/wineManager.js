@@ -17,6 +17,7 @@ class WineManager {
             showConsumed: false,
             showUnshelved: true,
             showShelved: true,
+            showCoravined: false,
             searchText: '',
             sortBy: 'name',
             sortOrder: 'asc'
@@ -193,7 +194,8 @@ class WineManager {
                 this.applyFilters();
             } else if (e.target.matches('#filter-consumed') ||
                        e.target.matches('#filter-unshelved') ||
-                       e.target.matches('#filter-shelved')) {
+                       e.target.matches('#filter-shelved') ||
+                       e.target.matches('#filter-coravined')) {
                 this.applyFilters();
             }
         });
@@ -452,6 +454,7 @@ class WineManager {
         const showConsumed = document.getElementById('filter-consumed')?.checked || false;
         const showUnshelved = document.getElementById('filter-unshelved')?.checked || false;
         const showShelved = document.getElementById('filter-shelved')?.checked || false;
+        const showCoravined = document.getElementById('filter-coravined')?.checked || false;
         const searchText = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
         
         // Get sort values
@@ -468,6 +471,7 @@ class WineManager {
             showConsumed,
             showUnshelved,
             showShelved,
+            showCoravined,
             searchText,
             sortBy,
             sortOrder
@@ -475,9 +479,9 @@ class WineManager {
 
         // Filter instances using current selections
         this.filteredInstances = this.wineInstances.filter(instance => {
-            // Filter by consumed/unshelved/shelved
-            // If all three are unchecked, show no wines
-            if (!showConsumed && !showUnshelved && !showShelved) {
+            // Filter by consumed/unshelved/shelved/coravined (OR logic)
+            // If all checkboxes are unchecked, show no wines
+            if (!showConsumed && !showUnshelved && !showShelved && !showCoravined) {
                 return false;
             }
             
@@ -492,6 +496,10 @@ class WineManager {
             }
             
             if (showShelved && !instance.isUnshelved(this.cellars)) {
+                matchesAnyStatus = true;
+            }
+
+            if (showCoravined && instance.coravined) {
                 matchesAnyStatus = true;
             }
             
@@ -721,6 +729,12 @@ class WineManager {
         const shelvedCheckbox = document.getElementById('filter-shelved');
         if (shelvedCheckbox) {
             shelvedCheckbox.checked = true;
+        }
+
+        // Reset coravined checkbox - unchecked (default off)
+        const coravinedCheckbox = document.getElementById('filter-coravined');
+        if (coravinedCheckbox) {
+            coravinedCheckbox.checked = false;
         }
         
         // Clear search text
