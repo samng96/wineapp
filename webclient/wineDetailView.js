@@ -43,6 +43,12 @@ class WineDetailView {
             coravinBtn.addEventListener('click', () => this.openWithCoravin());
         }
 
+        // Drink wine button
+        const drinkBtn = document.getElementById('wine-detail-drink-btn');
+        if (drinkBtn) {
+            drinkBtn.addEventListener('click', () => this.drinkWine());
+        }
+
         // Close modal when clicking on bottom nav bar
         const bottomNav = document.getElementById('bottom-nav');
         if (bottomNav) {
@@ -252,37 +258,65 @@ class WineDetailView {
             }
         }
 
+        // Consumed date
+        const consumedItemEl = document.getElementById('wine-detail-consumed-item');
+        const consumedDateEl = document.getElementById('wine-detail-consumed-date');
+        const consumedButtonItemEl = document.getElementById('wine-detail-drink-btn');
+        
+        if (instance && instance.consumed && instance.consumedDate) {
+            if (consumedItemEl) {
+                consumedItemEl.style.display = 'flex';
+            }
+            if (consumedDateEl) {
+                consumedDateEl.textContent = this.formatStoredDate(instance.consumedDate);
+            }
+        } else {
+            if (consumedItemEl) {
+                consumedItemEl.style.display = 'none';
+            }
+        }
+
         // Coravined date or button
         const coravinedItemEl = document.getElementById('wine-detail-coravined-item');
         const coravinedDateEl = document.getElementById('wine-detail-coravined-date');
-        const coravinButtonItemEl = document.getElementById('wine-detail-coravin-button-item');
+        const actionButtonsEl = document.getElementById('wine-detail-action-buttons');
+        const coravinBtn = document.getElementById('wine-detail-coravin-btn');
         
-        if (instance && instance.coravined && instance.coravinedDate) {
-            // Show coravined date
-            if (coravinedItemEl) {
-                coravinedItemEl.style.display = 'flex';
-            }
-            if (coravinedDateEl) {
-                coravinedDateEl.textContent = this.formatStoredDate(instance.coravinedDate);
-            }
-            if (coravinButtonItemEl) {
-                coravinButtonItemEl.style.display = 'none';
-            }
-        } else if (instance && !instance.consumed) {
-            // Show "Open with a Coravin" button (only if not consumed)
-            if (coravinedItemEl) {
-                coravinedItemEl.style.display = 'none';
-            }
-            if (coravinButtonItemEl) {
-                coravinButtonItemEl.style.display = 'flex';
+        if (instance && !instance.consumed) {
+            if (instance.coravined && instance.coravinedDate) {
+                // Show coravined date
+                if (coravinedItemEl) {
+                    coravinedItemEl.style.display = 'flex';
+                }
+                if (coravinedDateEl) {
+                    coravinedDateEl.textContent = this.formatStoredDate(instance.coravinedDate);
+                }
+                // Hide coravin button but show action buttons container for drink button
+                if (coravinBtn) {
+                    coravinBtn.style.display = 'none';
+                }
+                if (actionButtonsEl) {
+                    actionButtonsEl.style.display = 'flex';
+                }
+            } else {
+                // Show both buttons
+                if (coravinBtn) {
+                    coravinBtn.style.display = 'inline-block';
+                }
+                if (actionButtonsEl) {
+                    actionButtonsEl.style.display = 'flex';
+                }
+                if (coravinedItemEl) {
+                    coravinedItemEl.style.display = 'none';
+                }
             }
         } else {
-            // Hide both (consumed wine)
+            // Hide everything if consumed
             if (coravinedItemEl) {
                 coravinedItemEl.style.display = 'none';
             }
-            if (coravinButtonItemEl) {
-                coravinButtonItemEl.style.display = 'none';
+            if (actionButtonsEl) {
+                actionButtonsEl.style.display = 'none';
             }
         }
     }
@@ -318,6 +352,41 @@ class WineDetailView {
             if (coravinBtn) {
                 coravinBtn.disabled = false;
                 coravinBtn.textContent = 'Open with a Coravin';
+            }
+        }
+    }
+
+    async drinkWine() {
+        if (!this.currentInstance) return;
+
+        // Show confirmation dialog
+        const confirmed = confirm('Are you sure you want to mark this wine as consumed?');
+        if (!confirmed) return;
+
+        const drinkBtn = document.getElementById('wine-detail-drink-btn');
+        if (drinkBtn) {
+            drinkBtn.disabled = true;
+            drinkBtn.textContent = 'Marking...';
+        }
+
+        try {
+            // Call API to mark as consumed
+            await API.consumeWineInstance(this.currentInstance.id);
+
+            // Update local instance
+            this.currentInstance.consumed = true;
+            this.currentInstance.consumedDate = new Date().toISOString();
+
+            // Re-render storage info to show consumed date instead of buttons
+            this.renderStorageInfo();
+        } catch (error) {
+            console.error('Error marking wine as consumed:', error);
+            alert(`Failed to mark wine as consumed: ${error.message || 'Unknown error'}`);
+            
+            // Reset button
+            if (drinkBtn) {
+                drinkBtn.disabled = false;
+                drinkBtn.textContent = 'Drink wine';
             }
         }
     }

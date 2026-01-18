@@ -2571,6 +2571,33 @@ body {
     cursor: not-allowed;
 }
 
+.wine-detail-action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.wine-detail-drink-btn {
+    padding: 8px 16px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.wine-detail-drink-btn:hover {
+    background: #c62828;
+}
+
+.wine-detail-drink-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
 .wine-detail-section-title {
     margin: 0 0 16px 0;
     font-size: 18px;
