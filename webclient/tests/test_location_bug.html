@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: WineDetailView Location Bug Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-pass {
+            color: green;
+            font-weight: bold;
+        }
+        .test-fail {
+            color: red;
+            font-weight: bold;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <h1>WineDetailView Location Bug Fix Test</h1>
+    <p><strong>Bug:</strong> On first load, clicking on a wine in the cellar view shows "Unshelved" even though it's clearly shelved.</p>
+    <p><strong>Fix:</strong> Check both window.cellarManager.cellars and window.wineManager.cellars to find the wine's location.</p>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <button onclick="runTests()">Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script type="module">
+        import { findInstanceLocation } from '../utils/locationUtils.js';
+
+        // Mock data
+        function createMockCellar(id, name) {
+            return {
+                id,
+                name,
+                winePositions: {
+                    '0': {
+                        'front': ['wine-1', 'wine-2', null],
+                        'back': [null, 'wine-3', null]
+                    },
+                    '1': {
+                        'single': ['wine-4', null, 'wine-5']
+                    }
+                }
+            };
+        }
+
+        function createMockWineInstance(id) {
+            return {
+                id,
+                consumed: false,
+                consumedDate: null
+            };
+        }
+
+        window.runTests = function() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h3>Running tests...</h3>';
+            let passed = 0;
+            let failed = 0;
+            const results = [];
+
+            // Test 1: Find location when cellars are in cellarManager
+            try {
+                const mockCellarManager = {
+                    cellars: [createMockCellar('cellar-1', 'Main Cellar')]
+                };
+                const instance = createMockWineInstance('wine-1');
+                const location = findInstanceLocation(instance, mockCellarManager.cellars);
+                
+                if (location && location.cellar.id === 'cellar-1' && location.shelfIndex === 0 && location.side === 'front' && location.position === 0) {
+                    results.push('<div class="test-result test-pass">✓ Test 1 PASSED: Found location in cellarManager</div>');
+                    passed++;
+                } else {
+                    results.push('<div class="test-result test-fail">✗ Test 1 FAILED: Should find location in cellarManager</div>');
+                    failed++;
+                }
+            } catch (error) {
+                results.push(`<div class="test-result test-fail">✗ Test 1 ERROR: ${error.message}</div>`);
+                failed++;
+            }
+
+            // Test 2: Find location when cellars are in wineManager
+            try {
+                const mockWineManager = {
+                    cellars: [createMockCellar('cellar-1', 'Main Cellar')]
+                };
+                const instance = createMockWineInstance('wine-3');
+                const location = findInstanceLocation(instance, mockWineManager.cellars);
+                
+                if (location && location.cellar.id === 'cellar-1' && location.shelfIndex === 0 && location.side === 'back' && location.position === 1) {
+                    results.push('<div class="test-result test-pass">✓ Test 2 PASSED: Found location in wineManager</div>');
+                    passed++;
+                } else {
+                    results.push('<div class="test-result test-fail">✗ Test 2 FAILED: Should find location in wineManager</div>');
+                    failed++;
+                }
+            } catch (error) {
+                results.push(`<div class="test-result test-fail">✗ Test 2 ERROR: ${error.message}</div>`);
+                failed++;
+            }
+
+            // Test 3: Prioritize cellarManager over wineManager
+            try {
+                const cellarManagerCellars = [createMockCellar('cellar-1', 'Main Cellar')];
+                cellarManagerCellars[0].winePositions['0'].front[0] = 'wine-1';
+
+                const wineManagerCellars = [createMockCellar('cellar-2', 'Secondary Cellar')];
+                wineManagerCellars[0].winePositions['0'].front[0] = 'wine-1';
+
+                const instance = createMockWineInstance('wine-1');
+                // Should find in cellarManager's cellar (cellar-1), not wineManager's (cellar-2)
+                const location = findInstanceLocation(instance, cellarManagerCellars);
+                
+                if (location && location.cellar.id === 'cellar-1') {
+                    results.push('<div class="test-result test-pass">✓ Test 3 PASSED: Prioritizes cellarManager over wineManager</div>');
+                    passed++;
+                } else {
+                    results.push('<div class="test-result test-fail">✗ Test 3 FAILED: Should prioritize cellarManager</div>');
+                    failed++;
+                }
+            } catch (error) {
+                results.push(`<div class="test-result test-fail">✗ Test 3 ERROR: ${error.message}</div>`);
+                failed++;
+            }
+
+            // Test 4: Return null for unshelved wine
+            try {
+                const mockCellarManager = {
+                    cellars: [createMockCellar('cellar-1', 'Main Cellar')]
+                };
+                const instance = createMockWineInstance('wine-unshelved');
+                const location = findInstanceLocation(instance, mockCellarManager.cellars);
+                
+                if (location === null) {
+                    results.push('<div class="test-result test-pass">✓ Test 4 PASSED: Returns null for unshelved wine</div>');
+                    passed++;
+                } else {
+                    results.push('<div class="test-result test-fail">✗ Test 4 FAILED: Should return null for unshelved wine</div>');
+                    failed++;
+                }
+            } catch (error) {
+                results.push(`<div class="test-result test-fail">✗ Test 4 ERROR: ${error.message}</div>`);
+                failed++;
+            }
+
+            // Test 5: Find location in second cellar
+            try {
+                const cellars = [
+                    createMockCellar('cellar-1', 'Main Cellar'),
+                    createMockCellar('cellar-2', 'Secondary Cellar')
+                ];
+                cellars[1].winePositions['0'].single[0] = 'wine-6';
+
+                const instance = createMockWineInstance('wine-6');
+                const location = findInstanceLocation(instance, cellars);
+                
+                if (location && location.cellar.id === 'cellar-2' && location.shelfIndex === 0 && location.side === 'single' && location.position === 0) {
+                    results.push('<div class="test-result test-pass">✓ Test 5 PASSED: Found location in second cellar</div>');
+                    passed++;
+                } else {
+                    results.push(`<div class="test-result test-fail">✗ Test 5 FAILED: Should find location in second cellar. Got: ${location ? JSON.stringify(location) : 'null'}</div>`);
+                    failed++;
+                }
+            } catch (error) {
+                results.push(`<div class="test-result test-fail">✗ Test 5 ERROR: ${error.message}</div>`);
+                failed++;
+            }
+
+            // Test 6: Handle empty cellars array
+            try {
+                const instance = createMockWineInstance('wine-1');
+                const location = findInstanceLocation(instance, []);
+                
+                if (location === null) {
+                    results.push('<div class="test-result test-pass">✓ Test 6 PASSED: Handles empty cellars array</div>');
+                    passed++;
+                } else {
+                    results.push('<div class="test-result test-fail">✗ Test 6 FAILED: Should return null for empty cellars array</div>');
+                    failed++;
+                }
+            } catch (error) {
+                results.push(`<div class="test-result test-fail">✗ Test 6 ERROR: ${error.message}</div>`);
+                failed++;
+            }
+
+            // Summary
+            const summary = `<div class="test-result" style="background: ${failed === 0 ? '#d4edda' : '#f8d7da'}; border: 1px solid ${failed === 0 ? '#c3e6cb' : '#f5c6cb'};">
+                <strong>Test Summary:</strong> ${passed} passed, ${failed} failed out of ${passed + failed} tests
+            </div>`;
+
+            resultsDiv.innerHTML = results.join('') + summary;
+        };
+    </script>
+</body>
+</html>
