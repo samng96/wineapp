@@ -265,10 +265,18 @@ class WineDetailView {
         
         if (instance && !instance.consumed) {
             // Find location in cellars using utility function
+            // Check both wineManager and cellarManager for cellars
+            let cellars = null;
+            if (window.cellarManager && window.cellarManager.cellars && window.cellarManager.cellars.length > 0) {
+                cellars = window.cellarManager.cellars;
+            } else if (window.wineManager && window.wineManager.cellars && window.wineManager.cellars.length > 0) {
+                cellars = window.wineManager.cellars;
+            }
+            
             let locationInfo = null;
-            if (window.wineManager && window.wineManager.cellars && window.wineManager.cellars.length > 0) {
+            if (cellars) {
                 try {
-                    locationInfo = findInstanceLocation(instance, window.wineManager.cellars);
+                    locationInfo = findInstanceLocation(instance, cellars);
                 } catch (error) {
                     console.error('Error finding instance location:', error);
                 }
