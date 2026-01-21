@@ -248,17 +248,17 @@ class WineManager {
             // Update filter labels after populating
             this.updateFilterLabels();
 
-            // If search term provided, set it and expand filter panel
+            // If search term provided, set it
             if (searchTerm) {
                 const searchInput = document.getElementById('filter-search');
                 if (searchInput) {
                     searchInput.value = searchTerm;
                 }
                 this.currentFilters.searchText = searchTerm;
-                
-                // Expand filter panel
-                this.showFilterPanel();
             }
+            
+            // Always expand filter panel when loading wines view
+            this.showFilterPanel();
 
             // Apply current filters and render
             this.applyFilters();
