@@ -1,4 +1,5 @@
 import { Shelf } from './Shelf.js';
+import { findInstanceLocationInCellar } from '../utils/locationUtils.js';
 
 /**
  * Cellar model - represents a wine cellar
@@ -193,17 +194,10 @@ export class Cellar {
      * @returns {boolean} True if instance is in this cellar
      */
     isWineInstanceInCellar(instance) {
-        // Check winePositions data structure (from API)
-        if (this.winePositions) {
-            for (const shelfIndex in this.winePositions) {
-                const shelfPositions = this.winePositions[shelfIndex];
-                for (const side of ['front', 'back', 'single']) {
-                    const positions = shelfPositions[side] || [];
-                    if (positions.includes(instance.id)) {
-                        return true;
-                    }
-                }
-            }
+        // Check winePositions data structure using utility function
+        const location = findInstanceLocationInCellar(instance, this);
+        if (location) {
+            return true;
         }
         
         // Also check shelves if they have WineInstance objects

@@ -2,6 +2,7 @@
  * Wine Detail View - Modal for displaying and editing wine details
  */
 import { API } from './api.js';
+import { findInstanceLocation } from './utils/locationUtils.js';
 
 class WineDetailView {
     constructor() {
@@ -258,6 +259,65 @@ class WineDetailView {
             }
         }
 
+        // Location
+        const locationItemEl = document.getElementById('wine-detail-location-item');
+        const locationEl = document.getElementById('wine-detail-location');
+        
+        if (instance && !instance.consumed) {
+            // Find location in cellars using utility function
+            let locationInfo = null;
+            if (window.wineManager && window.wineManager.cellars && window.wineManager.cellars.length > 0) {
+                try {
+                    locationInfo = findInstanceLocation(instance, window.wineManager.cellars);
+                } catch (error) {
+                    console.error('Error finding instance location:', error);
+                }
+            }
+            
+            if (locationInfo) {
+                const { cellar, shelfIndex, side, position } = locationInfo;
+                const sideDisplay = side === 'single' ? '' : side === 'front' ? 'Front' : 'Back';
+                const sideText = sideDisplay ? `, ${sideDisplay}` : '';
+                const locationText = `${cellar.name}, Shelf ${shelfIndex + 1}${sideText}, Position ${position + 1}`;
+                
+                if (locationItemEl) {
+                    locationItemEl.style.display = 'flex';
+                }
+                if (locationEl) {
+                    locationEl.textContent = locationText;
+                    locationEl.classList.add('wine-detail-location-link');
+                    // Store location info for click handler
+                    locationEl.dataset.cellarId = cellar.id;
+                    locationEl.dataset.shelfIndex = shelfIndex;
+                    locationEl.dataset.side = side;
+                    locationEl.dataset.position = position;
+                    locationEl.dataset.instanceId = instance.id;
+                    
+                    // Remove existing click handlers and add new one
+                    const newLocationEl = locationEl.cloneNode(true);
+                    locationEl.parentNode.replaceChild(newLocationEl, locationEl);
+                    newLocationEl.addEventListener('click', () => this.navigateToLocation(newLocationEl.dataset));
+                }
+            } else {
+                // Unshelved
+                if (locationItemEl) {
+                    locationItemEl.style.display = 'flex';
+                }
+                if (locationEl) {
+                    locationEl.textContent = 'Unshelved';
+                    locationEl.classList.remove('wine-detail-location-link');
+                    // Remove click handler
+                    const newLocationEl = locationEl.cloneNode(true);
+                    locationEl.parentNode.replaceChild(newLocationEl, locationEl);
+                }
+            }
+        } else {
+            // Hide location if consumed
+            if (locationItemEl) {
+                locationItemEl.style.display = 'none';
+            }
+        }
+
         // Consumed date
         const consumedItemEl = document.getElementById('wine-detail-consumed-item');
         const consumedDateEl = document.getElementById('wine-detail-consumed-date');
@@ -373,28 +433,14 @@ class WineDetailView {
             // Find the wine's current location in cellars (if any)
             let cellarLocation = null;
             if (window.cellarManager && window.cellarManager.cellars) {
-                const cellars = window.cellarManager.cellars;
-                for (const cellar of cellars) {
-                    if (cellar.winePositions) {
-                        for (const shelfIndex in cellar.winePositions) {
-                            const shelfPositions = cellar.winePositions[shelfIndex];
-                            for (const side of ['front', 'back', 'single']) {
-                                const positions = shelfPositions[side] || [];
-                                const position = positions.indexOf(this.currentInstance.id);
-                                if (position !== -1) {
-                                    cellarLocation = {
-                                        cellarId: cellar.id,
-                                        shelfIndex: parseInt(shelfIndex),
-                                        side,
-                                        position
-                                    };
-                                    break;
-                                }
-                            }
-                            if (cellarLocation) break;
-                        }
-                    }
-                    if (cellarLocation) break;
+                const locationInfo = findInstanceLocation(this.currentInstance, window.cellarManager.cellars);
+                if (locationInfo) {
+                    cellarLocation = {
+                        cellarId: locationInfo.cellar.id,
+                        shelfIndex: locationInfo.shelfIndex,
+                        side: locationInfo.side,
+                        position: locationInfo.position
+                    };
                 }
             }
 
@@ -458,6 +504,45 @@ class WineDetailView {
                 drinkBtn.textContent = 'Drink wine';
             }
         }
+    }
+
+    async navigateToLocation(locationData) {
+        /**
+         * Navigate to cellar view and scroll to the wine's position
+         */
+        const { cellarId, shelfIndex, side, position, instanceId } = locationData;
+        
+        if (!cellarId || !window.cellarManager) return;
+        
+        // Close the wine detail modal
+        this.hide();
+        
+        // Navigate to cellar detail view
+        await window.cellarManager.showCellarDetail(cellarId);
+        
+        // Wait for DOM to update, then scroll to position
+        setTimeout(() => {
+            // Find the position element
+            const positionId = `wine-pos-${shelfIndex}-${side}-${position}`;
+            const positionEl = document.getElementById(positionId);
+            
+            if (positionEl) {
+                // Scroll the position into view
+                positionEl.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'center'
+                });
+                
+                // Add a highlight effect
+                positionEl.style.outline = '3px solid #1976d2';
+                positionEl.style.outlineOffset = '3px';
+                setTimeout(() => {
+                    positionEl.style.outline = '';
+                    positionEl.style.outlineOffset = '';
+                }, 2000);
+            }
+        }, 300);
     }
 
     formatStoredDate(storedDate) {

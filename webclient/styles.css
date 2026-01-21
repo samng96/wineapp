@@ -2643,6 +2643,17 @@ body {
     color: #333;
 }
 
+.wine-detail-location-link {
+    cursor: pointer;
+    color: #1976d2;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.wine-detail-location-link:hover {
+    color: #1565c0;
+}
+
 @media (max-width: 768px) {
     .wine-detail-main {
         flex-direction: column;

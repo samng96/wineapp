@@ -1,4 +1,5 @@
 import { WineReference } from './WineReference.js';
+import { findInstanceLocation } from '../utils/locationUtils.js';
 
 /**
  * WineInstance model - represents a wine instance (physical bottle)
@@ -51,25 +52,9 @@ export class WineInstance {
             return false;
         }
         
-        // Check if this instance is in any cellar
-        for (const cellar of cellars) {
-            if (cellar.isWineInstanceInCellar && cellar.isWineInstanceInCellar(this)) {
-                return false;
-            }
-            // Also check winePositions data structure
-            if (cellar.winePositions) {
-                for (const shelfIndex in cellar.winePositions) {
-                    const shelfPositions = cellar.winePositions[shelfIndex];
-                    for (const side of ['front', 'back', 'single']) {
-                        const positions = shelfPositions[side] || [];
-                        if (positions.includes(this.id)) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
+        // Check if this instance is in any cellar using utility function
+        const location = findInstanceLocation(this, cellars);
+        return location === null;
     }
 
     /**

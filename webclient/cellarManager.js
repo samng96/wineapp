@@ -2,6 +2,7 @@
 import { Cellar } from './models/Cellar.js';
 import { API } from './api.js';
 import { getWineCard } from './WineCard.js';
+import { findInstanceLocationInCellar } from './utils/locationUtils.js';
 
 class CellarManager {
     constructor() {
@@ -1099,7 +1100,7 @@ class CellarManager {
             let locationInfo = null;
             try {
                 if (instance && cellar) {
-                    locationInfo = this.findInstanceLocationInCellar(instance, cellar);
+                    locationInfo = findInstanceLocationInCellar(instance, cellar);
                 }
             } catch (error) {
                 console.error('Error finding location info:', error);
@@ -1317,37 +1318,6 @@ class CellarManager {
         }
     }
 
-    findInstanceLocationInCellar(instance, cellar) {
-        /**
-         * Find the location of a wine instance within a specific cellar
-         * Returns object with { cellar, shelfIndex, side, position } or null if not in this cellar
-         */
-        if (!cellar || !cellar.winePositions || !instance || !instance.id) return null;
-        
-        try {
-            for (const shelfIndex in cellar.winePositions) {
-                const shelfPositions = cellar.winePositions[shelfIndex];
-                if (!shelfPositions) continue;
-                
-                for (const side of ['front', 'back', 'single']) {
-                    const positions = shelfPositions[side] || [];
-                    const position = positions.indexOf(instance.id);
-                    if (position !== -1) {
-                        return {
-                            cellar,
-                            shelfIndex: parseInt(shelfIndex),
-                            side,
-                            position
-                        };
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error in findInstanceLocationInCellar:', error);
-            return null;
-        }
-        return null;
-    }
 
     renderStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, shelfIndex, position) {
         const frontWine = frontInstanceId && instanceMap[frontInstanceId] ? referenceMap[instanceMap[frontInstanceId].referenceId] : null;

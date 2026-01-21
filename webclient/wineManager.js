@@ -3,6 +3,7 @@ import { WineInstance } from './models/WineInstance.js';
 import { WineReference } from './models/WineReference.js';
 import { API } from './api.js';
 import { Cellar } from './models/Cellar.js';
+import { findInstanceLocation } from './utils/locationUtils.js';
 
 class WineManager {
     constructor() {
@@ -804,7 +805,7 @@ class WineManager {
             const ref = instance.reference;
             
             // Find location
-            const locationInfo = this.findInstanceLocation(instance);
+            const locationInfo = findInstanceLocation(instance, this.cellars);
             
             // Count bottles stored for this reference
             const bottlesStored = this.countBottlesStored(ref.id);
@@ -1016,32 +1017,6 @@ class WineManager {
         return countryMap[normalizedCountry] || '';
     }
 
-    findInstanceLocation(instance) {
-        /**
-         * Find the location of a wine instance (cellar, shelf, position)
-         * Returns object with { cellar, shelfIndex, side, position } or null if unshelved
-         */
-        for (const cellar of this.cellars) {
-            if (cellar.winePositions) {
-                for (const shelfIndex in cellar.winePositions) {
-                    const shelfPositions = cellar.winePositions[shelfIndex];
-                    for (const side of ['front', 'back', 'single']) {
-                        const positions = shelfPositions[side] || [];
-                        const position = positions.indexOf(instance.id);
-                        if (position !== -1) {
-                            return {
-                                cellar,
-                                shelfIndex: parseInt(shelfIndex),
-                                side,
-                                position
-                            };
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
 
     countBottlesStored(referenceId) {
         /**
