@@ -522,6 +522,10 @@ class WineDetailView {
         
         if (!cellarId || !window.cellarManager) return;
         
+        // Store reference and instance to reopen modal later
+        const referenceToReopen = this.currentReference;
+        const instanceToReopen = this.currentInstance;
+        
         // Close the wine detail modal
         this.hide();
         
@@ -542,12 +546,19 @@ class WineDetailView {
                     inline: 'center'
                 });
                 
-                // Add a highlight effect
-                positionEl.style.outline = '3px solid #1976d2';
+                // Add a red highlight effect
+                positionEl.style.outline = '3px solid #d32f2f';
                 positionEl.style.outlineOffset = '3px';
                 setTimeout(() => {
                     positionEl.style.outline = '';
                     positionEl.style.outlineOffset = '';
+                    
+                    // Reopen the wine detail modal after highlight disappears
+                    if (referenceToReopen && instanceToReopen) {
+                        setTimeout(() => {
+                            this.show(referenceToReopen, instanceToReopen);
+                        }, 100);
+                    }
                 }, 2000);
             }
         }, 300);
