@@ -362,9 +362,6 @@ export class AddWineManager {
 
     // Called when view is shown
     show() {
-        // Re-setup event listeners in case they weren't attached (view was hidden during init)
-        this.setupEventListeners();
-        
         // Reset to viewfinder state if needed
         if (this.currentState === 'preview' && !this.capturedPhoto) {
             this.switchToViewfinderMode();
