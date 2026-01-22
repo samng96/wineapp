@@ -4,6 +4,7 @@ import { WineReference } from './models/WineReference.js';
 import { WineInstance } from './models/WineInstance.js';
 import { CellarManager } from './cellarManager.js';
 import { WineManager } from './wineManager.js';
+import { AddWineManager } from './addWineManager.js';
 
 class WineApp {
     constructor() {
@@ -54,6 +55,14 @@ class WineApp {
         }
     }
 
+    initAddWineManager() {
+        try {
+            window.addWineManager = new AddWineManager();
+        } catch (error) {
+            console.error('Error initializing AddWineManager:', error);
+        }
+    }
+
     setupNavigation() {
         const navButtons = document.querySelectorAll('.nav-btn[data-view]');
         
@@ -80,11 +89,6 @@ class WineApp {
                     }).catch(error => {
                         console.error('Error closing wine detail view:', error);
                     });
-                }
-                
-                if (viewName === 'photo') {
-                    alert('Add Wines feature coming soon!');
-                    return;
                 }
                 
                 self.showView(viewName);
@@ -209,6 +213,13 @@ class WineApp {
         // Load wines when viewing wines page
         if (viewName === 'wines' && window.wineManager) {
             window.wineManager.loadWines(options.searchTerm);
+        }
+
+        // Show/hide camera when viewing photo page
+        if (viewName === 'photo' && window.addWineManager) {
+            window.addWineManager.show();
+        } else if (window.addWineManager) {
+            window.addWineManager.hide();
         }
     }
 

@@ -167,6 +167,48 @@
                 </div>
             </div>
 
+            <!-- Add Wines View -->
+            <div id="photo-view" class="view">
+                <div class="view-header">
+                    <h2>Add Wines</h2>
+                </div>
+                <div class="add-wine-content">
+                    <!-- Camera viewfinder or photo preview -->
+                    <div id="add-wine-camera-container" class="add-wine-camera-container">
+                        <video id="add-wine-video" class="add-wine-video hidden" autoplay playsinline></video>
+                        <canvas id="add-wine-canvas" class="add-wine-canvas hidden"></canvas>
+                        <img id="add-wine-preview" class="add-wine-preview hidden" alt="Photo preview" style="display: none;">
+                    </div>
+                    
+                    <!-- Bottom action bar (sits above main nav) -->
+                    <div id="add-wine-action-bar" class="add-wine-action-bar">
+                        <!-- Initial state: Album, Photo, Details -->
+                        <button id="add-wine-album-btn" class="add-wine-action-btn" title="Choose from album">
+                            <span class="add-wine-action-icon">📁</span>
+                        </button>
+                        <button id="add-wine-photo-btn" class="add-wine-action-btn add-wine-photo-btn-circle" title="Take photo" disabled>
+                            <span class="add-wine-action-icon">📷</span>
+                        </button>
+                        <button id="add-wine-details-btn" class="add-wine-action-btn" title="Details">
+                            <span class="add-wine-action-icon">📋</span>
+                        </button>
+                        
+                        <!-- After photo taken: Retake, Confirm -->
+                        <button id="add-wine-retake-btn" class="add-wine-action-btn hidden" title="Retake photo">
+                            <span class="add-wine-action-icon">↩️</span>
+                            <span class="add-wine-action-label">Retake</span>
+                        </button>
+                        <button id="add-wine-confirm-btn" class="add-wine-action-btn hidden" title="Confirm photo">
+                            <span class="add-wine-action-icon">✓</span>
+                            <span class="add-wine-action-label">Confirm</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Hidden file input for album selection -->
+                    <input type="file" id="add-wine-file-input" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
             <!-- Cellar Detail View -->
             <div id="cellar-detail-view" class="view">
                 <div class="view-header">
