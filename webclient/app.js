@@ -23,6 +23,7 @@ class WineApp {
         this.setupSearch();
         this.initCellarManager();
         this.initWineManager();
+        this.initAddWineManager();
         this.initWineDetailView();
         this.showView('home');
     }

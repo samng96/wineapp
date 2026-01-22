@@ -52,6 +52,14 @@ export class AddWineManager {
     }
 
     setupEventListeners() {
+        // Re-fetch elements in case view was hidden during init
+        this.albumBtn = document.getElementById('add-wine-album-btn');
+        this.photoBtn = document.getElementById('add-wine-photo-btn');
+        this.detailsBtn = document.getElementById('add-wine-details-btn');
+        this.retakeBtn = document.getElementById('add-wine-retake-btn');
+        this.confirmBtn = document.getElementById('add-wine-confirm-btn');
+        this.fileInput = document.getElementById('add-wine-file-input');
+        
         // Photo button - take photo
         if (this.photoBtn) {
             this.photoBtn.addEventListener('click', () => this.takePhoto());
@@ -80,7 +88,6 @@ export class AddWineManager {
         // Details button (placeholder for now)
         if (this.detailsBtn) {
             this.detailsBtn.addEventListener('click', () => {
-                console.log('Details button clicked');
                 // TODO: Implement details functionality
             });
         }
@@ -90,7 +97,6 @@ export class AddWineManager {
         try {
             // Check if getUserMedia is available
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.log('Camera API not available');
                 this.showNoCamera();
                 return;
             }
@@ -100,7 +106,6 @@ export class AddWineManager {
             const hasVideoInput = devices.some(device => device.kind === 'videoinput');
             
             if (!hasVideoInput) {
-                console.log('No video input devices found');
                 this.showNoCamera();
                 return;
             }
@@ -116,7 +121,6 @@ export class AddWineManager {
                 this.photoBtn.disabled = false;
                 this.photoBtn.classList.remove('disabled');
             } catch (error) {
-                console.log('Camera access denied or unavailable:', error);
                 this.showNoCamera();
             }
         } catch (error) {
@@ -308,7 +312,7 @@ export class AddWineManager {
         if (this.fileInput) {
             // Remove capture attribute for desktop/album selection
             // On iOS, the browser will show photo picker
-            // On desktop, it will show file picker
+            // On desktop/Mac, it will show Finder file picker
             this.fileInput.removeAttribute('capture');
             this.fileInput.click();
         }
@@ -352,14 +356,15 @@ export class AddWineManager {
         }
 
         // TODO: Navigate to confirmation/image processing page
-        console.log('Photo confirmed:', this.capturedPhoto);
-        
-        // For now, just log it - we'll implement the confirmation page next
+        // For now, just store it - we'll implement the confirmation page next
         // This will be handled in a future step
     }
 
     // Called when view is shown
     show() {
+        // Re-setup event listeners in case they weren't attached (view was hidden during init)
+        this.setupEventListeners();
+        
         // Reset to viewfinder state if needed
         if (this.currentState === 'preview' && !this.capturedPhoto) {
             this.switchToViewfinderMode();
