@@ -85,10 +85,12 @@ export class AddWineManager {
             this.confirmBtn.addEventListener('click', () => this.confirmPhoto());
         }
 
-        // Details button (placeholder for now)
+        // Details button - navigate to wine search view
         if (this.detailsBtn) {
             this.detailsBtn.addEventListener('click', () => {
-                // TODO: Implement details functionality
+                if (window.app && window.app.showView) {
+                    window.app.showView('wine-search');
+                }
             });
         }
     }

@@ -189,7 +189,7 @@
                         <button id="add-wine-photo-btn" class="add-wine-action-btn add-wine-photo-btn-circle" title="Take photo" disabled>
                             <span class="add-wine-action-icon">📷</span>
                         </button>
-                        <button id="add-wine-details-btn" class="add-wine-action-btn" title="Details">
+                        <button id="add-wine-details-btn" class="add-wine-action-btn" title="Search wine by name">
                             <span class="add-wine-action-icon">📋</span>
                         </button>
                         
@@ -206,6 +206,111 @@
                     
                     <!-- Hidden file input for album selection -->
                     <input type="file" id="add-wine-file-input" accept="image/*" style="position: fixed; opacity: 0; width: 1px; height: 1px; pointer-events: auto; z-index: 9999; top: 50%; left: 50%;">
+                </div>
+            </div>
+
+            <!-- Wine Search View -->
+            <div id="wine-search-view" class="view">
+                <div class="view-header">
+                    <button id="back-to-add-wine-from-search-btn" class="icon-btn" title="Back">←</button>
+                    <h2>Search Wine</h2>
+                </div>
+                <div class="wine-search-container">
+                    <div class="wine-search-form">
+                        <div class="form-group">
+                            <label for="wine-search-name">Wine Name</label>
+                            <input type="text" id="wine-search-name" name="name" placeholder="e.g., Cabernet Sauvignon" autofocus>
+                        </div>
+                        <div class="wine-search-actions">
+                            <button id="wine-search-btn" class="btn-primary">Search</button>
+                            <button id="wine-add-manually-btn" class="btn-secondary">Add Wine Manually</button>
+                        </div>
+                    </div>
+                    <div id="wine-search-results" class="wine-search-results">
+                        <!-- Search results will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wine Reference Form View -->
+            <div id="wine-reference-form-view" class="view">
+                <div class="view-header">
+                    <button id="back-to-add-wine-btn" class="icon-btn" title="Back">←</button>
+                    <h2>Wine Details</h2>
+                </div>
+                <div class="wine-reference-form-container">
+                    <form id="wine-reference-form" class="wine-reference-form">
+                        <div class="form-group">
+                            <label for="wine-name">Name <span class="required">*</span></label>
+                            <input type="text" id="wine-name" name="name" required placeholder="e.g., Cabernet Sauvignon">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wine-type">Type <span class="required">*</span></label>
+                            <select id="wine-type" name="type" required>
+                                <option value="">Select type</option>
+                                <option value="Red">Red</option>
+                                <option value="White">White</option>
+                                <option value="Rosé">Rosé</option>
+                                <option value="Sparkling">Sparkling</option>
+                                <option value="Dessert">Dessert</option>
+                                <option value="Fortified">Fortified</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="wine-vintage">Vintage</label>
+                                <input type="number" id="wine-vintage" name="vintage" min="1900" max="2100" placeholder="e.g., 2019">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="wine-rating">Rating</label>
+                                <select id="wine-rating" name="rating">
+                                    <option value="">No rating</option>
+                                    <option value="1">1 ⭐</option>
+                                    <option value="2">2 ⭐⭐</option>
+                                    <option value="3">3 ⭐⭐⭐</option>
+                                    <option value="4">4 ⭐⭐⭐⭐</option>
+                                    <option value="5">5 ⭐⭐⭐⭐⭐</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wine-producer">Producer/Winery</label>
+                            <input type="text" id="wine-producer" name="producer" placeholder="e.g., Domaine de la Romanée-Conti">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wine-varietals">Varietals</label>
+                            <input type="text" id="wine-varietals" name="varietals" placeholder="e.g., Cabernet Sauvignon, Merlot (comma-separated)">
+                            <small class="form-hint">Enter varietals separated by commas</small>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="wine-region">Region</label>
+                                <input type="text" id="wine-region" name="region" placeholder="e.g., Napa Valley">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="wine-country">Country</label>
+                                <input type="text" id="wine-country" name="country" placeholder="e.g., USA">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wine-tasting-notes">Tasting Notes</label>
+                            <textarea id="wine-tasting-notes" name="tastingNotes" rows="6" placeholder="Add your tasting notes here..."></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="wine-form-cancel" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary">Create Wine</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 

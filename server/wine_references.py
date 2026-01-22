@@ -112,6 +112,40 @@ def _create_wine_reference():
     return jsonify(data), 201
 
 """
+Search Vivino for wines by name
+
+Query Parameters:
+- name (str, required): Wine name to search for
+
+Response Format: Array of wine reference objects from Vivino, each containing:
+- name (str): Name of the wine
+- type (str): Type of wine
+- vintage (int, optional): Year the wine was produced
+- producer (str, optional): Name of the wine producer/winery
+- varietals (list[str], optional): List of grape varietals used
+- region (str, optional): Wine region
+- country (str, optional): Country of origin
+- rating (int, optional): Rating from 1-5
+- tastingNotes (str, optional): Tasting notes or description
+- labelImageUrl (str, optional): URL to the wine label image
+
+Note: This endpoint returns temporary IDs that should be replaced when creating the wine reference.
+"""
+@wine_references_bp.route('/vivino/search', methods=['GET'])
+def _search_vivino():
+    """Search Vivino for wines by name"""
+    name = request.args.get('name')
+    
+    if not name:
+        return jsonify({'error': 'name parameter is required'}), 400
+    
+    # TODO: Implement actual Vivino search
+    # For now, return empty array as placeholder
+    # This should be implemented to scrape/search Vivino website
+    return jsonify([]), 200
+
+
+"""
 Get a specific wine reference with all instances
 
 Response Format: Wine reference object containing all fields from GET /wine-references, plus:

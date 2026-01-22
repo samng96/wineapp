@@ -155,6 +155,24 @@ class API {
     static async updateWineReference(referenceId, updateData) {
         return await this.put(`/wine-references/${referenceId}`, updateData);
     }
+
+    /**
+     * Create a new wine reference
+     * @param {Object} referenceData - Reference data with name, type, and optional fields
+     * @returns {Promise<Object>} Created wine reference
+     */
+    static async createWineReference(referenceData) {
+        return await this.post('/wine-references', referenceData);
+    }
+
+    /**
+     * Search Vivino for wines by name
+     * @param {string} name - Wine name to search for
+     * @returns {Promise<Array>} Array of wine reference objects from Vivino
+     */
+    static async searchVivino(name) {
+        return await this.get(`/vivino/search?name=${encodeURIComponent(name)}`);
+    }
 }
 
 export { API };

@@ -5,6 +5,8 @@ import { WineInstance } from './models/WineInstance.js';
 import { CellarManager } from './cellarManager.js';
 import { WineManager } from './wineManager.js';
 import { AddWineManager } from './addWineManager.js';
+import { WineReferenceFormManager } from './wineReferenceFormManager.js';
+import { WineSearchManager } from './wineSearchManager.js';
 
 class WineApp {
     constructor() {
@@ -24,6 +26,8 @@ class WineApp {
         this.initCellarManager();
         this.initWineManager();
         this.initAddWineManager();
+        this.initWineReferenceFormManager();
+        this.initWineSearchManager();
         this.initWineDetailView();
         this.showView('home');
     }
@@ -61,6 +65,22 @@ class WineApp {
             window.addWineManager = new AddWineManager();
         } catch (error) {
             console.error('Error initializing AddWineManager:', error);
+        }
+    }
+
+    initWineReferenceFormManager() {
+        try {
+            window.wineReferenceFormManager = new WineReferenceFormManager();
+        } catch (error) {
+            console.error('Error initializing WineReferenceFormManager:', error);
+        }
+    }
+
+    initWineSearchManager() {
+        try {
+            window.wineSearchManager = new WineSearchManager();
+        } catch (error) {
+            console.error('Error initializing WineSearchManager:', error);
         }
     }
 
@@ -221,6 +241,20 @@ class WineApp {
             window.addWineManager.show();
         } else if (window.addWineManager) {
             window.addWineManager.hide();
+        }
+
+        // Show/hide wine reference form
+        if (viewName === 'wine-reference-form' && window.wineReferenceFormManager) {
+            window.wineReferenceFormManager.show();
+        } else if (window.wineReferenceFormManager) {
+            window.wineReferenceFormManager.hide();
+        }
+
+        // Show/hide wine search
+        if (viewName === 'wine-search' && window.wineSearchManager) {
+            window.wineSearchManager.show();
+        } else if (window.wineSearchManager) {
+            window.wineSearchManager.hide();
         }
     }
 
