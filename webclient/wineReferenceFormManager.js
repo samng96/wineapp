@@ -116,10 +116,18 @@ export class WineReferenceFormManager {
     }
 
     // Called when view is shown
-    show() {
+    show(options = {}) {
         // Reset form
         if (this.form) {
             this.form.reset();
+            
+            // Pre-fill name if provided
+            if (options.prefillName) {
+                const nameInput = document.getElementById('wine-name');
+                if (nameInput) {
+                    nameInput.value = options.prefillName;
+                }
+            }
         }
     }
 

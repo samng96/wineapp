@@ -42,8 +42,9 @@ export class WineSearchManager {
         // Add manually button
         if (this.addManuallyBtn) {
             this.addManuallyBtn.addEventListener('click', () => {
+                const searchTerm = this.searchInput ? this.searchInput.value.trim() : '';
                 if (window.app && window.app.showView) {
-                    window.app.showView('wine-reference-form');
+                    window.app.showView('wine-reference-form', { prefillName: searchTerm });
                 }
             });
         }

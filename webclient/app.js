@@ -245,7 +245,7 @@ class WineApp {
 
         // Show/hide wine reference form
         if (viewName === 'wine-reference-form' && window.wineReferenceFormManager) {
-            window.wineReferenceFormManager.show();
+            window.wineReferenceFormManager.show(options);
         } else if (window.wineReferenceFormManager) {
             window.wineReferenceFormManager.hide();
         }
