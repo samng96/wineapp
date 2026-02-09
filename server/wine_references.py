@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from server.utils import generate_id, get_current_timestamp
 from server.models import WineReference
 from server.data.storage_serializers import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
+from server.vivino_search import search_vivino
 from server.dynamo.storage import (
     get_all_wine_references as dynamodb_get_all_wine_references,
     put_wine_reference as dynamodb_put_wine_reference,
@@ -135,14 +136,17 @@ Note: This endpoint returns temporary IDs that should be replaced when creating 
 def _search_vivino():
     """Search Vivino for wines by name"""
     name = request.args.get('name')
-    
+
     if not name:
         return jsonify({'error': 'name parameter is required'}), 400
-    
-    # TODO: Implement actual Vivino search
-    # For now, return empty array as placeholder
-    # This should be implemented to scrape/search Vivino website
-    return jsonify([]), 200
+
+    # Get optional limit parameter (default 10, max 25)
+    limit = min(int(request.args.get('limit', 10)), 25)
+
+    # Search Vivino
+    results = search_vivino(name, limit=limit)
+
+    return jsonify(results), 200
 
 
 """
