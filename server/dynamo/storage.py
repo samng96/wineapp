@@ -11,6 +11,7 @@ DYNAMODB_REGION = os.environ.get('DYNAMODB_REGION', 'us-east-1')
 # Table names
 CELLARS_TABLE = 'wineapp-cellars'
 WINE_REFERENCES_TABLE = 'wineapp-wine-references'
+USER_WINE_REFERENCES_TABLE = 'wineapp-user-wine-references'
 WINE_INSTANCES_TABLE = 'wineapp-wine-instances'
 
 # Initialize DynamoDB resource
@@ -118,6 +119,44 @@ def delete_wine_reference(reference_id: str):
     dynamodb = get_dynamodb_resource()
     table = dynamodb.Table(WINE_REFERENCES_TABLE)
     table.delete_item(Key={'id': reference_id})
+
+
+# User Wine Reference storage functions
+def get_all_user_wine_references() -> List[Dict[str, Any]]:
+    """Load all user wine references from DynamoDB as serialized dictionaries"""
+    dynamodb = get_dynamodb_resource()
+    table = dynamodb.Table(USER_WINE_REFERENCES_TABLE)
+
+    try:
+        response = table.scan()
+        return response.get('Items', [])
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            return []
+        raise
+
+def put_user_wine_reference(user_ref: Dict[str, Any]):
+    """Save a user wine reference to DynamoDB"""
+    dynamodb = get_dynamodb_resource()
+    table = dynamodb.Table(USER_WINE_REFERENCES_TABLE)
+    table.put_item(Item=_prepare_item(user_ref))
+
+def get_user_wine_reference_by_id(user_ref_id: str) -> Optional[Dict[str, Any]]:
+    """Get a single user wine reference by ID from DynamoDB"""
+    dynamodb = get_dynamodb_resource()
+    table = dynamodb.Table(USER_WINE_REFERENCES_TABLE)
+
+    try:
+        response = table.get_item(Key={'id': user_ref_id})
+        return response.get('Item')
+    except ClientError:
+        return None
+
+def delete_user_wine_reference(user_ref_id: str):
+    """Delete a user wine reference from DynamoDB"""
+    dynamodb = get_dynamodb_resource()
+    table = dynamodb.Table(USER_WINE_REFERENCES_TABLE)
+    table.delete_item(Key={'id': user_ref_id})
 
 
 # Wine Instance storage functions

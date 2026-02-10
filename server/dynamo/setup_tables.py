@@ -2,7 +2,7 @@
 import os
 import boto3
 from botocore.exceptions import ClientError
-from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
+from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, USER_WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
 
 # DynamoDB configuration
 DYNAMODB_ENDPOINT = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
@@ -77,6 +77,17 @@ def main():
         ]
     )
     
+    # Create user wine references table
+    create_table(
+        USER_WINE_REFERENCES_TABLE,
+        [
+            {'AttributeName': 'id', 'KeyType': 'HASH'}
+        ],
+        [
+            {'AttributeName': 'id', 'AttributeType': 'S'}
+        ]
+    )
+
     # Create wine instances table
     create_table(
         WINE_INSTANCES_TABLE,

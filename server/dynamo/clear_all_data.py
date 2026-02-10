@@ -3,14 +3,14 @@ import os
 import boto3
 from server.dynamo.storage import (
     get_dynamodb_resource,
-    CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
+    CELLARS_TABLE, WINE_REFERENCES_TABLE, USER_WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
 )
 
 def clear_all_tables():
     """Clear all items from DynamoDB tables"""
     dynamodb = get_dynamodb_resource()
     
-    for table_name in [CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE]:
+    for table_name in [CELLARS_TABLE, WINE_REFERENCES_TABLE, USER_WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE]:
         table = dynamodb.Table(table_name)
         
         # Scan and delete all items

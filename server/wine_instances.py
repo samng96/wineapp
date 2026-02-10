@@ -4,7 +4,7 @@ from typing import List, Optional
 from server.utils import generate_id, get_current_timestamp
 from server.models import WineInstance
 from server.data.storage_serializers import serialize_wine_instance, deserialize_wine_instance
-from server.wine_references import get_all_wine_references, find_wine_reference_by_id
+from server.user_wine_references import get_all_user_wine_references, find_user_wine_reference_by_id
 from server.cellars import find_cellar_by_id, find_cellar_containing_wine_instance, update_and_save_cellar
 from server.dynamo.storage import (
     get_all_wine_instances as dynamodb_get_all_wine_instances,
@@ -29,10 +29,10 @@ def get_all_wine_instances() -> List[WineInstance]:
     """Load wine instances from DynamoDB as WineInstance model objects
     """
     data = dynamodb_get_all_wine_instances()
-    references_list = get_all_wine_references()
+    user_refs_list = get_all_user_wine_references()
     # Convert to dictionary keyed by ID for lookup
-    references_dict = {ref.id: ref for ref in references_list}
-    return [deserialize_wine_instance(i, references_dict[i['referenceId']]) for i in data]
+    user_refs_dict = {ref.id: ref for ref in user_refs_list}
+    return [deserialize_wine_instance(i, user_refs_dict[i['referenceId']]) for i in data]
 
 def save_wine_instances(instances: List[WineInstance]):
     """Save wine instances to DynamoDB (accepts WineInstance model objects)"""
@@ -44,10 +44,10 @@ def find_wine_instance_by_id(instance_id: str) -> Optional[WineInstance]:
     data = dynamodb_get_wine_instance_by_id(instance_id)
     if not data:
         return None
-    reference = find_wine_reference_by_id(data['referenceId'])
-    if not reference:
+    user_ref = find_user_wine_reference_by_id(data['referenceId'])
+    if not user_ref:
         return None
-    return deserialize_wine_instance(data, reference)
+    return deserialize_wine_instance(data, user_ref)
 
 def _update_and_save_wine_instance(instance: WineInstance):
     """Helper function to update and save a wine instance in DynamoDB"""
@@ -94,15 +94,15 @@ def _create_wine_instance():
     """Create a new wine instance"""
     data = request.json
     
-    # Verify reference exists
-    reference = find_wine_reference_by_id(data.get('referenceId'))
-    if not reference:
-        return jsonify({'error': 'Wine reference not found'}), 404
-    
+    # Verify user wine reference exists
+    user_ref = find_user_wine_reference_by_id(data.get('referenceId'))
+    if not user_ref:
+        return jsonify({'error': 'User wine reference not found'}), 404
+
     # Create WineInstance model object
     instance = WineInstance(
         id=generate_id(),
-        reference=reference,  # Use WineReference object
+        reference=user_ref,  # Use UserWineReference object
         price=data.get('price'),
         purchase_date=data.get('purchaseDate'),
         drink_by_date=data.get('drinkByDate'),

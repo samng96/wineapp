@@ -162,8 +162,8 @@ class Cellar:
         return False
 
 @dataclass
-class WineReference:
-    """Represents a wine reference (singleton for each wine type)"""
+class GlobalWineReference:
+    """Represents a global wine reference (shared across all users)"""
     id: str
     name: str
     type: str  # Red, White, Rosé, Sparkling, etc.
@@ -172,22 +172,31 @@ class WineReference:
     varietals: Optional[List[str]] = None
     region: Optional[str] = None
     country: Optional[str] = None
-    rating: Optional[int] = None  # 1-5
-    tasting_notes: Optional[str] = None
     label_image_url: Optional[str] = None  # URL to blob storage
     version: int = 1
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-    
+
     def get_unique_key(self) -> tuple:
         """Get unique key for deduplication (name, vintage, producer)"""
         return (self.name, self.vintage, self.producer)
 
 @dataclass
+class UserWineReference:
+    """Represents a user's personal data for a wine reference (per-user rating, tasting notes)"""
+    id: str
+    global_reference_id: str  # FK to GlobalWineReference
+    rating: Optional[int] = None  # 1-5
+    tasting_notes: Optional[str] = None
+    version: int = 1
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+@dataclass
 class WineInstance:
     """Represents a wine instance (physical bottle)"""
     id: str
-    reference: 'WineReference'  # WineReference object (not ID - loaded from global registry)
+    reference: 'UserWineReference'  # UserWineReference object (not ID)
     price: Optional[float] = None
     purchase_date: Optional[str] = None  # ISO 8601 date
     drink_by_date: Optional[str] = None  # ISO 8601 date

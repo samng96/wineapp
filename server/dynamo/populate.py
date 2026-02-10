@@ -5,11 +5,12 @@ import requests
 import re
 from urllib.parse import quote
 from server.utils import generate_id, get_current_timestamp
-from server.models import Shelf, Cellar, WineReference, WineInstance
-from server.data.storage_serializers import serialize_cellar, serialize_wine_reference, serialize_wine_instance
+from server.models import Shelf, Cellar, GlobalWineReference, UserWineReference, WineInstance
+from server.data.storage_serializers import serialize_cellar, serialize_global_wine_reference, serialize_user_wine_reference, serialize_wine_instance
 from server.dynamo.storage import (
     put_cellar as dynamodb_put_cellar,
     put_wine_reference as dynamodb_put_wine_reference,
+    put_user_wine_reference as dynamodb_put_user_wine_reference,
     save_wine_instances as dynamodb_save_wine_instances
 )
 
@@ -170,77 +171,68 @@ def create_cellars():
 
 
 def create_wine_references():
-    """Create wine references from the sample data"""
+    """Create global wine references and user wine references from the sample data.
+    Returns a tuple of (global_references, user_references)."""
     references = []
+    user_references = []
     timestamp = get_current_timestamp()
-    
+
     all_wines = RED_WINES + WHITE_WINES
     total_wines = len(all_wines)
-    
+
     print(f"Fetching Vivino label images for {total_wines} wines...")
     print("This may take a while due to rate limiting...\n")
-    
+
+    def create_ref_pair(wine_data, wine_type, index, total):
+        print(f"[{index}/{total}] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
+        label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
+        if label_url:
+            print(f"  Found: {label_url[:60]}...")
+        else:
+            print(f"  No image found - using None")
+
+        ref = GlobalWineReference(
+            id=generate_id(),
+            name=wine_data["name"],
+            type=wine_type,
+            vintage=wine_data["vintage"],
+            producer=wine_data["producer"],
+            varietals=wine_data["varietals"],
+            region=wine_data["region"],
+            country=wine_data["country"],
+            label_image_url=label_url,
+            version=1,
+            created_at=timestamp,
+            updated_at=timestamp
+        )
+
+        user_ref = UserWineReference(
+            id=generate_id(),
+            global_reference_id=ref.id,
+            rating=4,
+            tasting_notes=f"Excellent {wine_data['name']} from {wine_data['region']}",
+            version=1,
+            created_at=timestamp,
+            updated_at=timestamp
+        )
+
+        return ref, user_ref
+
     # Create 40 red wine references
     for i, wine_data in enumerate(RED_WINES, 1):
-        print(f"[{i}/40] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
-        label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
-        if label_url:
-            print(f"  ✓ Found: {label_url[:60]}...")
-        else:
-            print(f"  ✗ No image found - using None")
-        
-        reference = WineReference(
-            id=generate_id(),
-            name=wine_data["name"],
-            type="Red",
-            vintage=wine_data["vintage"],
-            producer=wine_data["producer"],
-            varietals=wine_data["varietals"],
-            region=wine_data["region"],
-            country=wine_data["country"],
-            rating=4,  # Default rating
-            tasting_notes=f"Excellent {wine_data['name']} from {wine_data['region']}",
-            label_image_url=label_url,  # Can be None if not found
-            version=1,
-            created_at=timestamp,
-            updated_at=timestamp
-        )
-        references.append(reference)
-        
-        # Rate limiting - be respectful
+        ref, user_ref = create_ref_pair(wine_data, "Red", i, 40)
+        references.append(ref)
+        user_references.append(user_ref)
         time.sleep(0.5)
-    
+
     # Create 10 white wine references
     for i, wine_data in enumerate(WHITE_WINES, 1):
-        print(f"[{i}/10] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
-        label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
-        if label_url:
-            print(f"  ✓ Found: {label_url[:60]}...")
-        else:
-            print(f"  ✗ No image found - using None")
-        
-        reference = WineReference(
-            id=generate_id(),
-            name=wine_data["name"],
-            type="White",
-            vintage=wine_data["vintage"],
-            producer=wine_data["producer"],
-            varietals=wine_data["varietals"],
-            region=wine_data["region"],
-            country=wine_data["country"],
-            rating=4,  # Default rating
-            tasting_notes=f"Excellent {wine_data['name']} from {wine_data['region']}",
-            label_image_url=label_url,  # Can be None if not found
-            version=1,
-            created_at=timestamp,
-            updated_at=timestamp
-        )
-        references.append(reference)
-        
-        # Rate limiting - be respectful
+        ref, user_ref = create_ref_pair(wine_data, "White", i, 10)
+        references.append(ref)
+        user_references.append(user_ref)
         time.sleep(0.5)
-    
-    return references
+
+    return references, user_references
 
 
 def search_vivino_images_scrape(query):
@@ -348,11 +340,17 @@ def get_wine_label_url(wine_name, producer, vintage):
     return None
 
 
-def create_wine_instances(references, cellars):
-    """Create 75 wine instances (50 red, 15 white shelved, 10 unshelved) and assign 65 to cellars randomly"""
+def create_wine_instances(references, user_references, cellars):
+    """Create 75 wine instances (50 red, 15 white shelved, 10 unshelved) and assign 65 to cellars randomly.
+    references: list of GlobalWineReference (used for type categorization)
+    user_references: list of UserWineReference (used as WineInstance.reference)
+    """
     instances = []
     timestamp = get_current_timestamp()
-    
+
+    # Build mapping from global_reference_id -> user_reference
+    global_to_user_ref = {ur.global_reference_id: ur for ur in user_references}
+
     # Collect all available positions across all cellars
     available_positions = []
     for cellar in cellars:
@@ -366,27 +364,27 @@ def create_wine_instances(references, cellars):
                 for pos in range(shelf.positions):
                     if cellar.is_position_available(shelf_index, 'single', pos):
                         available_positions.append((cellar, shelf_index, 'single', pos))
-    
+
     # Randomize the available positions
     random.shuffle(available_positions)
-    
+
     if len(available_positions) < 65:
         raise ValueError(f"Not enough available positions ({len(available_positions)}) for 65 wine instances")
-    
-    # Separate red and white references
-    red_references = [ref for ref in references if ref.type == 'Red']
-    white_references = [ref for ref in references if ref.type == 'White']
+
+    # Separate red and white global references, then map to user references
+    red_user_refs = [global_to_user_ref[ref.id] for ref in references if ref.type == 'Red']
+    white_user_refs = [global_to_user_ref[ref.id] for ref in references if ref.type == 'White']
     
     # We need 65 instances total: 50 red, 15 white
     instance_count = 0
-    
+
     # Create 50 red wine instances
     # Some red references should have multiple instances
     red_instance_count = 0
     red_reference_index = 0
-    
+
     while red_instance_count < 50:
-        reference = red_references[red_reference_index % len(red_references)]
+        reference = red_user_refs[red_reference_index % len(red_user_refs)]
         
         # Determine how many instances for this reference
         # First 10 red references get 2 instances each (20 instances)
@@ -431,9 +429,9 @@ def create_wine_instances(references, cellars):
     # Create 15 white wine instances
     # Cycle through white references to distribute them
     white_reference_index = 0
-    
+
     for white_instance_count in range(15):
-        reference = white_references[white_reference_index % len(white_references)]
+        reference = white_user_refs[white_reference_index % len(white_user_refs)]
         
         # Get a random available position
         cellar, shelf_index, side, position = available_positions[instance_count]
@@ -465,11 +463,11 @@ def create_wine_instances(references, cellars):
     # Create 10 unshelved wine instances (not assigned to any cellar position)
     # Mix of red and white wines
     unshelved_reference_index = 0
-    all_references = red_references + white_references
+    all_user_refs = red_user_refs + white_user_refs
     
     for unshelved_count in range(10):
-        # Cycle through all references (mix of red and white)
-        reference = all_references[unshelved_reference_index % len(all_references)]
+        # Cycle through all user references (mix of red and white)
+        reference = all_user_refs[unshelved_reference_index % len(all_user_refs)]
         
         # Create instance without assigning to any cellar position
         instance = WineInstance(
@@ -506,13 +504,17 @@ def main():
     print(f"Created {len(cellars)} cellars")
     
     print("Creating wine references...")
-    references = create_wine_references()
-    print(f"Created {len(references)} wine references ({sum(1 for r in references if r.type == 'Red')} red, {sum(1 for r in references if r.type == 'White')} white)")
+    references, user_references = create_wine_references()
+    print(f"Created {len(references)} global wine references ({sum(1 for r in references if r.type == 'Red')} red, {sum(1 for r in references if r.type == 'White')} white)")
+    print(f"Created {len(user_references)} user wine references")
     
     print("Creating wine instances...")
-    instances = create_wine_instances(references, cellars)
-    red_count = sum(1 for inst in instances if inst.reference.type == 'Red')
-    white_count = sum(1 for inst in instances if inst.reference.type == 'White')
+    # Build mapping from user_ref.id -> global_ref for type lookup
+    global_refs_by_id = {ref.id: ref for ref in references}
+    user_to_global = {ur.id: global_refs_by_id[ur.global_reference_id] for ur in user_references}
+    instances = create_wine_instances(references, user_references, cellars)
+    red_count = sum(1 for inst in instances if user_to_global[inst.reference.id].type == 'Red')
+    white_count = sum(1 for inst in instances if user_to_global[inst.reference.id].type == 'White')
     shelved_count = len(instances) - 10  # 10 are unshelved
     unshelved_count = 10
     print(f"Created {len(instances)} wine instances ({red_count} red, {white_count} white, {shelved_count} shelved, {unshelved_count} unshelved)")
@@ -525,11 +527,16 @@ def main():
         cellar_data = serialize_cellar(cellar)
         dynamodb_put_cellar(cellar_data)
     
-    # Save wine references individually
+    # Save global wine references individually
     for reference in references:
-        reference_data = serialize_wine_reference(reference)
+        reference_data = serialize_global_wine_reference(reference)
         dynamodb_put_wine_reference(reference_data)
-    
+
+    # Save user wine references individually
+    for user_ref in user_references:
+        user_ref_data = serialize_user_wine_reference(user_ref)
+        dynamodb_put_user_wine_reference(user_ref_data)
+
     # Save wine instances in batch
     instances_data = [serialize_wine_instance(i) for i in instances]
     dynamodb_save_wine_instances(instances_data)
@@ -539,7 +546,8 @@ def main():
     print(f"  Cellars: {len(cellars)}")
     print(f"    - {cellars[0].name}: {len(cellars[0].shelves)} shelves, capacity {cellars[0].capacity}")
     print(f"    - {cellars[1].name}: {len(cellars[1].shelves)} shelves, capacity {cellars[1].capacity}")
-    print(f"  Wine References: {len(references)}")
+    print(f"  Global Wine References: {len(references)}")
+    print(f"  User Wine References: {len(user_references)}")
     print(f"  Wine Instances: {len(instances)}")
 
 

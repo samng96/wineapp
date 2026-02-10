@@ -6,8 +6,9 @@ from flask import Flask
 from flask_cors import CORS
 from server.cellars import cellars_bp
 from server.wine_references import wine_references_bp
+from server.user_wine_references import user_wine_references_bp
 from server.wine_instances import wine_instances_bp
-from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
+from server.dynamo.storage import CELLARS_TABLE, WINE_REFERENCES_TABLE, USER_WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE
 from server.dynamo.setup_tables import get_dynamodb_client
 
 
@@ -18,12 +19,12 @@ def dynamodb_tables():
     endpoint = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
     os.environ['DYNAMODB_ENDPOINT'] = endpoint
     os.environ['DYNAMODB_REGION'] = 'us-east-1'
-    
+
     client = get_dynamodb_client()
-    
+
     # Create tables if they don't exist
     tables = client.list_tables().get('TableNames', [])
-    
+
     def create_table_if_not_exists(table_name):
         """Helper to create a table if it doesn't exist"""
         if table_name not in tables:
@@ -39,13 +40,14 @@ def dynamodb_tables():
             except Exception as e:
                 if 'ResourceInUseException' not in str(e):
                     raise
-    
+
     create_table_if_not_exists(CELLARS_TABLE)
     create_table_if_not_exists(WINE_REFERENCES_TABLE)
+    create_table_if_not_exists(USER_WINE_REFERENCES_TABLE)
     create_table_if_not_exists(WINE_INSTANCES_TABLE)
-    
+
     yield
-    
+
     # Cleanup is done by clear_tables fixture before each test
 
 
@@ -54,23 +56,24 @@ def app(dynamodb_tables, monkeypatch):
     """Create Flask app with test configuration"""
     # Set environment variable for testing
     monkeypatch.setenv('FLASK_ENV', 'testing')
-    
+
     # Ensure DynamoDB Local endpoint is set
     endpoint = os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000')
     monkeypatch.setenv('DYNAMODB_ENDPOINT', endpoint)
     monkeypatch.setenv('DYNAMODB_REGION', 'us-east-1')
-    
-    
+
+
     # Create Flask app
     app = Flask(__name__)
     CORS(app)
     app.config['TESTING'] = True
-    
+
     # Register blueprints
     app.register_blueprint(cellars_bp)
     app.register_blueprint(wine_references_bp)
+    app.register_blueprint(user_wine_references_bp)
     app.register_blueprint(wine_instances_bp)
-    
+
     yield app
 
 
@@ -85,9 +88,9 @@ def clear_tables(dynamodb_tables):
         aws_access_key_id='dummy',
         aws_secret_access_key='dummy'
     )
-    
+
     # Clear all items from all tables
-    for table_name in [CELLARS_TABLE, WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE]:
+    for table_name in [CELLARS_TABLE, WINE_REFERENCES_TABLE, USER_WINE_REFERENCES_TABLE, WINE_INSTANCES_TABLE]:
         table = dynamodb.Table(table_name)
         try:
             response = table.scan()
@@ -96,13 +99,28 @@ def clear_tables(dynamodb_tables):
                     batch.delete_item(Key={'id': item['id']})
         except Exception:
             pass  # Table might not exist yet
-    
+
 
 
 @pytest.fixture
 def client(app):
     """Create Flask test client"""
     return app.test_client()
+
+
+@pytest.fixture
+def sample_wine_reference():
+    """Sample global wine reference data for testing"""
+    return {
+        'name': 'Cabernet Sauvignon',
+        'type': 'Red',
+        'vintage': 2018,
+        'producer': 'Test Winery',
+        'varietals': ['Cabernet Sauvignon'],
+        'region': 'Napa Valley',
+        'country': 'USA',
+        'labelImageUrl': 'https://example.com/label.jpg'
+    }
 
 
 @pytest.fixture
@@ -116,19 +134,12 @@ def sample_cellar():
 
 
 @pytest.fixture
-def sample_wine_reference():
-    """Sample wine reference data for testing"""
+def sample_user_wine_reference():
+    """Sample user wine reference data for testing"""
     return {
-        'name': 'Cabernet Sauvignon',
-        'type': 'Red',
-        'vintage': 2018,
-        'producer': 'Test Winery',
-        'varietals': ['Cabernet Sauvignon'],
-        'region': 'Napa Valley',
-        'country': 'USA',
+        'globalReferenceId': None,  # Will be set by test
         'rating': 4,
-        'tastingNotes': 'Rich and full-bodied',
-        'labelImageUrl': 'https://example.com/label.jpg'
+        'tastingNotes': 'Rich and full-bodied'
     }
 
 
@@ -152,5 +163,18 @@ def created_wine_reference(client, sample_wine_reference):
     unique_ref['name'] = f"{sample_wine_reference['name']} {int(time.time() * 1000)}"
     response = client.post('/wine-references', json=unique_ref)
     assert response.status_code == 201, f"Failed to create wine reference: {response.get_json()}"
+    data = response.get_json()
+    return data['id']
+
+
+@pytest.fixture
+def created_user_wine_reference(client, created_wine_reference):
+    """Create a user wine reference linked to a global wine reference and return its ID"""
+    response = client.post('/user-wine-references', json={
+        'globalReferenceId': created_wine_reference,
+        'rating': 4,
+        'tastingNotes': 'Test tasting notes'
+    })
+    assert response.status_code == 201, f"Failed to create user wine reference: {response.get_json()}"
     data = response.get_json()
     return data['id']

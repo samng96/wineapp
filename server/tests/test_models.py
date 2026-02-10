@@ -1,6 +1,6 @@
 """Tests for data models"""
 import pytest
-from server.models import Shelf, Cellar, WineReference, WineInstance
+from server.models import Shelf, Cellar, GlobalWineReference, UserWineReference, WineInstance
 
 
 def test_shelf_initialization():
@@ -41,8 +41,8 @@ def test_shelf_get_wine_at():
     assert shelf.get_wine_at('single', 0) is None
     
     # Set a wine instance
-    ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-    instance = WineInstance(id='inst1', reference=ref)
+    user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+    instance = WineInstance(id='inst1', reference=user_ref)
     
     shelf.set_wine_at('single', 0, instance)
     assert shelf.get_wine_at('single', 0) == instance
@@ -60,10 +60,10 @@ def test_cellar_capacity_calculation():
 
 
 def test_wine_reference_get_unique_key():
-    """Test WineReference unique key generation"""
-    ref1 = WineReference(id='ref1', name='Wine', type='Red', vintage=2018, producer='Winery')
-    ref2 = WineReference(id='ref2', name='Wine', type='Red', vintage=2018, producer='Winery')
-    ref3 = WineReference(id='ref3', name='Wine', type='Red', vintage=2019, producer='Winery')
+    """Test GlobalWineReference unique key generation"""
+    ref1 = GlobalWineReference(id='ref1', name='Wine', type='Red', vintage=2018, producer='Winery')
+    ref2 = GlobalWineReference(id='ref2', name='Wine', type='Red', vintage=2018, producer='Winery')
+    ref3 = GlobalWineReference(id='ref3', name='Wine', type='Red', vintage=2019, producer='Winery')
     
     assert ref1.get_unique_key() == ref2.get_unique_key()
     assert ref1.get_unique_key() != ref3.get_unique_key()
@@ -71,8 +71,8 @@ def test_wine_reference_get_unique_key():
 
 def test_wine_instance_set_consumed():
     """Test WineInstance set_consumed method"""
-    ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-    instance = WineInstance(id='inst1', reference=ref)
+    user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+    instance = WineInstance(id='inst1', reference=user_ref)
     
     assert instance.consumed is False
     assert instance.consumed_date is None
@@ -84,8 +84,8 @@ def test_wine_instance_set_consumed():
 
 def test_wine_instance_set_coravined():
     """Test WineInstance set_coravined method"""
-    ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-    instance = WineInstance(id='inst1', reference=ref)
+    user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+    instance = WineInstance(id='inst1', reference=user_ref)
     
     assert instance.coravined is False
     assert instance.coravined_date is None

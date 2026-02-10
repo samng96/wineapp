@@ -1,6 +1,6 @@
 """Comprehensive data consistency tests for WineApp models"""
 import pytest
-from server.models import Shelf, Cellar, WineReference, WineInstance
+from server.models import Shelf, Cellar, GlobalWineReference, UserWineReference, WineInstance
 from server.utils import get_current_timestamp
 
 
@@ -70,9 +70,9 @@ class TestShelfConsistency:
     def test_shelf_wine_position_independence(self):
         """Test that front and back positions are independent on double shelf"""
         shelf = Shelf(positions=5, is_double=True)
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance1 = WineInstance(id='inst1', reference=ref)
-        instance2 = WineInstance(id='inst2', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance1 = WineInstance(id='inst1', reference=user_ref)
+        instance2 = WineInstance(id='inst2', reference=user_ref)
         
         # Set different wines on front and back
         shelf.set_wine_at('front', 0, instance1)
@@ -165,8 +165,8 @@ class TestCellarConsistency:
         assert cellar.is_position_available(0, 'single', 4) is True
         
         # After assigning, position should be unavailable
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
         cellar.assign_wine_to_position(0, 'single', 0, instance)
         assert cellar.is_position_available(0, 'single', 0) is False
         assert cellar.is_position_available(0, 'single', 1) is True
@@ -175,20 +175,20 @@ class TestCellarConsistency:
         """Test that wine assignment validates positions"""
         shelves = [Shelf(positions=5, is_double=False)]
         cellar = Cellar(id='c1', name='Test Cellar', shelves=shelves)
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
-        
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
+
         # Valid assignment
         cellar.assign_wine_to_position(0, 'single', 0, instance)
-        
+
         # Invalid position should raise ValueError
         with pytest.raises(ValueError, match="Invalid position"):
             cellar.assign_wine_to_position(0, 'single', 10, instance)
         with pytest.raises(ValueError, match="Invalid position"):
             cellar.assign_wine_to_position(1, 'single', 0, instance)  # shelf doesn't exist
-        
+
         # Occupied position should raise ValueError
-        instance2 = WineInstance(id='inst2', reference=ref)
+        instance2 = WineInstance(id='inst2', reference=user_ref)
         with pytest.raises(ValueError, match="not available"):
             cellar.assign_wine_to_position(0, 'single', 0, instance2)
     
@@ -196,8 +196,8 @@ class TestCellarConsistency:
         """Test removing wine from cellar"""
         shelves = [Shelf(positions=5, is_double=False)]
         cellar = Cellar(id='c1', name='Test Cellar', shelves=shelves)
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
         
         # Assign wine
         cellar.assign_wine_to_position(0, 'single', 0, instance)
@@ -213,9 +213,9 @@ class TestCellarConsistency:
         """Test that cellar correctly tracks wine instances"""
         shelves = [Shelf(positions=5, is_double=True)]
         cellar = Cellar(id='c1', name='Test Cellar', shelves=shelves)
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance1 = WineInstance(id='inst1', reference=ref)
-        instance2 = WineInstance(id='inst2', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance1 = WineInstance(id='inst1', reference=user_ref)
+        instance2 = WineInstance(id='inst2', reference=user_ref)
         
         # Initially no instances
         assert cellar.is_wine_instance_in_cellar(instance1) is False
@@ -235,13 +235,13 @@ class TestCellarConsistency:
         assert cellar.is_wine_instance_in_cellar(instance2) is True
 
 
-class TestWineReferenceConsistency:
-    """Test WineReference model data consistency"""
+class TestGlobalWineReferenceConsistency:
+    """Test GlobalWineReference model data consistency"""
     
     def test_wine_reference_required_fields(self):
         """Test that required fields are present"""
         # Valid reference with all required fields
-        ref = WineReference(
+        ref = GlobalWineReference(
             id='ref1',
             name='Test Wine',
             type='Red',
@@ -254,7 +254,7 @@ class TestWineReferenceConsistency:
     
     def test_wine_reference_optional_fields(self):
         """Test that optional fields can be None"""
-        ref = WineReference(
+        ref = GlobalWineReference(
             id='ref1',
             name='Test Wine',
             type='Red',
@@ -264,34 +264,32 @@ class TestWineReferenceConsistency:
         assert ref.varietals is None
         assert ref.region is None
         assert ref.country is None
-        assert ref.rating is None
-        assert ref.tasting_notes is None
         assert ref.label_image_url is None
     
     def test_wine_reference_unique_key_consistency(self):
         """Test that unique keys are consistent"""
-        ref1 = WineReference(
+        ref1 = GlobalWineReference(
             id='ref1',
             name='Wine A',
             type='Red',
             vintage=2018,
             producer='Winery A'
         )
-        ref2 = WineReference(
+        ref2 = GlobalWineReference(
             id='ref2',
             name='Wine A',
             type='Red',
             vintage=2018,
             producer='Winery A'
         )
-        ref3 = WineReference(
+        ref3 = GlobalWineReference(
             id='ref3',
             name='Wine A',
             type='Red',
             vintage=2019,  # Different vintage
             producer='Winery A'
         )
-        ref4 = WineReference(
+        ref4 = GlobalWineReference(
             id='ref4',
             name='Wine A',
             type='Red',
@@ -310,14 +308,14 @@ class TestWineReferenceConsistency:
     
     def test_wine_reference_unique_key_with_none_producer(self):
         """Test unique key handling when producer is None"""
-        ref1 = WineReference(
+        ref1 = GlobalWineReference(
             id='ref1',
             name='Wine A',
             type='Red',
             vintage=2018,
             producer=None
         )
-        ref2 = WineReference(
+        ref2 = GlobalWineReference(
             id='ref2',
             name='Wine A',
             type='Red',
@@ -333,42 +331,42 @@ class TestWineInstanceConsistency:
     """Test WineInstance model data consistency"""
     
     def test_wine_instance_required_reference(self):
-        """Test that WineInstance requires a WineReference object"""
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        
+        """Test that WineInstance requires a UserWineReference object"""
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+
         # Valid instance with reference
-        instance = WineInstance(id='inst1', reference=ref)
-        assert instance.reference == ref
-        assert instance.reference.id == 'ref1'
-    
+        instance = WineInstance(id='inst1', reference=user_ref)
+        assert instance.reference == user_ref
+        assert instance.reference.id == 'uref1'
+
     def test_wine_instance_state_transitions(self):
         """Test consumed and coravined state transitions"""
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
-        
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
+
         # Initial state
         assert instance.consumed is False
         assert instance.consumed_date is None
         assert instance.coravined is False
         assert instance.coravined_date is None
-        
+
         # Set consumed
         instance.set_consumed()
         assert instance.consumed is True
         assert instance.consumed_date is not None
         assert instance.coravined is False  # Unchanged
-        
+
         # Reset and test coravined
-        instance2 = WineInstance(id='inst2', reference=ref)
+        instance2 = WineInstance(id='inst2', reference=user_ref)
         instance2.set_coravined()
         assert instance2.coravined is True
         assert instance2.coravined_date is not None
         assert instance2.consumed is False  # Unchanged
-    
+
     def test_wine_instance_optional_fields(self):
         """Test that optional fields can be None"""
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
         
         assert instance.price is None
         assert instance.purchase_date is None
@@ -384,21 +382,21 @@ class TestCrossModelConsistency:
     """Test consistency across multiple models"""
     
     def test_wine_instance_reference_consistency(self):
-        """Test that WineInstance references are valid WineReference objects"""
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        
+        """Test that WineInstance references are valid UserWineReference objects"""
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+
         # Valid: instance with proper reference
-        instance = WineInstance(id='inst1', reference=ref)
-        assert isinstance(instance.reference, WineReference)
-        assert instance.reference.id == ref.id
-        assert instance.reference.name == ref.name
-    
+        instance = WineInstance(id='inst1', reference=user_ref)
+        assert isinstance(instance.reference, UserWineReference)
+        assert instance.reference.id == user_ref.id
+        assert instance.reference.global_reference_id == 'ref1'
+
     def test_cellar_wine_instance_consistency(self):
         """Test that wine instances assigned to cellars are tracked correctly"""
         shelves = [Shelf(positions=5, is_double=True)]
         cellar = Cellar(id='c1', name='Test Cellar', shelves=shelves)
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
         
         # Assign to cellar
         cellar.assign_wine_to_position(0, 'front', 0, instance)
@@ -416,8 +414,8 @@ class TestCrossModelConsistency:
         shelves2 = [Shelf(positions=5, is_double=False)]
         cellar1 = Cellar(id='c1', name='Cellar 1', shelves=shelves1)
         cellar2 = Cellar(id='c2', name='Cellar 2', shelves=shelves2)
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance = WineInstance(id='inst1', reference=ref)
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance = WineInstance(id='inst1', reference=user_ref)
         
         # Assign to first cellar
         cellar1.assign_wine_to_position(0, 'single', 0, instance)
@@ -433,15 +431,15 @@ class TestCrossModelConsistency:
     
     def test_multiple_instances_same_reference(self):
         """Test that multiple instances can share the same reference"""
-        ref = WineReference(id='ref1', name='Test Wine', type='Red', vintage=2018)
-        instance1 = WineInstance(id='inst1', reference=ref)
-        instance2 = WineInstance(id='inst2', reference=ref)
-        instance3 = WineInstance(id='inst3', reference=ref)
-        
-        # All instances reference the same WineReference object
-        assert instance1.reference == ref
-        assert instance2.reference == ref
-        assert instance3.reference == ref
+        user_ref = UserWineReference(id='uref1', global_reference_id='ref1')
+        instance1 = WineInstance(id='inst1', reference=user_ref)
+        instance2 = WineInstance(id='inst2', reference=user_ref)
+        instance3 = WineInstance(id='inst3', reference=user_ref)
+
+        # All instances reference the same UserWineReference object
+        assert instance1.reference == user_ref
+        assert instance2.reference == user_ref
+        assert instance3.reference == user_ref
         assert instance1.reference == instance2.reference
         
         # But instances are different
@@ -485,7 +483,7 @@ class TestEdgeCases:
     
     def test_zero_vintage(self):
         """Test wine reference with vintage 0 (edge case)"""
-        ref = WineReference(
+        ref = GlobalWineReference(
             id='ref1',
             name='Test Wine',
             type='Red',
@@ -496,7 +494,7 @@ class TestEdgeCases:
     
     def test_negative_vintage(self):
         """Test wine reference with negative vintage (should be allowed by model)"""
-        ref = WineReference(
+        ref = GlobalWineReference(
             id='ref1',
             name='Test Wine',
             type='Red',

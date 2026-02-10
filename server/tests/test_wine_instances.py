@@ -9,15 +9,15 @@ def test_get_wine_instances_empty(client):
     assert response.get_json() == []
 
 
-def test_create_wine_instance(client, sample_wine_instance, created_wine_reference):
+def test_create_wine_instance(client, sample_wine_instance, created_user_wine_reference):
     """Test creating a new wine instance"""
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     response = client.post('/wine-instances', json=sample_wine_instance)
     assert response.status_code == 201
     data = response.get_json()
     
     assert 'id' in data
-    assert data['referenceId'] == created_wine_reference
+    assert data['referenceId'] == created_user_wine_reference
     assert data['price'] == sample_wine_instance['price']
     assert data['purchaseDate'] == sample_wine_instance['purchaseDate']
     assert data['drinkByDate'] == sample_wine_instance['drinkByDate']
@@ -35,10 +35,10 @@ def test_create_wine_instance_invalid_reference(client, sample_wine_instance):
     assert response.status_code == 404
 
 
-def test_get_wine_instance_by_id(client, sample_wine_instance, created_wine_reference):
+def test_get_wine_instance_by_id(client, sample_wine_instance, created_user_wine_reference):
     """Test getting a specific wine instance by ID"""
     # Create instance
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     create_response = client.post('/wine-instances', json=sample_wine_instance)
     instance_id = create_response.get_json()['id']
     
@@ -47,7 +47,7 @@ def test_get_wine_instance_by_id(client, sample_wine_instance, created_wine_refe
     assert response.status_code == 200
     data = response.get_json()
     assert data['id'] == instance_id
-    assert data['referenceId'] == created_wine_reference
+    assert data['referenceId'] == created_user_wine_reference
 
 
 def test_get_wine_instance_not_found(client):
@@ -56,10 +56,10 @@ def test_get_wine_instance_not_found(client):
     assert response.status_code == 404
 
 
-def test_update_wine_instance(client, sample_wine_instance, created_wine_reference):
+def test_update_wine_instance(client, sample_wine_instance, created_user_wine_reference):
     """Test updating a wine instance"""
     # Create instance
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     create_response = client.post('/wine-instances', json=sample_wine_instance)
     instance_id = create_response.get_json()['id']
     original_version = create_response.get_json()['version']
@@ -78,10 +78,10 @@ def test_update_wine_instance(client, sample_wine_instance, created_wine_referen
     assert data['updatedAt'] != data['createdAt']
 
 
-def test_delete_wine_instance(client, sample_wine_instance, created_wine_reference):
+def test_delete_wine_instance(client, sample_wine_instance, created_user_wine_reference):
     """Test deleting a wine instance"""
     # Create instance
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     create_response = client.post('/wine-instances', json=sample_wine_instance)
     instance_id = create_response.get_json()['id']
     
@@ -94,10 +94,10 @@ def test_delete_wine_instance(client, sample_wine_instance, created_wine_referen
     assert get_response.status_code == 404
     
 
-def test_consume_wine_instance(client, sample_wine_instance, created_wine_reference):
+def test_consume_wine_instance(client, sample_wine_instance, created_user_wine_reference):
     """Test consuming a wine instance"""
     # Create instance
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     create_response = client.post('/wine-instances', json=sample_wine_instance)
     instance_id = create_response.get_json()['id']
     
@@ -109,14 +109,14 @@ def test_consume_wine_instance(client, sample_wine_instance, created_wine_refere
     assert data['consumedDate'] is not None
 
 
-def test_update_wine_instance_location(client, sample_wine_instance, created_wine_reference, sample_cellar):
+def test_update_wine_instance_location(client, sample_wine_instance, created_user_wine_reference, sample_cellar):
     """Test updating a wine instance location"""
     # Create cellar
     cellar_response = client.post('/cellars', json=sample_cellar)
     cellar_id = cellar_response.get_json()['id']
     
     # Create instance
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     instance_response = client.post('/wine-instances', json=sample_wine_instance)
     instance_id = instance_response.get_json()['id']
     
@@ -135,10 +135,10 @@ def test_update_wine_instance_location(client, sample_wine_instance, created_win
     assert data['id'] == instance_id
 
 
-def test_get_unshelved(client, sample_wine_instance, created_wine_reference):
+def test_get_unshelved(client, sample_wine_instance, created_user_wine_reference):
     """Test getting unshelved wine instances"""
     # Create multiple instances
-    sample_wine_instance['referenceId'] = created_wine_reference
+    sample_wine_instance['referenceId'] = created_user_wine_reference
     instance1 = client.post('/wine-instances', json=sample_wine_instance)
     instance2 = client.post('/wine-instances', json=sample_wine_instance)
     

@@ -1,7 +1,7 @@
 """Storage abstraction layer for serialization/deserialization of data models"""
 from typing import List, Optional, Dict, Any
 from server.models import (
-    Shelf, Cellar, WineReference, WineInstance,
+    Shelf, Cellar, GlobalWineReference, UserWineReference, WineInstance,
 )
 
 
@@ -22,7 +22,7 @@ def serialize_shelf_wine_positions(shelf: Shelf) -> Dict[str, List[Optional[str]
     return result
 
 
-def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[Dict[str, List[Optional[str]]]] = None, 
+def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[Dict[str, List[Optional[str]]]] = None,
                                   wine_instances_dict: Optional[Dict[str, WineInstance]] = None) -> Shelf:
     """
     Create Shelf from tuple format [Positions, IsDouble]
@@ -31,7 +31,7 @@ def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[
     """
     if not isinstance(shelf_data, list) or len(shelf_data) != 2:
         raise ValueError("Shelf must be a list of [Positions, IsDouble]")
-    
+
     # Handle Decimal from DynamoDB - convert to int
     from decimal import Decimal
     positions_val = shelf_data[0]
@@ -41,20 +41,20 @@ def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[
         positions = positions_val
     else:
         raise ValueError("Positions must be a positive integer")
-    
+
     if positions <= 0:
         raise ValueError("Positions must be a positive integer")
     if not isinstance(shelf_data[1], bool):
         raise ValueError("IsDouble must be a boolean")
-    
+
     is_double = shelf_data[1]
-    
+
     # Initialize empty wine_positions
     if is_double:
         wine_positions = [[None] * positions, [None] * positions]
     else:
         wine_positions = [[None] * positions]
-    
+
     # Populate with WineInstance objects if provided
     if wine_positions_ids and wine_instances_dict:
         if is_double:
@@ -65,7 +65,7 @@ def deserialize_shelf_from_tuple(shelf_data: List, wine_positions_ids: Optional[
         else:
             if 'single' in wine_positions_ids:
                 wine_positions[0] = [wine_instances_dict.get(id) if id else None for id in wine_positions_ids['single']]
-    
+
     return Shelf(positions=positions, is_double=is_double, wine_positions=wine_positions)
 
 
@@ -76,7 +76,7 @@ def serialize_cellar(cellar: Cellar) -> Dict[str, Any]:
     wine_positions = {}
     for i, shelf in enumerate(cellar.shelves):
         wine_positions[str(i)] = serialize_shelf_wine_positions(shelf)
-    
+
     return {
         'id': cellar.id,
         'name': cellar.name,
@@ -98,22 +98,22 @@ def deserialize_cellar(data: Dict[str, Any], wine_instances: List[WineInstance])
     shelves_data = data.get('shelves', [])
     wine_positions_data = data.get('winePositions', {})
     wine_instances_dict = {inst.id: inst for inst in wine_instances}
-    
+
     # Create shelves with their wine positions
     shelves = []
     for i, shelf_tuple in enumerate(shelves_data):
         shelf_key = str(i)
         wine_positions_ids = wine_positions_data.get(shelf_key, {})
         shelves.append(deserialize_shelf_from_tuple(shelf_tuple, wine_positions_ids, wine_instances_dict))
-    
+
     # Handle Decimal from DynamoDB for version and capacity
     from decimal import Decimal
     version_val = data.get('version', 1)
     version = int(version_val) if isinstance(version_val, Decimal) else version_val
-    
+
     capacity_val = data.get('capacity')
     capacity = int(capacity_val) if capacity_val is not None and isinstance(capacity_val, Decimal) else capacity_val
-    
+
     cellar = Cellar(
         id=data['id'],
         name=data['name'],
@@ -127,9 +127,9 @@ def deserialize_cellar(data: Dict[str, Any], wine_instances: List[WineInstance])
     return cellar
 
 
-# WineReference serialization
-def serialize_wine_reference(reference: WineReference) -> Dict[str, Any]:
-    """Serialize WineReference to dictionary format for JSON (includes id field from object)"""
+# GlobalWineReference serialization
+def serialize_global_wine_reference(reference: GlobalWineReference) -> Dict[str, Any]:
+    """Serialize GlobalWineReference to dictionary format for JSON"""
     return {
         'id': reference.id,
         'name': reference.name,
@@ -139,8 +139,6 @@ def serialize_wine_reference(reference: WineReference) -> Dict[str, Any]:
         'varietals': reference.varietals,
         'region': reference.region,
         'country': reference.country,
-        'rating': reference.rating,
-        'tastingNotes': reference.tasting_notes,
         'labelImageUrl': reference.label_image_url,
         'version': reference.version,
         'createdAt': reference.created_at,
@@ -148,20 +146,16 @@ def serialize_wine_reference(reference: WineReference) -> Dict[str, Any]:
     }
 
 
-def deserialize_wine_reference(data: Dict[str, Any]) -> WineReference:
-    """Create WineReference from dictionary and auto-register in global registry"""
-    # Handle Decimal from DynamoDB for version, vintage, rating
+def deserialize_global_wine_reference(data: Dict[str, Any]) -> GlobalWineReference:
+    """Create GlobalWineReference from dictionary"""
     from decimal import Decimal
     version_val = data.get('version', 1)
     version = int(version_val) if isinstance(version_val, Decimal) else version_val
-    
+
     vintage_val = data.get('vintage')
     vintage = int(vintage_val) if vintage_val is not None and isinstance(vintage_val, Decimal) else vintage_val
-    
-    rating_val = data.get('rating')
-    rating = int(rating_val) if rating_val is not None and isinstance(rating_val, Decimal) else rating_val
-    
-    reference = WineReference(
+
+    reference = GlobalWineReference(
         id=data['id'],
         name=data['name'],
         type=data['type'],
@@ -170,8 +164,6 @@ def deserialize_wine_reference(data: Dict[str, Any]) -> WineReference:
         varietals=data.get('varietals'),
         region=data.get('region'),
         country=data.get('country'),
-        rating=rating,
-        tasting_notes=data.get('tastingNotes'),
         label_image_url=data.get('labelImageUrl'),
         version=version,
         created_at=data.get('createdAt'),
@@ -180,12 +172,46 @@ def deserialize_wine_reference(data: Dict[str, Any]) -> WineReference:
     return reference
 
 
+# UserWineReference serialization
+def serialize_user_wine_reference(user_ref: UserWineReference) -> Dict[str, Any]:
+    """Serialize UserWineReference to dictionary format for JSON"""
+    return {
+        'id': user_ref.id,
+        'globalReferenceId': user_ref.global_reference_id,
+        'rating': user_ref.rating,
+        'tastingNotes': user_ref.tasting_notes,
+        'version': user_ref.version,
+        'createdAt': user_ref.created_at,
+        'updatedAt': user_ref.updated_at
+    }
+
+
+def deserialize_user_wine_reference(data: Dict[str, Any]) -> UserWineReference:
+    """Create UserWineReference from dictionary"""
+    from decimal import Decimal
+    version_val = data.get('version', 1)
+    version = int(version_val) if isinstance(version_val, Decimal) else version_val
+
+    rating_val = data.get('rating')
+    rating = int(rating_val) if rating_val is not None and isinstance(rating_val, Decimal) else rating_val
+
+    return UserWineReference(
+        id=data['id'],
+        global_reference_id=data['globalReferenceId'],
+        rating=rating,
+        tasting_notes=data.get('tastingNotes'),
+        version=version,
+        created_at=data.get('createdAt'),
+        updated_at=data.get('updatedAt')
+    )
+
+
 # WineInstance serialization
 def serialize_wine_instance(instance: WineInstance) -> Dict[str, Any]:
     """Serialize WineInstance to dictionary format for JSON (extracts IDs from objects)"""
     return {
         'id': instance.id,
-        'referenceId': instance.reference.id,  # Extract ID from WineReference object
+        'referenceId': instance.reference.id,  # Extract ID from UserWineReference object
         'price': instance.price,
         'purchaseDate': instance.purchase_date,
         'drinkByDate': instance.drink_by_date,
@@ -200,20 +226,20 @@ def serialize_wine_instance(instance: WineInstance) -> Dict[str, Any]:
     }
 
 
-def deserialize_wine_instance(data: Dict[str, Any], reference: WineReference) -> WineInstance:
+def deserialize_wine_instance(data: Dict[str, Any], reference: UserWineReference) -> WineInstance:
     """
-    Create WineInstance from dictionary, looking up WineReference from global registry
+    Create WineInstance from dictionary, using UserWineReference object
     """
     assert reference is not None
-    
+
     # Handle Decimal from DynamoDB for version
     from decimal import Decimal
     version_val = data.get('version', 1)
     version = int(version_val) if isinstance(version_val, Decimal) else version_val
-    
+
     instance = WineInstance(
         id=data['id'],
-        reference=reference,  # Store WineReference object
+        reference=reference,  # Store UserWineReference object
         price=data.get('price'),
         purchase_date=data.get('purchaseDate'),
         drink_by_date=data.get('drinkByDate'),

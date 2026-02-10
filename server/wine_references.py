@@ -2,8 +2,8 @@
 from flask import Blueprint, jsonify, request
 from typing import Dict, List, Optional
 from server.utils import generate_id, get_current_timestamp
-from server.models import WineReference
-from server.data.storage_serializers import serialize_wine_reference, deserialize_wine_reference, serialize_wine_instance
+from server.models import GlobalWineReference
+from server.data.storage_serializers import serialize_global_wine_reference, deserialize_global_wine_reference, serialize_wine_instance
 from server.vivino_search import search_vivino
 from server.dynamo.storage import (
     get_all_wine_references as dynamodb_get_all_wine_references,
@@ -16,23 +16,23 @@ wine_references_bp = Blueprint('wine_references', __name__)
 
 
 # Helper functions
-def get_all_wine_references() -> List[WineReference]:
-    """Load wine references from DynamoDB as WineReference model objects"""
+def get_all_wine_references() -> List[GlobalWineReference]:
+    """Load wine references from DynamoDB as GlobalWineReference model objects"""
     data = dynamodb_get_all_wine_references()
-    return [deserialize_wine_reference(r) for r in data]
+    return [deserialize_global_wine_reference(r) for r in data]
 
-def find_wine_reference_by_id(reference_id: str) -> Optional[WineReference]:
-    """Find a wine reference by ID (returns WineReference model object)"""
+def find_wine_reference_by_id(reference_id: str) -> Optional[GlobalWineReference]:
+    """Find a wine reference by ID (returns GlobalWineReference model object)"""
     data = dynamodb_get_wine_reference_by_id(reference_id)
     if not data:
         return None
-    return deserialize_wine_reference(data)
+    return deserialize_global_wine_reference(data)
 
 # Endpoints
 """
 Get all wine references
 
-Response Format: Array of wine reference objects, each containing:
+Response Format: Array of global wine reference objects, each containing:
 - id (str): Unique identifier for the wine reference
 - name (str): Name of the wine
 - type (str): Type of wine (e.g., 'Red', 'White', 'Rosé', 'Sparkling')
@@ -41,8 +41,6 @@ Response Format: Array of wine reference objects, each containing:
 - varietals (list[str], optional): List of grape varietals used
 - region (str, optional): Wine region
 - country (str, optional): Country of origin
-- rating (int, optional): Rating from 1-5
-- tastingNotes (str, optional): Tasting notes or description
 - labelImageUrl (str, optional): URL to the wine label image
 - version (int): Version number for conflict resolution
 - createdAt (str): ISO 8601 timestamp when reference was created
@@ -52,7 +50,7 @@ Response Format: Array of wine reference objects, each containing:
 def _get_wine_references():
     """Get all wine references"""
     references = get_all_wine_references()
-    return jsonify([serialize_wine_reference(r) for r in references])
+    return jsonify([serialize_global_wine_reference(r) for r in references])
 
 
 """
@@ -66,21 +64,19 @@ Expected POST Parameters:
 - varietals (list[str], optional): List of grape varietals used in the wine
 - region (str, optional): Wine region (e.g., 'Napa Valley', 'Bordeaux')
 - country (str, optional): Country of origin
-- rating (int, optional): Rating from 1-5
-- tastingNotes (str, optional): Tasting notes or description
 - labelImageUrl (str, optional): URL to the wine label image in blob storage
 """
 @wine_references_bp.route('/wine-references', methods=['POST'])
 def _create_wine_reference():
     """Create a new wine reference"""
     data = request.json
-    
+
     # Validate required fields
     if not data.get('name') or not data.get('type'):
         return jsonify({'error': 'name and type are required'}), 400
-    
-    # Create WineReference model object
-    reference = WineReference(
+
+    # Create GlobalWineReference model object
+    reference = GlobalWineReference(
         id=generate_id(),
         name=data.get('name'),
         type=data.get('type'),
@@ -89,26 +85,24 @@ def _create_wine_reference():
         varietals=data.get('varietals', []),
         region=data.get('region'),
         country=data.get('country'),
-        rating=data.get('rating'),
-        tasting_notes=data.get('tastingNotes'),
         label_image_url=data.get('labelImageUrl')
     )
-    
+
     # Check if reference already exists (name + vintage + producer)
     references = get_all_wine_references()
     existing = next((r for r in references if r.get_unique_key() == reference.get_unique_key()), None)
-    
+
     if existing:
-        return jsonify({'error': 'Wine reference already exists', 'reference': serialize_wine_reference(existing)}), 409
-    
+        return jsonify({'error': 'Wine reference already exists', 'reference': serialize_global_wine_reference(existing)}), 409
+
     # Add version and timestamps
     timestamp = get_current_timestamp()
     reference.version = 1
     reference.created_at = timestamp
     reference.updated_at = timestamp
-    
+
     # Save to DynamoDB
-    data = serialize_wine_reference(reference)
+    data = serialize_global_wine_reference(reference)
     dynamodb_put_wine_reference(data)
     return jsonify(data), 201
 
@@ -118,19 +112,14 @@ Search Vivino for wines by name
 Query Parameters:
 - name (str, required): Wine name to search for
 
-Response Format: Array of wine reference objects from Vivino, each containing:
+Response Format: Array of wine data from Vivino, each containing:
 - name (str): Name of the wine
 - type (str): Type of wine
-- vintage (int, optional): Year the wine was produced
 - producer (str, optional): Name of the wine producer/winery
-- varietals (list[str], optional): List of grape varietals used
 - region (str, optional): Wine region
 - country (str, optional): Country of origin
-- rating (int, optional): Rating from 1-5
-- tastingNotes (str, optional): Tasting notes or description
+- rating (float, optional): Vivino community rating
 - labelImageUrl (str, optional): URL to the wine label image
-
-Note: This endpoint returns temporary IDs that should be replaced when creating the wine reference.
 """
 @wine_references_bp.route('/vivino/search', methods=['GET'])
 def _search_vivino():
@@ -154,20 +143,6 @@ Get a specific wine reference with all instances
 
 Response Format: Wine reference object containing all fields from GET /wine-references, plus:
 - instances (array): Array of wine instance objects that reference this wine reference
-  Each instance object contains:
-  - id (str): Unique identifier for the wine instance
-  - referenceId (str): ID of the wine reference this instance belongs to
-  - price (float, optional): Purchase price
-  - purchaseDate (str, optional): ISO 8601 date when purchased
-  - drinkByDate (str, optional): ISO 8601 date for recommended consumption
-  - consumed (bool): Whether the wine has been consumed
-  - consumedDate (str, optional): ISO 8601 timestamp when consumed
-  - coravined (bool): Whether the wine has been coravined
-  - coravinedDate (str, optional): ISO 8601 timestamp when coravined
-  - storedDate (str, optional): ISO 8601 timestamp when stored
-  - version (int): Version number for conflict resolution
-  - createdAt (str): ISO 8601 timestamp when instance was created
-  - updatedAt (str): ISO 8601 timestamp when instance was last updated
 
 Error Response (404): {'error': 'Wine reference not found'} if reference doesn't exist
 """
@@ -177,15 +152,15 @@ def _get_wine_reference_instances(reference_id: str):
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
-    
+
     # Get all instances for this reference
     from server.wine_instances import get_all_wine_instances
     instances = get_all_wine_instances()
-    reference_instances = [serialize_wine_instance(i) for i in instances if i.reference.id == reference_id]
-    
-    response = serialize_wine_reference(reference)
+    reference_instances = [serialize_wine_instance(i) for i in instances if i.reference.global_reference_id == reference_id]
+
+    response = serialize_global_wine_reference(reference)
     response['instances'] = reference_instances
-    
+
     return jsonify(response)
 
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['GET'])
@@ -194,7 +169,7 @@ def _get_wine_reference(reference_id: str):
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
-    return jsonify(serialize_wine_reference(reference))
+    return jsonify(serialize_global_wine_reference(reference))
 
 """
 Update a wine reference
@@ -207,8 +182,6 @@ Expected PUT Parameters (all optional):
 - varietals (list[str], optional): Updated list of grape varietals
 - region (str, optional): Updated wine region
 - country (str, optional): Updated country of origin
-- rating (int, optional): Updated rating (1-5)
-- tastingNotes (str, optional): Updated tasting notes
 - labelImageUrl (str, optional): Updated URL to label image
 """
 @wine_references_bp.route('/wine-references/<reference_id>', methods=['PUT'])
@@ -217,9 +190,9 @@ def _update_wine_reference(reference_id: str):
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
-    
+
     data = request.json
-    
+
     # Update fields
     if 'name' in data:
         reference.name = data['name']
@@ -235,19 +208,15 @@ def _update_wine_reference(reference_id: str):
         reference.region = data['region']
     if 'country' in data:
         reference.country = data['country']
-    if 'rating' in data:
-        reference.rating = data['rating']
-    if 'tastingNotes' in data:
-        reference.tasting_notes = data['tastingNotes']
     if 'labelImageUrl' in data:
         reference.label_image_url = data['labelImageUrl']
-    
+
     # Update version and timestamp
     reference.version += 1
     reference.updated_at = get_current_timestamp()
 
     # Save to DynamoDB
-    data = serialize_wine_reference(reference)
+    data = serialize_global_wine_reference(reference)
     dynamodb_put_wine_reference(data)
     return jsonify(data)
 
@@ -257,7 +226,7 @@ def _delete_wine_reference(reference_id: str):
     reference = find_wine_reference_by_id(reference_id)
     if not reference:
         return jsonify({'error': 'Wine reference not found'}), 404
-    
+
     # Remove from DynamoDB
     dynamodb_delete_wine_reference(reference_id)
     return jsonify({'message': 'Wine reference deleted'}), 200

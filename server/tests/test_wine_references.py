@@ -23,8 +23,6 @@ def test_create_wine_reference(client, sample_wine_reference):
     assert data['varietals'] == sample_wine_reference['varietals']
     assert data['region'] == sample_wine_reference['region']
     assert data['country'] == sample_wine_reference['country']
-    assert data['rating'] == sample_wine_reference['rating']
-    assert data['tastingNotes'] == sample_wine_reference['tastingNotes']
     assert data['labelImageUrl'] == sample_wine_reference['labelImageUrl']
     assert 'version' in data
     assert 'createdAt' in data
@@ -101,13 +99,13 @@ def test_update_wine_reference(client, sample_wine_reference):
     # Update reference
     update_data = {
         'name': 'Updated Wine Name',
-        'rating': 5
+        'producer': 'Updated Producer'
     }
     response = client.put(f'/wine-references/{reference_id}', json=update_data)
     assert response.status_code == 200
     data = response.get_json()
     assert data['name'] == 'Updated Wine Name'
-    assert data['rating'] == 5
+    assert data['producer'] == 'Updated Producer'
     assert data['version'] == original_version + 1
     assert data['updatedAt'] != data['createdAt']
 
