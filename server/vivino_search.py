@@ -1,14 +1,27 @@
-"""Vivino search functionality - scrapes Vivino website to find wines"""
+"""Vivino search functionality - fetches wine data from Vivino's search page"""
 import requests
 import re
+import json
 from bs4 import BeautifulSoup
-from typing import List, Dict
-from urllib.parse import quote, urljoin
+from typing import List, Dict, Optional, Any
+from urllib.parse import quote_plus
+
+
+# Vivino type_id to wine type mapping
+VIVINO_TYPE_MAP = {
+    1: 'Red',
+    2: 'White',
+    3: 'Sparkling',
+    4: 'Rosé',
+    7: 'Dessert',
+    24: 'Fortified',
+}
 
 
 def search_vivino(query: str, limit: int = 10) -> List[Dict]:
     """
-    Search Vivino for wines matching the query by scraping Google search results
+    Search Vivino for wines by fetching the search page and extracting
+    the preloaded state data embedded in the HTML.
 
     Args:
         query: Wine name to search for
@@ -26,167 +39,113 @@ def search_vivino(query: str, limit: int = 10) -> List[Dict]:
         - labelImageUrl: URL to wine label image (optional)
     """
     try:
-        # Use Google to search for Vivino wines
-        # This is more reliable than trying to scrape Vivino directly (which uses heavy JS)
-        search_query = quote(f'site:vivino.com/wines {query}')
-        url = f"https://www.google.com/search?q={search_query}&num={limit * 2}"
-
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/120.0.0.0 Safari/537.36',
         }
 
-        response = requests.get(url, headers=headers, timeout=10)
+        search_url = f"https://www.vivino.com/search/wines?q={quote_plus(query)}"
+        response = requests.get(search_url, headers=headers, timeout=10)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Vivino embeds search results as JSON in a data-preloaded-state attribute
+        search_div = soup.find('div', id='search-page')
+        if not search_div:
+            print(f"No search-page div found for '{query}'")
+            return _get_fallback_results(query, limit)
+
+        state_str = search_div.get('data-preloaded-state', '')
+        if not state_str:
+            print(f"No preloaded state found for '{query}'")
+            return _get_fallback_results(query, limit)
+
+        state = json.loads(state_str)
+        matches = state.get('search_results', {}).get('matches', [])
+
+        if not matches:
+            return []
+
         wines = []
-
-        # Find all Google search result links
-        search_results = soup.find_all('a', href=True)
-
-        for link in search_results:
-            if len(wines) >= limit:
-                break
-
-            href = link.get('href', '')
-
-            # Look for Vivino wine URLs in the format: /url?q=https://www.vivino.com/wines/...
-            if '/url?q=https://www.vivino.com/wines/' in href:
-                # Extract the actual Vivino URL
-                vivino_url = href.split('/url?q=')[1].split('&')[0]
-
-                # Extract wine information from the URL and link text
-                wine_name = link.get_text(strip=True)
-
-                # Skip if the name is empty or just navigation text
-                if not wine_name or len(wine_name) < 3 or wine_name in ['Images', 'Videos', 'News', 'Shopping', 'Maps']:
-                    continue
-
-                # Try to extract vintage from the wine name
-                vintage = None
-                vintage_match = re.search(r'\b(19|20)\d{2}\b', wine_name)
-                if vintage_match:
-                    vintage = int(vintage_match.group())
-                    # Remove vintage from name
-                    wine_name = re.sub(r'\s*\b(19|20)\d{2}\b\s*', ' ', wine_name).strip()
-
-                # Clean up the wine name (remove Vivino branding, etc.)
-                wine_name = re.sub(r'\s*[-|]\s*Vivino.*$', '', wine_name, flags=re.IGNORECASE)
-                wine_name = wine_name.strip()
-
-                # Skip if we filtered out too much
-                if not wine_name or len(wine_name) < 2:
-                    continue
-
-                # Try to extract producer (usually before a dash or pipe)
-                producer = None
-                producer_match = re.search(r'^(.+?)\s+[-–—]\s+', wine_name)
-                if producer_match:
-                    producer = producer_match.group(1).strip()
-
-                # Determine wine type from the query and wine name
-                wine_type = _extract_wine_type_from_query(f"{query} {wine_name}")
-
-                wine = {
-                    'name': wine_name,
-                    'type': wine_type,
-                    'vintage': vintage,
-                    'producer': producer,
-                    'region': None,
-                    'country': None,
-                    'rating': None,
-                    'labelImageUrl': None,
-                }
-
-                # Try to fetch additional details from the Vivino page
-                try:
-                    wine_details = _fetch_wine_details(vivino_url)
-                    if wine_details:
-                        wine.update(wine_details)
-                except Exception as e:
-                    print(f"Error fetching wine details from {vivino_url}: {e}")
-
+        for match in matches[:limit]:
+            wine = _parse_vivino_match(match)
+            if wine:
                 wines.append(wine)
 
-        # If we didn't get enough results from Google, fall back to sample data
-        if len(wines) == 0:
-            print(f"No wines found via Google search for '{query}', using fallback")
-            wines = _get_fallback_results(query, limit)
-
-        return wines[:limit]
+        return wines
 
     except Exception as e:
-        print(f"Error searching Vivino via Google: {e}")
-        # Fall back to sample data
+        print(f"Error searching Vivino: {e}")
         return _get_fallback_results(query, limit)
 
 
-def _fetch_wine_details(vivino_url: str) -> Dict:
+def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
     """
-    Fetch additional wine details from a Vivino wine page
+    Parse a match from Vivino's preloaded search results.
 
     Args:
-        vivino_url: URL to the Vivino wine page
+        match: A match dict from Vivino's search_results.matches
 
     Returns:
-        Dictionary with wine details (producer, region, country, rating, labelImageUrl)
+        Wine dictionary or None
     """
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        vintage = match.get('vintage', {})
+        wine_data = vintage.get('wine', {})
+        winery = wine_data.get('winery', {})
+        region = wine_data.get('region', {})
+        country = region.get('country', {})
+        stats = vintage.get('statistics', {})
+        image = vintage.get('image', {})
+
+        name = vintage.get('name', '')
+        if not name:
+            return None
+
+        # Map type_id to wine type string
+        type_id = wine_data.get('type_id')
+        wine_type = VIVINO_TYPE_MAP.get(type_id, 'Red')
+
+        # Get year (may be None for non-vintage wines)
+        year = vintage.get('year')
+        if year and isinstance(year, str) and year.strip() == '':
+            year = None
+
+        # Build image URL
+        img_location = image.get('location', '')
+        label_image_url = None
+        if img_location:
+            if img_location.startswith('//'):
+                label_image_url = 'https:' + img_location
+            elif img_location.startswith('http'):
+                label_image_url = img_location
+
+        # Get rating
+        rating = stats.get('ratings_average')
+        if rating is not None:
+            rating = round(float(rating), 1)
+
+        return {
+            'name': name,
+            'type': wine_type,
+            'vintage': int(year) if year else None,
+            'producer': winery.get('name'),
+            'region': region.get('name'),
+            'country': country.get('name'),
+            'rating': rating,
+            'labelImageUrl': label_image_url,
         }
 
-        response = requests.get(vivino_url, headers=headers, timeout=5)
-        response.raise_for_status()
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-        details = {}
-
-        # Try to extract wine details from meta tags (most reliable)
-        og_image = soup.find('meta', property='og:image')
-        if og_image and og_image.get('content'):
-            details['labelImageUrl'] = og_image['content']
-
-        # Try to find wine region/country
-        region_elem = soup.find(text=re.compile(r'Region|Country', re.IGNORECASE))
-        if region_elem:
-            parent = region_elem.find_parent()
-            if parent:
-                region_text = parent.get_text(strip=True)
-                # Extract country and region
-                if ',' in region_text:
-                    parts = region_text.split(',')
-                    details['region'] = parts[0].strip()
-                    if len(parts) > 1:
-                        details['country'] = parts[-1].strip()
-                else:
-                    details['country'] = region_text
-
-        # Try to find rating
-        rating_elem = soup.find('div', class_=re.compile(r'rating|average'))
-        if not rating_elem:
-            rating_elem = soup.find(text=re.compile(r'\d+\.\d+'))
-        if rating_elem:
-            rating_text = rating_elem.get_text(strip=True) if hasattr(rating_elem, 'get_text') else str(rating_elem)
-            rating_match = re.search(r'(\d+\.?\d*)', rating_text)
-            if rating_match:
-                rating = float(rating_match.group(1))
-                # Vivino uses 1-5 scale
-                if rating <= 5:
-                    details['rating'] = round(rating, 1)
-
-        return details
-
     except Exception as e:
-        print(f"Error fetching details from {vivino_url}: {e}")
-        return {}
+        print(f"Error parsing Vivino match: {e}")
+        return None
 
 
 def _get_fallback_results(query: str, limit: int) -> List[Dict]:
     """
-    Generate fallback sample results when scraping fails
+    Generate fallback sample results when fetching fails.
 
     Args:
         query: Search query
@@ -233,7 +192,7 @@ def _get_fallback_results(query: str, limit: int) -> List[Dict]:
 
 def _extract_wine_type_from_query(query: str) -> str:
     """
-    Extract wine type from search query text
+    Extract wine type from search query text.
 
     Args:
         query: Search query text

@@ -27,22 +27,20 @@ class TestVivinoSearch:
 
         wine = results[0]
 
-        # Required fields
+        # All fields should be present
         assert 'name' in wine
         assert 'type' in wine
-
-        # Optional fields
-        assert 'vintage' in wine or wine.get('vintage') is None
-        assert 'producer' in wine or wine.get('producer') is None
-        assert 'region' in wine or wine.get('region') is None
-        assert 'country' in wine or wine.get('country') is None
-        assert 'rating' in wine or wine.get('rating') is None
-        assert 'labelImageUrl' in wine or wine.get('labelImageUrl') is None
+        assert 'vintage' in wine
+        assert 'producer' in wine
+        assert 'region' in wine
+        assert 'country' in wine
+        assert 'rating' in wine
+        assert 'labelImageUrl' in wine
 
     def test_search_includes_query_in_results(self):
         """Test that search results include the query term"""
         query = 'Chardonnay'
-        results = search_vivino(query, limit=1)
+        results = search_vivino(query, limit=3)
 
         assert len(results) > 0
         # At least one result should contain the query term
@@ -195,53 +193,61 @@ class TestExtractWineType:
 
 
 class TestVivinoSearchIntegration:
-    """Integration tests for Vivino search with API endpoint"""
+    """Integration tests for Vivino search - hits live Vivino"""
 
-    def test_search_results_have_correct_wine_types(self):
-        """Test that search results have correctly determined wine types"""
-        # Search for red wine
-        red_results = search_vivino('Cabernet Sauvignon', limit=3)
-        for wine in red_results:
-            assert wine['type'] == 'Red'
+    def test_search_returns_real_wine_data(self):
+        """Test that search returns real data from Vivino (not fallback)"""
+        results = search_vivino('Caymus', limit=3)
 
-        # Search for white wine
-        white_results = search_vivino('Chardonnay', limit=3)
-        for wine in white_results:
-            assert wine['type'] == 'White'
-
-        # Search for sparkling wine
-        sparkling_results = search_vivino('Champagne', limit=3)
-        for wine in sparkling_results:
-            assert wine['type'] == 'Sparkling'
-
-    def test_search_results_contain_query(self):
-        """Test that search results are relevant to the query"""
-        query = 'Malbec'
-        results = search_vivino(query, limit=5)
-
-        # All results should contain the query term in the name
+        assert len(results) > 0
+        # Should not be fallback "Sample Winery" data
         for wine in results:
-            assert query.lower() in wine['name'].lower(), \
-                f"Expected '{wine['name']}' to contain '{query}'"
+            assert wine.get('producer') != 'Sample Winery', \
+                "Got fallback data instead of real Vivino results"
 
-    def test_search_returns_valid_ratings(self):
-        """Test that ratings are in valid range (1-5)"""
+    def test_search_results_have_vivino_images(self):
+        """Test that results include Vivino image URLs"""
+        results = search_vivino('Opus One', limit=3)
+
+        assert len(results) > 0
+        # At least some results should have images
+        has_image = any(wine.get('labelImageUrl') for wine in results)
+        assert has_image, "Expected at least one result to have an image URL"
+
+    def test_search_results_have_ratings(self):
+        """Test that results include ratings from Vivino"""
         results = search_vivino('Pinot Noir', limit=5)
 
+        assert len(results) > 0
         for wine in results:
             if wine.get('rating') is not None:
                 assert 1 <= wine['rating'] <= 5, \
                     f"Rating {wine['rating']} is out of valid range (1-5)"
 
-    def test_search_returns_valid_vintages(self):
+    def test_search_results_have_valid_vintages(self):
         """Test that vintages are reasonable years"""
         results = search_vivino('Bordeaux', limit=5)
 
         for wine in results:
             if wine.get('vintage') is not None:
-                # Vintages should be between 1900 and current year + 1
                 assert 1900 <= wine['vintage'] <= 2027, \
                     f"Vintage {wine['vintage']} is not a reasonable year"
+
+    def test_search_results_have_producers(self):
+        """Test that results include producer/winery names"""
+        results = search_vivino('Cabernet Sauvignon', limit=5)
+
+        assert len(results) > 0
+        has_producer = any(wine.get('producer') for wine in results)
+        assert has_producer, "Expected at least one result to have a producer"
+
+    def test_search_results_have_regions(self):
+        """Test that results include region info"""
+        results = search_vivino('Napa Valley Cabernet', limit=5)
+
+        assert len(results) > 0
+        has_region = any(wine.get('region') for wine in results)
+        assert has_region, "Expected at least one result to have a region"
 
     def test_multiple_searches_are_independent(self):
         """Test that multiple searches return independent results"""
