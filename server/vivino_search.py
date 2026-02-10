@@ -58,7 +58,7 @@ def search_vivino(query: str, limit: int = 10) -> List[Dict]:
             return _get_fallback_results(query, limit)
 
         state_str = search_div.get('data-preloaded-state', '')
-        if not state_str:
+        if not state_str or not isinstance(state_str, str):
             print(f"No preloaded state found for '{query}'")
             return _get_fallback_results(query, limit)
 
