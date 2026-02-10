@@ -43,13 +43,8 @@ export class WineReferenceFormManager {
         const data = {
             name: formData.get('name'),
             type: formData.get('type'),
+            vintage: parseInt(formData.get('vintage')),
         };
-
-        // Optional fields
-        const vintage = formData.get('vintage');
-        if (vintage) {
-            data.vintage = parseInt(vintage);
-        }
 
         const producer = formData.get('producer');
         if (producer) {
