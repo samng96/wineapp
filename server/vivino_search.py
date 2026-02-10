@@ -29,9 +29,8 @@ def search_vivino(query: str, limit: int = 10) -> List[Dict]:
 
     Returns:
         List of wine dictionaries with fields:
-        - name: Wine name
+        - name: Wine name (year stripped)
         - type: Wine type (Red, White, etc.)
-        - vintage: Vintage year (optional)
         - producer: Producer name (optional)
         - region: Region name (optional)
         - country: Country name (optional)
@@ -69,10 +68,14 @@ def search_vivino(query: str, limit: int = 10) -> List[Dict]:
             return []
 
         wines = []
-        for match in matches[:limit]:
+        seen_names: set = set()
+        for match in matches:
             wine = _parse_vivino_match(match)
-            if wine:
+            if wine and wine['name'] not in seen_names:
+                seen_names.add(wine['name'])
                 wines.append(wine)
+                if len(wines) >= limit:
+                    break
 
         return wines
 
@@ -104,14 +107,16 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         if not name:
             return None
 
+        # Strip vintage year from the name so results are year-agnostic
+        name = re.sub(r'\s*\b(19|20)\d{2}\b\s*', ' ', name).strip()
+        # Also strip common non-vintage markers
+        name = re.sub(r'\s*(N\.V\.|NV|U\.V\.)\s*$', '', name, flags=re.I).strip()
+        if not name:
+            return None
+
         # Map type_id to wine type string
         type_id = wine_data.get('type_id')
         wine_type = VIVINO_TYPE_MAP.get(type_id, 'Red')
-
-        # Get year (may be None for non-vintage wines)
-        year = vintage.get('year')
-        if year and isinstance(year, str) and year.strip() == '':
-            year = None
 
         # Build image URL
         img_location = image.get('location', '')
@@ -130,7 +135,6 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         return {
             'name': name,
             'type': wine_type,
-            'vintage': int(year) if year else None,
             'producer': winery.get('name'),
             'region': region.get('name'),
             'country': country.get('name'),
@@ -158,7 +162,6 @@ def _get_fallback_results(query: str, limit: int) -> List[Dict]:
         {
             'name': f'{query}',
             'type': _extract_wine_type_from_query(query),
-            'vintage': 2019,
             'producer': 'Sample Winery',
             'region': 'Napa Valley',
             'country': 'United States',
@@ -168,7 +171,6 @@ def _get_fallback_results(query: str, limit: int) -> List[Dict]:
         {
             'name': f'{query} Reserve',
             'type': _extract_wine_type_from_query(query),
-            'vintage': 2018,
             'producer': 'Sample Estate',
             'region': 'Sonoma',
             'country': 'United States',
@@ -178,7 +180,6 @@ def _get_fallback_results(query: str, limit: int) -> List[Dict]:
         {
             'name': f'{query} Special Selection',
             'type': _extract_wine_type_from_query(query),
-            'vintage': 2020,
             'producer': 'Sample Vineyards',
             'region': 'Paso Robles',
             'country': 'United States',

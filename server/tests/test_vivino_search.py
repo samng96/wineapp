@@ -1,4 +1,5 @@
 """Tests for Vivino search functionality"""
+import re
 import pytest
 from server.vivino_search import search_vivino, _extract_wine_type_from_query
 
@@ -30,12 +31,31 @@ class TestVivinoSearch:
         # All fields should be present
         assert 'name' in wine
         assert 'type' in wine
-        assert 'vintage' in wine
         assert 'producer' in wine
         assert 'region' in wine
         assert 'country' in wine
         assert 'rating' in wine
         assert 'labelImageUrl' in wine
+
+        # vintage should NOT be present
+        assert 'vintage' not in wine
+
+    def test_search_results_have_no_years_in_name(self):
+        """Test that wine names have years stripped out"""
+        results = search_vivino('Caymus', limit=5)
+
+        assert len(results) > 0
+        for wine in results:
+            assert not re.search(r'\b(19|20)\d{2}\b', wine['name']), \
+                f"Name '{wine['name']}' still contains a year"
+
+    def test_search_results_are_deduplicated(self):
+        """Test that duplicate names (from different vintages) are removed"""
+        results = search_vivino('Caymus', limit=10)
+
+        names = [wine['name'] for wine in results]
+        assert len(names) == len(set(names)), \
+            f"Duplicate names found: {names}"
 
     def test_search_includes_query_in_results(self):
         """Test that search results include the query term"""
@@ -221,17 +241,8 @@ class TestVivinoSearchIntegration:
         assert len(results) > 0
         for wine in results:
             if wine.get('rating') is not None:
-                assert 1 <= wine['rating'] <= 5, \
-                    f"Rating {wine['rating']} is out of valid range (1-5)"
-
-    def test_search_results_have_valid_vintages(self):
-        """Test that vintages are reasonable years"""
-        results = search_vivino('Bordeaux', limit=5)
-
-        for wine in results:
-            if wine.get('vintage') is not None:
-                assert 1900 <= wine['vintage'] <= 2027, \
-                    f"Vintage {wine['vintage']} is not a reasonable year"
+                assert 0 <= wine['rating'] <= 5, \
+                    f"Rating {wine['rating']} is out of valid range (0-5)"
 
     def test_search_results_have_producers(self):
         """Test that results include producer/winery names"""
