@@ -6,6 +6,12 @@ WineApp is a personal wine inventory management system that allows users to trac
 ## Data architecture
 The data architecture will mirror that from server_requirements.md, with additions needed for client side management.
 
+**Key Data Model Structure:**
+- **GlobalWineReference**: Shared wine information (name, type, vintage, producer, varietals, region, country, label image)
+- **UserWineReference**: Per-user personal data (rating, tasting notes) linked to a GlobalWineReference
+- **WineInstance**: Physical bottle instances that reference UserWineReference
+- **Cellar/Shelf**: Location tracking - WineInstance objects are stored in Cellar Shelf structures, not on the instance itself
+
 First, we need to build a set of types and library functions to manage the data transport coming across the wire from the REST APIs. These will be stored in the /communication folder. These will be separated into files:
 
 - Connection management - manages establishing server communications, sending/receiving bits across the wire, and eventually auth.
@@ -177,9 +183,12 @@ A collapsible filter panel is accessible via a filter icon button in the top rig
 - Updates dynamically as filters change
 
 #### 3.4 Wine Instance management
-Users should be able to add new wines to their inventory. They should be able to do this by scanning the label of the wine, having the app look up the wine online (via InVintory or TotalWine or some other service) to auto-populate the wine's details.
-- When we add a wine, user should be able to determine if they've purchased the wine before; if so, we should refer to the same instance and have it keep tally of each purchase/consumption date.
-- This likely means we need a singleton that tracks each wine reference, and then a separate entity for instances.
+Users should be able to add new wines to their inventory. They should be able to do this by scanning the label of the wine, having the app look up the wine online (via Vivino or other service) to auto-populate the wine's details.
+- When we add a wine, user should be able to determine if they've purchased the wine before; if so, we should refer to the same UserWineReference and create a new WineInstance.
+- The system uses a two-tier reference system:
+  - **GlobalWineReference**: Shared wine information across all users (name, type, vintage, producer, etc.)
+  - **UserWineReference**: Per-user personal data (rating, tasting notes) linked to a GlobalWineReference
+  - **WineInstance**: Physical bottle instances that reference UserWineReference
 
 #### 3.5 View Wines - Instances and References
 Users should be able to view all wines in their inventory. When viewing a wine, the user should be able to:
