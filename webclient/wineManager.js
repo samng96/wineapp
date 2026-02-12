@@ -216,24 +216,40 @@ class WineManager {
 
     async loadWines(searchTerm = null) {
         try {
-            const [instancesData, referencesData, cellarsData] = await Promise.all([
+            const [instancesData, globalRefsData, userRefsData, cellarsData] = await Promise.all([
                 API.get('/wine-instances'),
                 API.get('/wine-references'),
+                API.get('/user-wine-references'),
                 API.get('/cellars')
             ]);
 
-            // Create reference map
-            const referencesMap = {};
-            this.wineReferences = referencesData.map(refData => {
-                const ref = WineReference.fromDict(refData);
-                referencesMap[ref.id] = ref;
-                return ref;
+            // Build global reference map (keyed by GlobalWineReference ID)
+            const globalRefsMap = {};
+            globalRefsData.forEach(refData => {
+                globalRefsMap[refData.id] = refData;
             });
+
+            // Build merged WineReference objects from UserWineReference + GlobalWineReference
+            // Keyed by UserWineReference ID for instance resolution
+            const referencesMap = {};
+            this.wineReferences = userRefsData.map(userRefData => {
+                const globalRefData = globalRefsMap[userRefData.globalReferenceId];
+                if (!globalRefData) return null;
+                const mergedData = {
+                    ...globalRefData,
+                    userReferenceId: userRefData.id,
+                    rating: userRefData.rating,
+                    tastingNotes: userRefData.tastingNotes
+                };
+                const ref = WineReference.fromDict(mergedData);
+                referencesMap[userRefData.id] = ref;
+                return ref;
+            }).filter(r => r !== null);
 
             // Create cellar map
             this.cellars = cellarsData.map(cellarData => Cellar.fromDict(cellarData));
 
-            // Create wine instances
+            // Create wine instances (referenceId is now a UserWineReference ID)
             this.wineInstances = instancesData.map(instData => {
                 const reference = referencesMap[instData.referenceId];
                 if (!reference) {
@@ -928,22 +944,20 @@ class WineManager {
                 if (!referenceId || !rating) return;
                 
                 try {
-                    // Update rating via API
-                    await API.updateWineReferenceRating(referenceId, rating);
-                    
-                    // Update local reference object
+                    // Find reference to get userReferenceId for API call
                     const reference = this.wineReferences.find(ref => ref.id === referenceId);
-                    if (reference) {
-                        reference.rating = rating;
-                    }
-                    
+                    if (!reference || !reference.userReferenceId) return;
+
+                    // Update rating via UserWineReference API
+                    await API.updateUserWineReference(reference.userReferenceId, { rating });
+
+                    // Update local reference object
+                    reference.rating = rating;
+
                     // Update all instances that use this reference
                     this.wineInstances.forEach(inst => {
                         if (inst.reference && inst.reference.id === referenceId) {
                             inst.reference.rating = rating;
-                        } else if (inst.referenceId === referenceId) {
-                            // Handle case where instance has referenceId but not reference object
-                            // We'll need to reload to get the updated reference
                         }
                     });
                     

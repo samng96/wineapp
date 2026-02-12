@@ -77,9 +77,13 @@ class WineDetailView {
         // Show modal
         this.modal.classList.remove('hidden');
 
-        // Load full wine reference data
+        // Load full global wine reference data, merge with user-specific fields
         try {
             const fullReference = await API.get(`/wine-references/${wineReference.id}`);
+            // Preserve user-specific fields from the passed-in reference
+            fullReference.userReferenceId = wineReference.userReferenceId;
+            fullReference.rating = wineReference.rating;
+            fullReference.tastingNotes = wineReference.tastingNotes;
             this.currentReference = fullReference;
             this.render();
         } catch (error) {
@@ -183,12 +187,16 @@ class WineDetailView {
                 if (!referenceId || !rating) return;
                 
                 try {
-                    await API.updateWineReferenceRating(referenceId, rating);
-                    
+                    // Update via UserWineReference endpoint
+                    const userRefId = this.currentReference ? this.currentReference.userReferenceId : null;
+                    if (userRefId) {
+                        await API.updateUserWineReference(userRefId, { rating });
+                    }
+
                     if (this.currentReference) {
                         this.currentReference.rating = rating;
                     }
-                    
+
                     // Re-render rating stars
                     this.renderRatingStars();
                 } catch (error) {
@@ -219,10 +227,13 @@ class WineDetailView {
         }
 
         try {
-            // Update via API
-            await API.updateWineReference(this.currentReference.id, {
-                tastingNotes: newNotes
-            });
+            // Update via UserWineReference API
+            const userRefId = this.currentReference.userReferenceId;
+            if (userRefId) {
+                await API.updateUserWineReference(userRefId, {
+                    tastingNotes: newNotes
+                });
+            }
 
             // Update local reference
             this.currentReference.tastingNotes = newNotes;

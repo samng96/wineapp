@@ -241,19 +241,26 @@ class CellarManager {
             });
             console.log('Parsed cellars:', this.cellars.length);
             
-            // Load wine instances and references for breakdown calculation and preview rendering
+            // Load wine instances, global references, and user references for breakdown calculation and preview rendering
             try {
-                const [wineInstances, wineReferences] = await Promise.all([
+                const [wineInstances, wineReferences, userWineReferences] = await Promise.all([
                     API.get('/wine-instances'),
-                    API.get('/wine-references')
+                    API.get('/wine-references'),
+                    API.get('/user-wine-references')
                 ]);
                 this.wineInstances = wineInstances;
                 this.wineReferences = wineReferences;
-                console.log('Loaded wine instances:', wineInstances?.length, 'references:', wineReferences?.length);
+                // Build mapping from UserWineReference ID → GlobalWineReference ID
+                this.userRefToGlobalRefId = {};
+                userWineReferences.forEach(userRef => {
+                    this.userRefToGlobalRefId[userRef.id] = userRef.globalReferenceId;
+                });
+                console.log('Loaded wine instances:', wineInstances?.length, 'references:', wineReferences?.length, 'user refs:', userWineReferences?.length);
             } catch (err) {
                 console.warn('Could not load wine data for breakdown:', err);
                 this.wineInstances = [];
                 this.wineReferences = [];
+                this.userRefToGlobalRefId = {};
             }
             
             console.log('Rendering cellars...');
@@ -313,7 +320,9 @@ class CellarManager {
         this.wineInstances.forEach(instance => {
             // If this instance is in this cellar's winePositions
             if (cellarWineIds.has(instance.id) && instance.referenceId) {
-                const wineType = referenceTypeMap[instance.referenceId] || 'Unknown';
+                // instance.referenceId is a UserWineRef ID, resolve to GlobalWineRef ID
+                const globalRefId = this.userRefToGlobalRefId ? this.userRefToGlobalRefId[instance.referenceId] : instance.referenceId;
+                const wineType = referenceTypeMap[globalRefId] || 'Unknown';
                 breakdown[wineType] = (breakdown[wineType] || 0) + 1;
             }
         });
@@ -438,7 +447,9 @@ class CellarManager {
         
         this.wineInstances.forEach(instance => {
             if (cellarWineIds.has(instance.id) && instance.referenceId) {
-                const reference = referenceMap[instance.referenceId];
+                // instance.referenceId is a UserWineRef ID, resolve to GlobalWineRef ID
+                const globalRefId = this.userRefToGlobalRefId ? this.userRefToGlobalRefId[instance.referenceId] : instance.referenceId;
+                const reference = referenceMap[globalRefId];
                 if (reference && reference.labelImageUrl && !seenImages.has(reference.labelImageUrl)) {
                     labelImages.push(reference.labelImageUrl);
                     seenImages.add(reference.labelImageUrl);
@@ -579,7 +590,9 @@ class CellarManager {
     }
 
     renderMiniSinglePosition(instanceId, instanceMap, referenceMap, position, unitSize, radius) {
-        const wine = instanceId && instanceMap[instanceId] ? referenceMap[instanceMap[instanceId].referenceId] : null;
+        const inst = instanceId && instanceMap[instanceId] ? instanceMap[instanceId] : null;
+        const globalRefId = inst && inst.referenceId && this.userRefToGlobalRefId ? this.userRefToGlobalRefId[inst.referenceId] : (inst ? inst.referenceId : null);
+        const wine = globalRefId ? referenceMap[globalRefId] : null;
         const wineType = wine ? (wine.type || '').toLowerCase() : '';
         const vintage = wine && wine.vintage ? wine.vintage : null;
         
@@ -600,8 +613,12 @@ class CellarManager {
     }
 
     renderMiniStaggeredPosition(frontInstanceId, backInstanceId, instanceMap, referenceMap, position, unitSize, radius) {
-        const frontWine = frontInstanceId && instanceMap[frontInstanceId] ? referenceMap[instanceMap[frontInstanceId].referenceId] : null;
-        const backWine = backInstanceId && instanceMap[backInstanceId] ? referenceMap[instanceMap[backInstanceId].referenceId] : null;
+        const frontInst = frontInstanceId && instanceMap[frontInstanceId] ? instanceMap[frontInstanceId] : null;
+        const frontGlobalRefId = frontInst && frontInst.referenceId && this.userRefToGlobalRefId ? this.userRefToGlobalRefId[frontInst.referenceId] : (frontInst ? frontInst.referenceId : null);
+        const frontWine = frontGlobalRefId ? referenceMap[frontGlobalRefId] : null;
+        const backInst = backInstanceId && instanceMap[backInstanceId] ? instanceMap[backInstanceId] : null;
+        const backGlobalRefId = backInst && backInst.referenceId && this.userRefToGlobalRefId ? this.userRefToGlobalRefId[backInst.referenceId] : (backInst ? backInst.referenceId : null);
+        const backWine = backGlobalRefId ? referenceMap[backGlobalRefId] : null;
         
         const frontType = frontWine ? (frontWine.type || '').toLowerCase() : '';
         const backType = backWine ? (backWine.type || '').toLowerCase() : '';
@@ -939,10 +956,11 @@ class CellarManager {
             // Load full cellar data with wine instances
             const cellar = await API.get(`/cellars/${cellarId}`);
             
-            // Load wine instances and references to get label images
-            const [wineInstances, wineReferences] = await Promise.all([
+            // Load wine instances, global references, and user references
+            const [wineInstances, wineReferences, userWineReferences] = await Promise.all([
                 API.get('/wine-instances'),
-                API.get('/wine-references')
+                API.get('/wine-references'),
+                API.get('/user-wine-references')
             ]);
 
             // Create maps for quick lookup
@@ -951,9 +969,27 @@ class CellarManager {
                 instanceMap[inst.id] = inst;
             });
 
-            const referenceMap = {};
+            // Build global reference map
+            const globalRefMap = {};
             wineReferences.forEach(ref => {
-                referenceMap[ref.id] = ref;
+                globalRefMap[ref.id] = ref;
+            });
+
+            // Build dual-keyed referenceMap: accessible by both UserWineRef ID and GlobalWineRef ID
+            // Merge user-specific data (rating, tastingNotes) into the global reference
+            const referenceMap = {};
+            userWineReferences.forEach(userRef => {
+                const globalRef = globalRefMap[userRef.globalReferenceId];
+                if (globalRef) {
+                    const merged = {
+                        ...globalRef,
+                        userReferenceId: userRef.id,
+                        rating: userRef.rating,
+                        tastingNotes: userRef.tastingNotes
+                    };
+                    referenceMap[userRef.id] = merged;                  // Keyed by UserWineRef ID
+                    referenceMap[userRef.globalReferenceId] = merged;   // Keyed by GlobalWineRef ID
+                }
             });
 
             // Update view header

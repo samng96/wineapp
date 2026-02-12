@@ -165,6 +165,35 @@ class API {
         return await this.post('/wine-references', referenceData);
     }
 
+    // User Wine Reference API methods
+
+    /**
+     * Get all user wine references
+     * @returns {Promise<Array>} Array of user wine reference objects
+     */
+    static async getUserWineReferences() {
+        return await this.get('/user-wine-references');
+    }
+
+    /**
+     * Create a new user wine reference
+     * @param {Object} data - Data with globalReferenceId (required), rating (optional), tastingNotes (optional)
+     * @returns {Promise<Object>} Created user wine reference
+     */
+    static async createUserWineReference(data) {
+        return await this.post('/user-wine-references', data);
+    }
+
+    /**
+     * Update a user wine reference
+     * @param {string} userRefId - User wine reference ID
+     * @param {Object} updateData - Data to update (rating, tastingNotes)
+     * @returns {Promise<Object>} Updated user wine reference
+     */
+    static async updateUserWineReference(userRefId, updateData) {
+        return await this.put(`/user-wine-references/${userRefId}`, updateData);
+    }
+
     /**
      * Search Vivino for wines by name
      * @param {string} name - Wine name to search for

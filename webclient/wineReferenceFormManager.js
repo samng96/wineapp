@@ -67,14 +67,16 @@ export class WineReferenceFormManager {
             data.country = country;
         }
 
+        // User-specific data goes to UserWineReference, not GlobalWineReference
+        const userRefData = {};
         const rating = formData.get('rating');
         if (rating) {
-            data.rating = parseInt(rating);
+            userRefData.rating = parseInt(rating);
         }
 
         const tastingNotes = formData.get('tastingNotes');
         if (tastingNotes) {
-            data.tastingNotes = tastingNotes;
+            userRefData.tastingNotes = tastingNotes;
         }
 
         // If there's a captured photo from addWineManager, include it
@@ -84,15 +86,20 @@ export class WineReferenceFormManager {
         }
 
         try {
+            // Create global wine reference (wine metadata)
             const reference = await API.createWineReference(data);
-            
+
+            // Create user wine reference (user-specific data: rating, tasting notes)
+            await API.createUserWineReference({
+                globalReferenceId: reference.id,
+                ...userRefData
+            });
+
             // Show success message
             alert('Wine reference created successfully!');
-            
+
             // Navigate back to add wines view
             this.handleCancel();
-            
-            // TODO: Optionally create a wine instance from this reference
         } catch (error) {
             console.error('Error creating wine reference:', error);
             if (error.message.includes('already exists')) {

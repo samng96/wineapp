@@ -189,7 +189,7 @@ export class WineSearchManager {
 
     async createWineFromReference(reference) {
         try {
-            // Create wine reference via API
+            // Create global wine reference via API (wine metadata without user-specific data)
             const referenceData = {
                 name: reference.name,
                 type: reference.type,
@@ -198,15 +198,25 @@ export class WineSearchManager {
                 varietals: reference.varietals || [],
                 region: reference.region,
                 country: reference.country,
-                rating: reference.rating,
-                tastingNotes: reference.tastingNotes,
                 labelImageUrl: reference.labelImageUrl
             };
 
             const createdReference = await API.createWineReference(referenceData);
-            
+
+            // Create user wine reference (user-specific data: rating, tasting notes)
+            const userRefData = {
+                globalReferenceId: createdReference.id
+            };
+            if (reference.rating) {
+                userRefData.rating = reference.rating;
+            }
+            if (reference.tastingNotes) {
+                userRefData.tastingNotes = reference.tastingNotes;
+            }
+            await API.createUserWineReference(userRefData);
+
             alert('Wine reference created successfully!');
-            
+
             // Navigate back to add wines view
             if (window.app && window.app.showView) {
                 window.app.showView('photo');

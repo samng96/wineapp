@@ -39,8 +39,8 @@ class WineCard {
         const allInstances = options.allInstances || [];
         const locationInfo = options.locationInfo || null;
 
-        // Count bottles stored for this reference
-        const bottlesStored = this.countBottlesStored(ref.id, allInstances);
+        // Count bottles stored for this reference (check both GlobalWineRef ID and UserWineRef ID)
+        const bottlesStored = this.countBottlesStored(ref.id, ref.userReferenceId, allInstances);
         
         // Count other bottles (excluding this instance if not consumed)
         const otherBottlesCount = instance && bottlesStored > 0 && !instance.consumed ? bottlesStored - 1 : bottlesStored;
@@ -190,13 +190,12 @@ class WineCard {
                 if (!referenceId || !rating) return;
                 
                 try {
-                    // Update rating via API
-                    await API.updateWineReferenceRating(referenceId, rating);
-                    
-                    // Update the reference object passed to this card
-                    // Note: We need to update the reference that was passed in
-                    // Since we don't have direct access to it, we'll re-render with updated rating
+                    // Update rating via UserWineReference API
                     const ref = this.getCurrentReference();
+                    const userRefId = ref ? ref.userReferenceId : null;
+                    if (userRefId) {
+                        await API.updateUserWineReference(userRefId, { rating });
+                    }
                     if (ref) {
                         ref.rating = rating;
                         // Re-render the card with updated rating
@@ -272,11 +271,12 @@ class WineCard {
         return countryMap[normalizedCountry] || '';
     }
 
-    countBottlesStored(referenceId, allInstances) {
+    countBottlesStored(referenceId, userReferenceId, allInstances) {
         return allInstances.filter(inst => {
-            // Handle both WineInstance objects (with reference.id) and plain API objects (with referenceId)
+            // Handle both WineInstance objects (with reference.id = GlobalWineRef ID)
+            // and plain API objects (with referenceId = UserWineRef ID)
             const instRefId = inst.reference ? inst.reference.id : inst.referenceId;
-            return instRefId === referenceId && !inst.consumed;
+            return (instRefId === referenceId || instRefId === userReferenceId) && !inst.consumed;
         }).length;
     }
 

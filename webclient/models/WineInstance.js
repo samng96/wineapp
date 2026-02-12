@@ -82,7 +82,7 @@ export class WineInstance {
     toDict() {
         return {
             id: this.id,
-            referenceId: this.reference.id,
+            referenceId: this.reference.userReferenceId || this.reference.id,
             price: this.price,
             purchaseDate: this.purchaseDate,
             drinkByDate: this.drinkByDate,
