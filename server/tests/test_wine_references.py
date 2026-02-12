@@ -146,3 +146,122 @@ def test_get_all_wine_references(client, sample_wine_reference):
     names = [r['name'] for r in data]
     assert 'Wine 1' in names
     assert 'Wine 2' in names
+
+
+def test_get_wine_reference_with_instances(client, sample_wine_reference, sample_wine_instance):
+    """Test getting a wine reference with all its instances"""
+    # Create global reference
+    ref_response = client.post('/wine-references', json=sample_wine_reference)
+    global_ref_id = ref_response.get_json()['id']
+    
+    # Create user reference
+    user_ref_response = client.post('/user-wine-references', json={
+        'globalReferenceId': global_ref_id
+    })
+    user_ref_id = user_ref_response.get_json()['id']
+    
+    # Create instances
+    sample_wine_instance['referenceId'] = user_ref_id
+    instance1_response = client.post('/wine-instances', json=sample_wine_instance)
+    instance1_id = instance1_response.get_json()['id']
+    
+    instance2_response = client.post('/wine-instances', json=sample_wine_instance)
+    instance2_id = instance2_response.get_json()['id']
+    
+    # Get reference with instances
+    response = client.get(f'/wine-references/{global_ref_id}/instances')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['id'] == global_ref_id
+    assert 'instances' in data
+    instance_ids = [i['id'] for i in data['instances']]
+    assert instance1_id in instance_ids
+    assert instance2_id in instance_ids
+
+
+def test_get_wine_reference_with_instances_no_instances(client, sample_wine_reference):
+    """Test getting a wine reference with no instances"""
+    # Create global reference
+    ref_response = client.post('/wine-references', json=sample_wine_reference)
+    global_ref_id = ref_response.get_json()['id']
+    
+    # Get reference with instances (should return empty array)
+    response = client.get(f'/wine-references/{global_ref_id}/instances')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['id'] == global_ref_id
+    assert 'instances' in data
+    assert data['instances'] == []
+
+
+def test_get_wine_reference_with_instances_not_found(client):
+    """Test getting instances for non-existent wine reference"""
+    response = client.get('/wine-references/non-existent-id/instances')
+    assert response.status_code == 404
+
+
+def test_update_wine_reference_partial_fields(client, sample_wine_reference):
+    """Test updating only some fields of a wine reference"""
+    # Create reference
+    create_response = client.post('/wine-references', json=sample_wine_reference)
+    reference_id = create_response.get_json()['id']
+    original_producer = create_response.get_json()['producer']
+    
+    # Update only name
+    update_data = {
+        'name': 'Updated Name Only'
+    }
+    response = client.put(f'/wine-references/{reference_id}', json=update_data)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['name'] == 'Updated Name Only'
+    assert data['producer'] == original_producer  # Should remain unchanged
+
+
+def test_update_wine_reference_not_found(client):
+    """Test updating a non-existent wine reference"""
+    update_data = {'name': 'Updated Name'}
+    response = client.put('/wine-references/non-existent-id', json=update_data)
+    assert response.status_code == 404
+
+
+def test_create_wine_reference_with_vintage_zero(client):
+    """Test creating a wine reference with vintage 0 (edge case)"""
+    data = {
+        'name': 'Non-Vintage Wine',
+        'type': 'Red',
+        'vintage': 0
+    }
+    response = client.post('/wine-references', json=data)
+    assert response.status_code == 201
+    result = response.get_json()
+    assert result['vintage'] == 0
+
+
+def test_create_wine_reference_empty_varietals(client):
+    """Test creating a wine reference with empty varietals array"""
+    data = {
+        'name': 'Test Wine',
+        'type': 'Red',
+        'varietals': []
+    }
+    response = client.post('/wine-references', json=data)
+    assert response.status_code == 201
+    result = response.get_json()
+    assert result['varietals'] == []
+
+
+def test_update_wine_reference_varietals(client, sample_wine_reference):
+    """Test updating varietals list"""
+    # Create reference
+    create_response = client.post('/wine-references', json=sample_wine_reference)
+    reference_id = create_response.get_json()['id']
+    
+    # Update varietals
+    update_data = {
+        'varietals': ['Cabernet Sauvignon', 'Merlot']
+    }
+    response = client.put(f'/wine-references/{reference_id}', json=update_data)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['varietals'] == ['Cabernet Sauvignon', 'Merlot']

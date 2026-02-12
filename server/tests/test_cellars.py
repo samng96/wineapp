@@ -138,3 +138,120 @@ def test_get_all_cellars(client, sample_cellar):
     names = [c['name'] for c in data]
     assert 'Cellar 1' in names
     assert 'Cellar 2' in names
+
+
+def test_create_cellar_missing_name(client):
+    """Test creating a cellar without name"""
+    data = {
+        'shelves': [[5, False]]
+    }
+    response = client.post('/cellars', json=data)
+    assert response.status_code == 400
+
+
+def test_create_cellar_missing_shelves(client):
+    """Test creating a cellar without shelves"""
+    data = {
+        'name': 'No Shelves Cellar'
+    }
+    response = client.post('/cellars', json=data)
+    assert response.status_code == 400
+
+
+def test_create_cellar_empty_shelves(client):
+    """Test creating a cellar with empty shelves array"""
+    data = {
+        'name': 'Empty Shelves Cellar',
+        'shelves': []
+    }
+    response = client.post('/cellars', json=data)
+    # Should succeed but with capacity 0
+    assert response.status_code == 201
+    result = response.get_json()
+    assert result['capacity'] == 0
+
+
+def test_create_cellar_double_shelf(client):
+    """Test creating a cellar with double shelves"""
+    data = {
+        'name': 'Double Shelf Cellar',
+        'shelves': [
+            [10, True],  # Double shelf with 10 positions
+            [5, False]   # Single shelf with 5 positions
+        ]
+    }
+    response = client.post('/cellars', json=data)
+    assert response.status_code == 201
+    result = response.get_json()
+    # Capacity: (10 * 2) + 5 = 25
+    assert result['capacity'] == 25
+
+
+def test_update_cellar_partial_fields(client, sample_cellar):
+    """Test updating only some fields"""
+    # Create cellar
+    create_response = client.post('/cellars', json=sample_cellar)
+    cellar_id = create_response.get_json()['id']
+    original_temperature = create_response.get_json()['temperature']
+    
+    # Update only name
+    update_data = {
+        'name': 'Updated Name Only'
+    }
+    response = client.put(f'/cellars/{cellar_id}', json=update_data)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['name'] == 'Updated Name Only'
+    assert data['temperature'] == original_temperature  # Should remain unchanged
+
+
+def test_update_cellar_not_found(client):
+    """Test updating a non-existent cellar"""
+    update_data = {'name': 'Updated Name'}
+    response = client.put('/cellars/non-existent-id', json=update_data)
+    assert response.status_code == 404
+
+
+def test_delete_cellar_with_wines(client, sample_cellar, sample_wine_instance, created_user_wine_reference):
+    """Test deleting a cellar that contains wines"""
+    # Create cellar
+    cellar_response = client.post('/cellars', json=sample_cellar)
+    cellar_id = cellar_response.get_json()['id']
+    
+    # Create and place wine in cellar
+    sample_wine_instance['referenceId'] = created_user_wine_reference
+    instance_response = client.post('/wine-instances', json=sample_wine_instance)
+    instance_id = instance_response.get_json()['id']
+    
+    # Place wine in cellar
+    location_data = {
+        'oldCellarId': None,
+        'newCellarId': cellar_id,
+        'shelfIndex': 0,
+        'side': 'single',
+        'position': 0
+    }
+    client.put(f'/wine-instances/{instance_id}/location', json=location_data)
+    
+    # Delete cellar (should move wines to unshelved)
+    delete_response = client.delete(f'/cellars/{cellar_id}')
+    assert delete_response.status_code == 200
+    
+    # Verify wine is now unshelved
+    unshelved_response = client.get('/unshelved')
+    unshelved_ids = [i['id'] for i in unshelved_response.get_json()]
+    assert instance_id in unshelved_ids
+
+
+def test_get_cellar_layout(client, sample_cellar):
+    """Test getting cellar layout/wine positions"""
+    # Create cellar
+    cellar_response = client.post('/cellars', json=sample_cellar)
+    cellar_id = cellar_response.get_json()['id']
+    
+    # Get cellar (should include winePositions)
+    response = client.get(f'/cellars/{cellar_id}')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert 'winePositions' in data
+    assert isinstance(data['winePositions'], dict)
