@@ -103,7 +103,10 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         stats = vintage.get('statistics', {})
         image = vintage.get('image', {})
 
-        name = vintage.get('name', '')
+        # Prefer wine_data.name (wine-only name without winery prefix)
+        # over vintage.name (which includes "Winery WineName Year")
+        producer_name = winery.get('name')
+        name = wine_data.get('name', '') or vintage.get('name', '')
         if not name:
             return None
 
@@ -114,9 +117,22 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         if not name:
             return None
 
+        # Strip producer prefix from name if present to avoid duplication
+        # e.g., "Opus One Opus One" -> "Opus One"
+        if producer_name and name.lower().startswith(producer_name.lower()):
+            stripped = name[len(producer_name):].strip()
+            # Remove leading punctuation (comma, dash, colon)
+            stripped = re.sub(r'^[\s,\-:]+', '', stripped).strip()
+            if stripped:
+                name = stripped
+
         # Map type_id to wine type string
         type_id = wine_data.get('type_id')
         wine_type = VIVINO_TYPE_MAP.get(type_id, 'Red')
+
+        # Extract grape varietals
+        grapes = wine_data.get('grapes', [])
+        varietals = [g.get('name') for g in grapes if isinstance(g, dict) and g.get('name')]
 
         # Build image URL
         img_location = image.get('location', '')
@@ -135,7 +151,8 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         return {
             'name': name,
             'type': wine_type,
-            'producer': winery.get('name'),
+            'producer': producer_name,
+            'varietals': varietals if varietals else [],
             'region': region.get('name'),
             'country': country.get('name'),
             'rating': rating,

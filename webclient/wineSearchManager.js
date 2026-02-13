@@ -178,10 +178,15 @@ export class WineSearchManager {
             item.addEventListener('click', () => {
                 const referenceId = item.getAttribute('data-reference-id');
                 const reference = this.searchResults.find(ref => ref.id === referenceId);
-                
+
                 if (reference) {
-                    // Create wine reference from search result
-                    this.createWineFromReference(reference);
+                    // Show detail card for the search result
+                    import('./wineSearchDetailCard.js').then(({ getWineSearchDetailCard }) => {
+                        const detailCard = getWineSearchDetailCard();
+                        detailCard.show(reference);
+                    }).catch(error => {
+                        console.error('Error loading wine search detail card:', error);
+                    });
                 }
             });
         });

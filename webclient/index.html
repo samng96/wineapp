@@ -541,5 +541,57 @@
             </div>
         </div>
     </div>
+
+    <!-- Wine Search Detail Modal (bottom sheet for Vivino search results) -->
+    <div id="wine-search-detail-modal" class="wine-detail-modal hidden">
+        <div class="wine-detail-overlay"></div>
+        <div class="wine-detail-content">
+            <div class="wine-detail-header">
+                <h2>Wine Details</h2>
+                <button id="wine-search-detail-close" class="wine-detail-close-btn" title="Close">&times;</button>
+            </div>
+            <div class="wine-detail-body">
+                <div class="wine-detail-main">
+                    <div class="wine-detail-image-section">
+                        <img id="wine-search-detail-image" src="" alt="Wine label" class="wine-detail-image" />
+                        <div id="wine-search-detail-image-placeholder" class="wine-detail-image-placeholder" style="display: none;">&#127863;</div>
+                    </div>
+                    <div class="wine-detail-info-section">
+                        <div class="wine-detail-name-section">
+                            <h3 id="wine-search-detail-name"></h3>
+                            <div id="wine-search-detail-meta" class="wine-detail-meta"></div>
+                        </div>
+                        <div id="wine-search-detail-rating-section" class="wine-detail-rating-section" style="display: none;">
+                            <label class="wine-detail-label">Vivino Rating:</label>
+                            <span id="wine-search-detail-rating" class="wine-search-detail-rating-value"></span>
+                        </div>
+                        <div class="wine-detail-storage-section" id="wine-search-detail-info">
+                        </div>
+                        <div class="wine-search-detail-inputs">
+                            <div class="wine-search-detail-input-row">
+                                <label for="wine-search-detail-vintage">Vintage Year</label>
+                                <input type="number" id="wine-search-detail-vintage" min="1900" max="2099" placeholder="e.g. 2020">
+                            </div>
+                            <div class="wine-search-detail-input-row">
+                                <label for="wine-search-detail-price">Purchase Price</label>
+                                <input type="number" id="wine-search-detail-price" min="0" step="0.01" placeholder="$ (optional)">
+                            </div>
+                            <div class="wine-search-detail-input-row">
+                                <label>Quantity</label>
+                                <div class="wine-search-detail-quantity">
+                                    <button type="button" id="wine-search-detail-qty-down" class="qty-btn">&minus;</button>
+                                    <span id="wine-search-detail-qty-value">1</span>
+                                    <button type="button" id="wine-search-detail-qty-up" class="qty-btn">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wine-search-detail-actions">
+                            <button id="wine-search-detail-add-btn" class="btn-primary wine-search-detail-add-btn">Add to Collection</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
