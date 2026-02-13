@@ -1,13 +1,7 @@
 """Data models and type definitions for WineApp"""
-from typing import List, Optional, Dict, Any, Tuple, TYPE_CHECKING, Callable
+from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass, field
 from server.utils import get_current_timestamp
-
-if TYPE_CHECKING:
-    # Forward references for type checking
-    WineInstance = 'WineInstance'
-    Cellar = 'Cellar'
-    Shelf = 'Shelf'
 
 @dataclass
 class Shelf:
@@ -38,7 +32,7 @@ class Shelf:
     
     def __setattr__(self, name, value):
         """Override to make positions and is_double immutable"""
-        if hasattr(self, '_positions_frozen') and self._positions_frozen:
+        if getattr(self, '_positions_frozen', False):
             if name == 'positions' or name == 'is_double':
                 raise AttributeError(f"'{name}' is immutable after initialization")
         super().__setattr__(name, value)
@@ -122,6 +116,8 @@ class Cellar:
             return False
         
         shelf = self._get_shelf(shelf_index)
+        if shelf is None:
+            return False
         wine = shelf.get_wine_at(side, position)
         return wine is None
     
@@ -133,6 +129,8 @@ class Cellar:
             raise ValueError(f"Position is not available: shelf_index={shelf_index}, side={side}, position={position}")
         
         shelf = self._get_shelf(shelf_index)
+        if shelf is None:
+            raise ValueError(f"Shelf not found: shelf_index={shelf_index}")
         shelf.set_wine_at(side, position, instance)
     
     def remove_wine_from_cellar(self, instance: 'WineInstance'):
