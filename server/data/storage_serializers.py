@@ -118,7 +118,7 @@ def deserialize_cellar(data: Dict[str, Any], wine_instances: List[WineInstance])
         id=data['id'],
         name=data['name'],
         shelves=shelves,
-        temperature=data.get('temperature'),
+        temperature=int(data['temperature']) if data.get('temperature') is not None and isinstance(data.get('temperature'), Decimal) else data.get('temperature'),
         capacity=capacity,  # Will be calculated in __post_init__ if None
         version=version,
         created_at=data.get('createdAt'),

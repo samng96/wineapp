@@ -285,6 +285,12 @@ def _update_wine_instance_location(instance_id: str):
         return jsonify({'error': 'New cellar not found'}), 404
 
     # Okay we've found the wine in the old cellar, so we're good to actually do the move.
+    # Validate position before making changes
+    if not new_cellar.is_position_valid(shelf_index, side, position):
+        return jsonify({'error': f'Invalid position: shelf_index={shelf_index}, side={side}, position={position}'}), 400
+    if not new_cellar.is_position_available(shelf_index, side, position):
+        return jsonify({'error': f'Position is already occupied: shelf_index={shelf_index}, side={side}, position={position}'}), 400
+
     if old_cellar is not None:
         old_cellar.remove_wine_from_cellar(instance)
         update_and_save_cellar(old_cellar)

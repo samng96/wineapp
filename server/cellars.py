@@ -83,9 +83,15 @@ Expected POST Parameters:
 def _create_cellar():
     """Create a new cellar"""
     data = request.json
-    
+
+    if not data.get('name'):
+        return jsonify({'error': 'name is required'}), 400
+
+    if 'shelves' not in data:
+        return jsonify({'error': 'shelves is required'}), 400
+
     shelves_data = data.get('shelves', [])
-    
+
     # Validate and convert shelves to Shelf objects
     try:
         shelves = []

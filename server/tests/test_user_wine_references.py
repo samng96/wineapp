@@ -195,9 +195,11 @@ def test_get_all_user_wine_references(client, created_wine_reference):
     })
     # Create another global reference for second user reference
     import time
-    from server.tests.conftest import sample_wine_reference
-    unique_ref = sample_wine_reference.copy()
-    unique_ref['name'] = f"Test Wine {int(time.time() * 1000)}"
+    unique_ref = {
+        'name': f"Test Wine {int(time.time() * 1000)}",
+        'type': 'Red',
+        'vintage': 2018
+    }
     global_ref2 = client.post('/wine-references', json=unique_ref)
     global_ref2_id = global_ref2.get_json()['id']
     
