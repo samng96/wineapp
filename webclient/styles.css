@@ -3105,7 +3105,8 @@ body {
     min-width: 120px;
 }
 
-.wine-search-detail-input-row input[type="number"] {
+.wine-search-detail-input-row input[type="number"],
+.wine-search-detail-input-row input[type="text"] {
     flex: 1;
     max-width: 160px;
     padding: 8px 12px;
@@ -3115,10 +3116,29 @@ body {
     color: #333;
 }
 
-.wine-search-detail-input-row input[type="number"]:focus {
+.wine-search-detail-input-row input[type="number"]:focus,
+.wine-search-detail-input-row input[type="text"]:focus {
     outline: none;
     border-color: #6200ea;
     box-shadow: 0 0 0 2px rgba(98, 0, 234, 0.1);
+}
+
+.wine-search-detail-price-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    max-width: 160px;
+}
+
+.wine-search-detail-price-sign {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+}
+
+.wine-search-detail-price-wrapper input[type="text"] {
+    max-width: none;
 }
 
 .wine-search-detail-quantity {
