@@ -7,6 +7,7 @@ class WineSearchDetailCard {
         this.modal = document.getElementById('wine-search-detail-modal');
         this.currentReference = null;
         this.quantity = 1;
+        this.populateVintageSelect();
         this.setupEventListeners();
     }
 
@@ -38,6 +39,19 @@ class WineSearchDetailCard {
         if (addBtn) {
             addBtn.addEventListener('click', () => this.handleAddToCollection());
         }
+    }
+
+    populateVintageSelect() {
+        const select = document.getElementById('wine-search-detail-vintage');
+        if (!select) return;
+        const currentYear = new Date().getFullYear();
+        for (let year = currentYear; year >= 1950; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            select.appendChild(option);
+        }
+        select.value = '2020';
     }
 
     show(reference) {
@@ -93,10 +107,10 @@ class WineSearchDetailCard {
         // Info rows
         this.renderInfoRows(reference);
 
-        // Pre-fill vintage if available
-        const vintageInput = document.getElementById('wine-search-detail-vintage');
-        if (vintageInput) {
-            vintageInput.value = reference.vintage || '';
+        // Pre-fill vintage if available, otherwise default to 2020
+        const vintageSelect = document.getElementById('wine-search-detail-vintage');
+        if (vintageSelect) {
+            vintageSelect.value = reference.vintage || '2020';
         }
 
         // Reset price

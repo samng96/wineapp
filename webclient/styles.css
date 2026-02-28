@@ -3106,7 +3106,8 @@ body {
 }
 
 .wine-search-detail-input-row input[type="number"],
-.wine-search-detail-input-row input[type="text"] {
+.wine-search-detail-input-row input[type="text"],
+.wine-search-detail-input-row select {
     flex: 1;
     max-width: 160px;
     padding: 8px 12px;
@@ -3114,10 +3115,12 @@ body {
     border-radius: 6px;
     font-size: 14px;
     color: #333;
+    background: #fff;
 }
 
 .wine-search-detail-input-row input[type="number"]:focus,
-.wine-search-detail-input-row input[type="text"]:focus {
+.wine-search-detail-input-row input[type="text"]:focus,
+.wine-search-detail-input-row select:focus {
     outline: none;
     border-color: #6200ea;
     box-shadow: 0 0 0 2px rgba(98, 0, 234, 0.1);
