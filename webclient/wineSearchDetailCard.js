@@ -231,11 +231,14 @@ class WineSearchDetailCard {
             // 4. Store pending instances for placement flow
             window.app.pendingWineInstances = createdInstances;
 
-            // 5. Hide detail card and navigate
+            // 5. Hide detail card and navigate to wines view showing unshelved, sorted by stored date
             this.hide();
-            alert(`Added ${quantity} bottle(s) to your collection!`);
             if (window.app && window.app.showView) {
-                window.app.showView('wines');
+                window.app.showView('wines', {
+                    showUnshelvedOnly: true,
+                    sortBy: 'stored',
+                    sortOrder: 'desc'
+                });
             }
         } catch (error) {
             console.error('Error adding to collection:', error);

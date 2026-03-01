@@ -233,7 +233,7 @@ class WineApp {
 
         // Load wines when viewing wines page
         if (viewName === 'wines' && window.wineManager) {
-            window.wineManager.loadWines(options.searchTerm);
+            window.wineManager.loadWines(options);
         }
 
         // Show/hide camera when viewing photo page

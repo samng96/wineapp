@@ -214,7 +214,7 @@ class WineManager {
         }
     }
 
-    async loadWines(searchTerm = null) {
+    async loadWines(options = {}) {
         try {
             const [instancesData, globalRefsData, userRefsData, cellarsData] = await Promise.all([
                 API.get('/wine-instances'),
@@ -261,11 +261,12 @@ class WineManager {
 
             // Populate filter dropdowns
             this.populateFilters();
-            
+
             // Update filter labels after populating
             this.updateFilterLabels();
 
             // If search term provided, set it
+            const searchTerm = options.searchTerm || null;
             if (searchTerm) {
                 const searchInput = document.getElementById('filter-search');
                 if (searchInput) {
@@ -273,7 +274,30 @@ class WineManager {
                 }
                 this.currentFilters.searchText = searchTerm;
             }
-            
+
+            // Apply filter/sort overrides if provided
+            if (options.showUnshelvedOnly) {
+                const unshelvedCb = document.getElementById('filter-unshelved');
+                const shelvedCb = document.getElementById('filter-shelved');
+                const consumedCb = document.getElementById('filter-consumed');
+                const coravinedCb = document.getElementById('filter-coravined');
+                if (unshelvedCb) unshelvedCb.checked = true;
+                if (shelvedCb) shelvedCb.checked = false;
+                if (consumedCb) consumedCb.checked = false;
+                if (coravinedCb) coravinedCb.checked = false;
+            }
+            if (options.sortBy) {
+                const sortSelect = document.getElementById('sort-select');
+                if (sortSelect) sortSelect.value = options.sortBy;
+            }
+            if (options.sortOrder) {
+                const sortOrderBtn = document.getElementById('sort-order-btn');
+                if (sortOrderBtn) {
+                    sortOrderBtn.classList.remove('ascending', 'descending');
+                    sortOrderBtn.classList.add(options.sortOrder === 'desc' ? 'descending' : 'ascending');
+                }
+            }
+
             // Always expand filter panel when loading wines view
             this.showFilterPanel();
 
