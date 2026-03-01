@@ -165,6 +165,28 @@ class API {
         return await this.post('/wine-references', referenceData);
     }
 
+    /**
+     * Create a wine reference, or return the existing one if a duplicate exists.
+     * Handles 409 Conflict by extracting the existing reference from the response.
+     * @param {Object} referenceData - Reference data with name, type, and optional fields
+     * @returns {Promise<Object>} Created or existing wine reference
+     */
+    static async createOrGetWineReference(referenceData) {
+        const response = await fetch(`${API_BASE_URL}/wine-references`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(referenceData),
+        });
+        const data = await response.json();
+        if (response.status === 201) {
+            return data;
+        }
+        if (response.status === 409 && data.reference) {
+            return data.reference;
+        }
+        throw new Error(data.error || `API Error: ${response.status}`);
+    }
+
     // User Wine Reference API methods
 
     /**

@@ -1,6 +1,7 @@
 /**
  * WineSearchDetailCard - Bottom sheet detail card for Vivino search results
  */
+import { API } from './api.js';
 
 class WineSearchDetailCard {
     constructor() {
@@ -184,21 +185,62 @@ class WineSearchDetailCard {
         }
     }
 
-    handleAddToCollection() {
-        const vintage = document.getElementById('wine-search-detail-vintage');
-        const price = document.getElementById('wine-search-detail-price');
+    async handleAddToCollection() {
+        const vintageSelect = document.getElementById('wine-search-detail-vintage');
+        const priceInput = document.getElementById('wine-search-detail-price');
 
-        const vintageValue = vintage ? parseInt(vintage.value) || null : null;
-        const priceValue = price ? parseFloat(price.value) || null : null;
+        const vintageValue = vintageSelect ? parseInt(vintageSelect.value) : null;
+        const priceText = priceInput ? priceInput.value.trim() : '';
+        const priceValue = priceText ? parseFloat(priceText) : null;
+        const quantity = this.quantity;
+        const reference = this.currentReference;
 
-        // TODO: Implement add to collection flow
-        console.log('Add to collection:', {
-            reference: this.currentReference,
-            vintage: vintageValue,
-            price: priceValue,
-            quantity: this.quantity
-        });
-        alert(`TODO: Add ${this.quantity} bottle(s) to collection`);
+        if (!reference) return;
+
+        try {
+            // 1. Create or get GlobalWineReference
+            const globalRef = await API.createOrGetWineReference({
+                name: reference.name,
+                type: reference.type,
+                vintage: vintageValue,
+                producer: reference.producer,
+                varietals: reference.varietals || [],
+                region: reference.region,
+                country: reference.country,
+                labelImageUrl: reference.labelImageUrl,
+            });
+
+            // 2. Find or create UserWineReference
+            const allUserRefs = await API.getUserWineReferences();
+            let userRef = allUserRefs.find(r => r.globalReferenceId === globalRef.id);
+            if (!userRef) {
+                const userRefData = { globalReferenceId: globalRef.id };
+                if (reference.rating) userRefData.rating = Math.round(reference.rating);
+                userRef = await API.createUserWineReference(userRefData);
+            }
+
+            // 3. Create WineInstances (one per bottle)
+            const createdInstances = [];
+            for (let i = 0; i < quantity; i++) {
+                const instanceData = { referenceId: userRef.id };
+                if (priceValue !== null) instanceData.price = priceValue;
+                const instance = await API.createWineInstance(instanceData);
+                createdInstances.push(instance);
+            }
+
+            // 4. Store pending instances for placement flow
+            window.app.pendingWineInstances = createdInstances;
+
+            // 5. Hide detail card and navigate
+            this.hide();
+            alert(`Added ${quantity} bottle(s) to your collection!`);
+            if (window.app && window.app.showView) {
+                window.app.showView('wines');
+            }
+        } catch (error) {
+            console.error('Error adding to collection:', error);
+            alert('Error adding wine to collection: ' + error.message);
+        }
     }
 
     getCountryFlag(country) {
