@@ -841,15 +841,25 @@ class WineManager {
             return;
         }
         
-        winesList.innerHTML = this.filteredInstances.map(instance => {
+        // Deduplicate: group filtered instances by UserWineReference, show one card per wine
+        const deduped = new Map();
+        for (const instance of this.filteredInstances) {
+            const key = instance.reference.userReferenceId || instance.reference.id;
+            if (!deduped.has(key)) {
+                deduped.set(key, instance);
+            }
+        }
+        const dedupedInstances = Array.from(deduped.values());
+
+        winesList.innerHTML = dedupedInstances.map(instance => {
             const ref = instance.reference;
-            
+
             // Find location
             const locationInfo = findInstanceLocation(instance, this.cellars);
-            
-            // Count bottles stored for this reference
+
+            // Count total bottles stored for this reference (from unfiltered list)
             const bottlesStored = this.countBottlesStored(ref.id);
-            
+
             // Count other bottles (excluding this instance if not consumed)
             const otherBottlesCount = bottlesStored > 0 && !instance.consumed ? bottlesStored - 1 : bottlesStored;
             

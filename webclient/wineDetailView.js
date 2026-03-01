@@ -145,6 +145,9 @@ class WineDetailView {
         // Storage info (Stored and Coravined dates)
         this.renderStorageInfo();
 
+        // Other bottles of the same wine
+        this.renderOtherBottles();
+
         // Tasting notes
         const notesEl = document.getElementById('wine-detail-tasting-notes');
         if (notesEl) {
@@ -572,6 +575,75 @@ class WineDetailView {
                     }
                 }, 2000);
             }
+        }, 300);
+    }
+
+    renderOtherBottles() {
+        const container = document.getElementById('wine-detail-other-bottles');
+        if (!container) return;
+
+        const instance = this.currentInstance;
+        const ref = this.currentReference;
+        if (!instance || !ref) {
+            container.style.display = 'none';
+            return;
+        }
+
+        // Find all instances of the same wine from wineManager
+        const allInstances = window.wineManager ? window.wineManager.wineInstances : [];
+        const cellars = window.wineManager ? window.wineManager.cellars : [];
+        const siblings = allInstances.filter(inst =>
+            inst.reference.id === ref.id && inst.id !== instance.id && !inst.consumed
+        );
+
+        if (siblings.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const links = siblings.map(sib => {
+            const loc = findInstanceLocation(sib, cellars);
+            let locText = 'Unshelved';
+            if (loc) {
+                const { cellar, shelfIndex, side, position } = loc;
+                const sideDisplay = side === 'single' ? '' : side === 'front' ? 'Front' : 'Back';
+                const sideText = sideDisplay ? `, ${sideDisplay}` : '';
+                locText = `${cellar.name}, Shelf ${shelfIndex + 1}${sideText}, Pos ${position + 1}`;
+            }
+            return `<a class="wine-detail-other-bottle-link wine-detail-location-link" data-instance-id="${sib.id}">${locText}</a>`;
+        }).join('');
+
+        container.innerHTML = `<div class="wine-detail-info-item">
+            <span class="wine-detail-storage-label">Other bottles:</span>
+            <div class="wine-detail-other-bottles-links">${links}</div>
+        </div>`;
+        container.style.display = '';
+
+        // Click handlers
+        container.querySelectorAll('.wine-detail-other-bottle-link').forEach(el => {
+            el.addEventListener('click', () => {
+                const sibId = el.getAttribute('data-instance-id');
+                const sib = siblings.find(s => s.id === sibId);
+                if (sib) this.swapToInstance(sib);
+            });
+        });
+    }
+
+    swapToInstance(newInstance) {
+        const content = this.modal.querySelector('.wine-detail-content');
+        if (!content) return;
+
+        // Slide down
+        content.style.transform = 'translateY(100%)';
+
+        // After slide-down animation completes, swap content and slide back up
+        setTimeout(() => {
+            this.currentReference = newInstance.reference;
+            this.currentInstance = newInstance;
+            this.render();
+            // Force reflow then slide up
+            content.offsetHeight;
+            content.style.transform = '';
         }, 300);
     }
 

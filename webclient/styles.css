@@ -2583,6 +2583,12 @@ body {
     cursor: not-allowed;
 }
 
+.wine-detail-other-bottles-links {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .wine-detail-action-buttons {
     display: flex;
     gap: 8px;
