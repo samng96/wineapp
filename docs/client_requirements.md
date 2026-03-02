@@ -166,7 +166,10 @@ A collapsible filter panel is accessible via a filter icon button in the top rig
 - Filter panel can be collapsed/expanded via filter icon in header
 
 #### 3.3 Wine List Display
-- Displays all wine instances matching the current filter criteria
+- Displays wine instances matching the current filter criteria, **deduplicated by UserWineReference**
+  - Multiple bottles of the same wine (same UserWineReference) are grouped into a single card
+  - The first matching instance per UserWineReference is shown as the representative card
+  - Dedup key is `userReferenceId`, falling back to `reference.id` if unavailable
 - Each wine item shows:
   - Wine label image or placeholder icon
   - Vintage and name
@@ -206,12 +209,21 @@ Clicking on a wine in the wine list or hovering over a wine in the cellar view o
 - Wine label image
 - Full name with vintage
 - Producer, type, region, country
+- **Varietals** (shown when the wine reference has varietal data, comma-separated)
 - Rating stars (clickable to update)
 - **Stored date** (when the bottle was added to inventory)
+- **Cost** (shown only when a price was entered for the instance)
+- **Purchase date** (shown only when entered)
+- **Drink by date** (shown only when entered)
+- **Location** (cellar name, shelf, side, position - clickable to navigate to cellar view)
 - **Consumed date** (if consumed)
 - **Coravined date** (if opened with Coravin)
+- **Other bottles** (shown when other non-consumed instances of the same wine exist)
+  - Lists the cellar location of each sibling bottle as a clickable link
+  - Unshelved siblings show "Unshelved"
+  - Clicking a shelved sibling's location: closes the detail card, navigates to that cellar, scrolls to the position, blinks a red outline highlight 3 times (on 400ms / off 200ms), then reopens the detail card for that bottle
+  - Clicking an unshelved sibling: swaps the detail card content in place with a slide-down/slide-up animation
 - Tasting notes textarea with save button
-- Additional information section (drink time, drink window - placeholder for future Vivino integration)
 
 **Actions for Non-Consumed Wines:**
 - **"Open with a Coravin" button** - marks wine as coravined with current date/time
