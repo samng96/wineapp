@@ -155,8 +155,6 @@ class WineDetailView {
             notesEl.value = this.originalTastingNotes;
         }
 
-        // Vivino info (placeholder for now)
-        this.renderVivinoInfo();
     }
 
     renderRatingStars() {
@@ -270,6 +268,42 @@ class WineDetailView {
                 storedDateEl.textContent = this.formatStoredDate(instance.storedDate);
             } else {
                 storedDateEl.textContent = 'N/A';
+            }
+        }
+
+        // Price
+        const priceItemEl = document.getElementById('wine-detail-price-item');
+        const priceEl = document.getElementById('wine-detail-price');
+        if (priceItemEl && priceEl) {
+            if (instance && instance.price != null) {
+                priceEl.textContent = `$${Number(instance.price).toFixed(2)}`;
+                priceItemEl.style.display = 'flex';
+            } else {
+                priceItemEl.style.display = 'none';
+            }
+        }
+
+        // Purchase date
+        const purchaseDateItemEl = document.getElementById('wine-detail-purchase-date-item');
+        const purchaseDateEl = document.getElementById('wine-detail-purchase-date');
+        if (purchaseDateItemEl && purchaseDateEl) {
+            if (instance && instance.purchaseDate) {
+                purchaseDateEl.textContent = this.formatStoredDate(instance.purchaseDate);
+                purchaseDateItemEl.style.display = 'flex';
+            } else {
+                purchaseDateItemEl.style.display = 'none';
+            }
+        }
+
+        // Drink by date
+        const drinkByItemEl = document.getElementById('wine-detail-drink-by-item');
+        const drinkByEl = document.getElementById('wine-detail-drink-by-date');
+        if (drinkByItemEl && drinkByEl) {
+            if (instance && instance.drinkByDate) {
+                drinkByEl.textContent = this.formatStoredDate(instance.drinkByDate);
+                drinkByItemEl.style.display = 'flex';
+            } else {
+                drinkByItemEl.style.display = 'none';
             }
         }
 
@@ -657,19 +691,6 @@ class WineDetailView {
         }
     }
 
-    renderVivinoInfo() {
-        // Placeholder for Vivino data
-        // TODO: Fetch from Vivino API or store in wine reference
-        const drinkTimeEl = document.getElementById('wine-detail-drink-time');
-        const drinkWindowEl = document.getElementById('wine-detail-drink-window');
-        
-        if (drinkTimeEl) {
-            drinkTimeEl.textContent = 'Not available';
-        }
-        if (drinkWindowEl) {
-            drinkWindowEl.textContent = 'Not available';
-        }
-    }
 }
 
 // Create singleton instance
