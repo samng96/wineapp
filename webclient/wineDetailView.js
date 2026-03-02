@@ -599,27 +599,17 @@ class WineDetailView {
             const positionEl = document.getElementById(positionId);
             
             if (positionEl) {
-                // Scroll the position into view
-                positionEl.scrollIntoView({ 
-                    behavior: 'smooth', 
+                positionEl.scrollIntoView({
+                    behavior: 'smooth',
                     block: 'center',
                     inline: 'center'
                 });
-                
-                // Add a red highlight effect
-                positionEl.style.outline = '3px solid #d32f2f';
-                positionEl.style.outlineOffset = '3px';
-                setTimeout(() => {
-                    positionEl.style.outline = '';
-                    positionEl.style.outlineOffset = '';
-                    
-                    // Reopen the wine detail modal after highlight disappears
+
+                this.blinkHighlight(positionEl, () => {
                     if (referenceToReopen && instanceToReopen) {
-                        setTimeout(() => {
-                            this.show(referenceToReopen, instanceToReopen);
-                        }, 100);
+                        this.show(referenceToReopen, instanceToReopen);
                     }
-                }, 2000);
+                });
             }
         }, 300);
     }
@@ -670,7 +660,17 @@ class WineDetailView {
             el.addEventListener('click', () => {
                 const sibId = el.getAttribute('data-instance-id');
                 const sib = siblings.find(s => s.id === sibId);
-                if (sib) this.swapToInstance(sib);
+                if (!sib) return;
+
+                // Check if the sibling has a cellar location
+                const loc = findInstanceLocation(sib, cellars);
+                if (loc && window.cellarManager) {
+                    // Navigate to cellar, highlight position, then reopen card for this bottle
+                    this.navigateToOtherBottle(sib, loc);
+                } else {
+                    // Unshelved — just swap the card content
+                    this.swapToInstance(sib);
+                }
             });
         });
     }
@@ -691,6 +691,60 @@ class WineDetailView {
             content.offsetHeight;
             content.style.transform = '';
         }, 300);
+    }
+
+    async navigateToOtherBottle(siblingInstance, location) {
+        const { cellar, shelfIndex, side, position } = location;
+
+        // Close the wine detail modal
+        this.hide();
+
+        // Navigate to the cellar detail view
+        await window.cellarManager.showCellarDetail(cellar.id);
+
+        // Wait for DOM to update, then scroll to position and highlight
+        setTimeout(() => {
+            const positionId = `wine-pos-${shelfIndex}-${side}-${position}`;
+            const positionEl = document.getElementById(positionId);
+
+            if (positionEl) {
+                positionEl.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'center'
+                });
+
+                this.blinkHighlight(positionEl, () => {
+                    this.show(siblingInstance.reference, siblingInstance);
+                });
+            }
+        }, 300);
+    }
+
+    blinkHighlight(el, onComplete) {
+        const on = () => {
+            el.style.outline = '3px solid #d32f2f';
+            el.style.outlineOffset = '3px';
+        };
+        const off = () => {
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+        };
+
+        // Blink: on 400ms, off 200ms, on 400ms, off — then callback
+        on();
+        setTimeout(() => {
+            off();
+            setTimeout(() => {
+                on();
+                setTimeout(() => {
+                    off();
+                    setTimeout(() => {
+                        if (onComplete) onComplete();
+                    }, 100);
+                }, 400);
+            }, 200);
+        }, 400);
     }
 
     formatStoredDate(storedDate) {
