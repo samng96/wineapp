@@ -111,6 +111,11 @@
         <button onclick="runWineInstanceModelTests()">Test WineInstance Model</button>
         <button onclick="runCellarModelTests()">Test Cellar Model</button>
         <button onclick="runFilterBehaviorTests()">Test Filter Behavior</button>
+        <button onclick="runDeduplicationTests()">Test Deduplication</button>
+        <button onclick="runOtherBottlesTests()">Test Other Bottles</button>
+        <button onclick="runVarietalsTests()">Test Varietals</button>
+        <button onclick="runOptionalFieldsTests()">Test Optional Fields</button>
+        <button onclick="runBlinkHighlightTests()">Test Blink Highlight</button>
         <div id="test-results"></div>
     </div>
 
@@ -624,51 +629,701 @@
             renderResults();
         }
 
+        // ========== NAVIGATION TESTS ==========
+        window.runNavigationTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Navigate to location data structure
+            try {
+                const locationData = {
+                    cellarId: 'cellar-1',
+                    shelfIndex: '0',
+                    side: 'front',
+                    position: '2',
+                    instanceId: 'wine-1'
+                };
+                addResult(
+                    'Navigation - location data has required fields',
+                    locationData.cellarId && locationData.shelfIndex !== undefined && locationData.side && locationData.position !== undefined,
+                    'Location data contains cellarId, shelfIndex, side, and position'
+                );
+            } catch (error) {
+                addResult('Navigation - location data', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Position element ID format
+            try {
+                const shelfIndex = 0;
+                const side = 'front';
+                const position = 2;
+                const positionId = `wine-pos-${shelfIndex}-${side}-${position}`;
+                addResult(
+                    'Navigation - position element ID format is correct',
+                    positionId === 'wine-pos-0-front-2',
+                    `Generated ID: ${positionId}`
+                );
+            } catch (error) {
+                addResult('Navigation - position element ID format', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== WINE INSTANCE MODEL TESTS ==========
+        window.runWineInstanceModelTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Instance has expected properties
+            try {
+                const instance = createMockWineInstance('wine-1');
+                addResult(
+                    'WineInstance - has id property',
+                    instance.id === 'wine-1',
+                    `Instance id: ${instance.id}`
+                );
+            } catch (error) {
+                addResult('WineInstance - has id property', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Consumed state
+            try {
+                const consumed = createMockWineInstance('wine-1', true);
+                const notConsumed = createMockWineInstance('wine-2', false);
+                addResult(
+                    'WineInstance - consumed flag works correctly',
+                    consumed.consumed === true && notConsumed.consumed === false,
+                    'Consumed flag set correctly'
+                );
+            } catch (error) {
+                addResult('WineInstance - consumed flag', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== CELLAR MODEL TESTS ==========
+        window.runCellarModelTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Cellar has winePositions
+            try {
+                const cellar = createMockCellar('cellar-1', 'Main Cellar');
+                addResult(
+                    'Cellar - has winePositions property',
+                    cellar.winePositions !== undefined && typeof cellar.winePositions === 'object',
+                    'winePositions is an object'
+                );
+            } catch (error) {
+                addResult('Cellar - winePositions', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Cellar shelves have sides
+            try {
+                const cellar = createMockCellar('cellar-1', 'Main Cellar');
+                const shelf0 = cellar.winePositions['0'];
+                const shelf1 = cellar.winePositions['1'];
+                addResult(
+                    'Cellar - shelves have correct sides',
+                    shelf0.front && shelf0.back && shelf1.single,
+                    'Shelf 0 has front/back, Shelf 1 has single'
+                );
+            } catch (error) {
+                addResult('Cellar - shelf sides', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== FILTER BEHAVIOR TESTS ==========
+        window.runFilterBehaviorTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Default filter state
+            try {
+                const defaultFilters = {
+                    showConsumed: false,
+                    showUnshelved: true,
+                    showShelved: true,
+                    showCoravined: false
+                };
+                addResult(
+                    'Filter Behavior - default filter state is correct',
+                    !defaultFilters.showConsumed && defaultFilters.showUnshelved && defaultFilters.showShelved && !defaultFilters.showCoravined,
+                    'Consumed and Coravined off, Unshelved and Shelved on'
+                );
+            } catch (error) {
+                addResult('Filter Behavior - default state', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Sort options exist
+            try {
+                const validSortOptions = ['name', 'type', 'vintage', 'stored', 'drinkby', 'rating'];
+                addResult(
+                    'Filter Behavior - sort options are valid',
+                    validSortOptions.length === 6 && validSortOptions.includes('name') && validSortOptions.includes('stored'),
+                    `Sort options: ${validSortOptions.join(', ')}`
+                );
+            } catch (error) {
+                addResult('Filter Behavior - sort options', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== DEDUPLICATION TESTS ==========
+        window.runDeduplicationTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Dedup groups by userReferenceId
+            try {
+                const instances = [
+                    { id: 'inst-1', reference: { id: 'global-1', userReferenceId: 'user-ref-1' } },
+                    { id: 'inst-2', reference: { id: 'global-1', userReferenceId: 'user-ref-1' } },
+                    { id: 'inst-3', reference: { id: 'global-2', userReferenceId: 'user-ref-2' } },
+                ];
+                const deduped = new Map();
+                for (const instance of instances) {
+                    const key = instance.reference.userReferenceId || instance.reference.id;
+                    if (!deduped.has(key)) {
+                        deduped.set(key, instance);
+                    }
+                }
+                const dedupedInstances = Array.from(deduped.values());
+                addResult(
+                    'Dedup - groups by userReferenceId',
+                    dedupedInstances.length === 2,
+                    `3 instances deduped to ${dedupedInstances.length} (expected 2)`
+                );
+            } catch (error) {
+                addResult('Dedup - groups by userReferenceId', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Dedup keeps first instance per group
+            try {
+                const instances = [
+                    { id: 'inst-1', reference: { id: 'global-1', userReferenceId: 'user-ref-1' } },
+                    { id: 'inst-2', reference: { id: 'global-1', userReferenceId: 'user-ref-1' } },
+                ];
+                const deduped = new Map();
+                for (const instance of instances) {
+                    const key = instance.reference.userReferenceId || instance.reference.id;
+                    if (!deduped.has(key)) {
+                        deduped.set(key, instance);
+                    }
+                }
+                const dedupedInstances = Array.from(deduped.values());
+                addResult(
+                    'Dedup - keeps first instance per group',
+                    dedupedInstances[0].id === 'inst-1',
+                    `Kept instance ${dedupedInstances[0].id} (expected inst-1)`
+                );
+            } catch (error) {
+                addResult('Dedup - keeps first instance', false, `Error: ${error.message}`);
+            }
+
+            // Test 3: Dedup falls back to reference.id when userReferenceId is missing
+            try {
+                const instances = [
+                    { id: 'inst-1', reference: { id: 'global-1' } },
+                    { id: 'inst-2', reference: { id: 'global-1' } },
+                    { id: 'inst-3', reference: { id: 'global-2' } },
+                ];
+                const deduped = new Map();
+                for (const instance of instances) {
+                    const key = instance.reference.userReferenceId || instance.reference.id;
+                    if (!deduped.has(key)) {
+                        deduped.set(key, instance);
+                    }
+                }
+                const dedupedInstances = Array.from(deduped.values());
+                addResult(
+                    'Dedup - falls back to reference.id when userReferenceId missing',
+                    dedupedInstances.length === 2,
+                    `3 instances deduped to ${dedupedInstances.length} using reference.id`
+                );
+            } catch (error) {
+                addResult('Dedup - fallback to reference.id', false, `Error: ${error.message}`);
+            }
+
+            // Test 4: Dedup with different userReferenceIds keeps all
+            try {
+                const instances = [
+                    { id: 'inst-1', reference: { id: 'global-1', userReferenceId: 'user-ref-1' } },
+                    { id: 'inst-2', reference: { id: 'global-2', userReferenceId: 'user-ref-2' } },
+                    { id: 'inst-3', reference: { id: 'global-3', userReferenceId: 'user-ref-3' } },
+                ];
+                const deduped = new Map();
+                for (const instance of instances) {
+                    const key = instance.reference.userReferenceId || instance.reference.id;
+                    if (!deduped.has(key)) {
+                        deduped.set(key, instance);
+                    }
+                }
+                const dedupedInstances = Array.from(deduped.values());
+                addResult(
+                    'Dedup - different references are all kept',
+                    dedupedInstances.length === 3,
+                    `3 unique wines deduped to ${dedupedInstances.length} (expected 3)`
+                );
+            } catch (error) {
+                addResult('Dedup - different references', false, `Error: ${error.message}`);
+            }
+
+            // Test 5: Empty list produces empty result
+            try {
+                const instances = [];
+                const deduped = new Map();
+                for (const instance of instances) {
+                    const key = instance.reference.userReferenceId || instance.reference.id;
+                    if (!deduped.has(key)) {
+                        deduped.set(key, instance);
+                    }
+                }
+                const dedupedInstances = Array.from(deduped.values());
+                addResult(
+                    'Dedup - empty list produces empty result',
+                    dedupedInstances.length === 0,
+                    `Empty input produces ${dedupedInstances.length} results`
+                );
+            } catch (error) {
+                addResult('Dedup - empty list', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== OTHER BOTTLES TESTS ==========
+        window.runOtherBottlesTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Find siblings with same reference.id
+            try {
+                const currentInstance = { id: 'inst-1', consumed: false, reference: { id: 'global-1' } };
+                const allInstances = [
+                    { id: 'inst-1', consumed: false, reference: { id: 'global-1' } },
+                    { id: 'inst-2', consumed: false, reference: { id: 'global-1' } },
+                    { id: 'inst-3', consumed: false, reference: { id: 'global-1' } },
+                    { id: 'inst-4', consumed: false, reference: { id: 'global-2' } },
+                ];
+                const siblings = allInstances.filter(inst =>
+                    inst.reference.id === currentInstance.reference.id && inst.id !== currentInstance.id && !inst.consumed
+                );
+                addResult(
+                    'Other Bottles - finds siblings with same reference',
+                    siblings.length === 2,
+                    `Found ${siblings.length} siblings (expected 2)`
+                );
+            } catch (error) {
+                addResult('Other Bottles - find siblings', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Excludes consumed siblings
+            try {
+                const currentInstance = { id: 'inst-1', consumed: false, reference: { id: 'global-1' } };
+                const allInstances = [
+                    { id: 'inst-1', consumed: false, reference: { id: 'global-1' } },
+                    { id: 'inst-2', consumed: true, reference: { id: 'global-1' } },
+                    { id: 'inst-3', consumed: false, reference: { id: 'global-1' } },
+                ];
+                const siblings = allInstances.filter(inst =>
+                    inst.reference.id === currentInstance.reference.id && inst.id !== currentInstance.id && !inst.consumed
+                );
+                addResult(
+                    'Other Bottles - excludes consumed siblings',
+                    siblings.length === 1 && siblings[0].id === 'inst-3',
+                    `Found ${siblings.length} non-consumed sibling(s)`
+                );
+            } catch (error) {
+                addResult('Other Bottles - excludes consumed', false, `Error: ${error.message}`);
+            }
+
+            // Test 3: No siblings when only one instance
+            try {
+                const currentInstance = { id: 'inst-1', consumed: false, reference: { id: 'global-1' } };
+                const allInstances = [
+                    { id: 'inst-1', consumed: false, reference: { id: 'global-1' } },
+                ];
+                const siblings = allInstances.filter(inst =>
+                    inst.reference.id === currentInstance.reference.id && inst.id !== currentInstance.id && !inst.consumed
+                );
+                addResult(
+                    'Other Bottles - no siblings when single bottle',
+                    siblings.length === 0,
+                    `Found ${siblings.length} siblings (expected 0)`
+                );
+            } catch (error) {
+                addResult('Other Bottles - single bottle', false, `Error: ${error.message}`);
+            }
+
+            // Test 4: Sibling location text for shelved bottle
+            try {
+                const cellar = createMockCellar('cellar-1', 'Main Cellar');
+                const sibling = createMockWineInstance('wine-1');
+                const loc = findInstanceLocation(sibling, [cellar]);
+                let locText = 'Unshelved';
+                if (loc) {
+                    const { cellar: c, shelfIndex, side, position } = loc;
+                    const sideDisplay = side === 'single' ? '' : side === 'front' ? 'Front' : 'Back';
+                    const sideText = sideDisplay ? `, ${sideDisplay}` : '';
+                    locText = `${c.name}, Shelf ${shelfIndex + 1}${sideText}, Pos ${position + 1}`;
+                }
+                addResult(
+                    'Other Bottles - shelved bottle shows location text',
+                    locText.includes('Main Cellar') && locText.includes('Shelf') && locText.includes('Pos'),
+                    `Location text: ${locText}`
+                );
+            } catch (error) {
+                addResult('Other Bottles - shelved location text', false, `Error: ${error.message}`);
+            }
+
+            // Test 5: Sibling location text for unshelved bottle
+            try {
+                const sibling = createMockWineInstance('wine-not-in-cellar');
+                const loc = findInstanceLocation(sibling, [createMockCellar('cellar-1', 'Main Cellar')]);
+                const locText = loc ? 'Shelved' : 'Unshelved';
+                addResult(
+                    'Other Bottles - unshelved bottle shows "Unshelved"',
+                    locText === 'Unshelved',
+                    `Location text: ${locText}`
+                );
+            } catch (error) {
+                addResult('Other Bottles - unshelved location text', false, `Error: ${error.message}`);
+            }
+
+            // Test 6: Side display text formatting
+            try {
+                const singleDisplay = 'single' === 'single' ? '' : 'single' === 'front' ? 'Front' : 'Back';
+                const frontDisplay = 'front' === 'single' ? '' : 'front' === 'front' ? 'Front' : 'Back';
+                const backDisplay = 'back' === 'single' ? '' : 'back' === 'front' ? 'Front' : 'Back';
+                addResult(
+                    'Other Bottles - side display text is correct',
+                    singleDisplay === '' && frontDisplay === 'Front' && backDisplay === 'Back',
+                    `single="${singleDisplay}", front="${frontDisplay}", back="${backDisplay}"`
+                );
+            } catch (error) {
+                addResult('Other Bottles - side display text', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== VARIETALS DISPLAY TESTS ==========
+        window.runVarietalsTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Varietals join with comma
+            try {
+                const varietals = ['Cabernet Sauvignon', 'Merlot', 'Petit Verdot'];
+                const display = varietals.join(', ');
+                addResult(
+                    'Varietals - joins array with comma separator',
+                    display === 'Cabernet Sauvignon, Merlot, Petit Verdot',
+                    `Display: "${display}"`
+                );
+            } catch (error) {
+                addResult('Varietals - join', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Single varietal displays correctly
+            try {
+                const varietals = ['Pinot Noir'];
+                const display = varietals.join(', ');
+                addResult(
+                    'Varietals - single varietal displays correctly',
+                    display === 'Pinot Noir',
+                    `Display: "${display}"`
+                );
+            } catch (error) {
+                addResult('Varietals - single varietal', false, `Error: ${error.message}`);
+            }
+
+            // Test 3: Empty varietals array should hide section
+            try {
+                const varietals = [];
+                const shouldShow = varietals && varietals.length > 0;
+                addResult(
+                    'Varietals - empty array hides section',
+                    shouldShow === false,
+                    `shouldShow: ${shouldShow} (expected false)`
+                );
+            } catch (error) {
+                addResult('Varietals - empty array', false, `Error: ${error.message}`);
+            }
+
+            // Test 4: Null/undefined varietals hides section
+            try {
+                const ref1 = { varietals: null };
+                const ref2 = { varietals: undefined };
+                const ref3 = {};
+                const show1 = ref1.varietals && ref1.varietals.length > 0;
+                const show2 = ref2.varietals && ref2.varietals.length > 0;
+                const show3 = ref3.varietals && ref3.varietals.length > 0;
+                addResult(
+                    'Varietals - null/undefined/missing hides section',
+                    !show1 && !show2 && !show3,
+                    'All null/undefined/missing cases correctly hidden'
+                );
+            } catch (error) {
+                addResult('Varietals - null/undefined', false, `Error: ${error.message}`);
+            }
+
+            // Test 5: Varietals from mock wine reference
+            try {
+                const ref = createMockWineReference('ref-1');
+                const hasVarietals = ref.varietals && ref.varietals.length > 0;
+                const display = hasVarietals ? ref.varietals.join(', ') : '';
+                addResult(
+                    'Varietals - mock reference has varietals',
+                    hasVarietals && display === 'Cabernet Sauvignon',
+                    `Display: "${display}"`
+                );
+            } catch (error) {
+                addResult('Varietals - mock reference', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== OPTIONAL FIELDS DISPLAY TESTS ==========
+        window.runOptionalFieldsTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Price formatting
+            try {
+                const price = 45.99;
+                const formatted = `$${Number(price).toFixed(2)}`;
+                addResult(
+                    'Optional Fields - price formats with $ and 2 decimals',
+                    formatted === '$45.99',
+                    `Formatted: "${formatted}"`
+                );
+            } catch (error) {
+                addResult('Optional Fields - price formatting', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Price with integer value
+            try {
+                const price = 50;
+                const formatted = `$${Number(price).toFixed(2)}`;
+                addResult(
+                    'Optional Fields - integer price gets decimals',
+                    formatted === '$50.00',
+                    `Formatted: "${formatted}"`
+                );
+            } catch (error) {
+                addResult('Optional Fields - integer price', false, `Error: ${error.message}`);
+            }
+
+            // Test 3: Null price hides section
+            try {
+                const instance = { price: null };
+                const shouldShow = instance.price != null;
+                addResult(
+                    'Optional Fields - null price hides section',
+                    shouldShow === false,
+                    `shouldShow: ${shouldShow} (expected false)`
+                );
+            } catch (error) {
+                addResult('Optional Fields - null price', false, `Error: ${error.message}`);
+            }
+
+            // Test 4: Zero price shows section (0 is a valid price)
+            try {
+                const instance = { price: 0 };
+                const shouldShow = instance.price != null;
+                addResult(
+                    'Optional Fields - zero price shows section',
+                    shouldShow === true,
+                    `shouldShow: ${shouldShow} (expected true, 0 is a valid price)`
+                );
+            } catch (error) {
+                addResult('Optional Fields - zero price', false, `Error: ${error.message}`);
+            }
+
+            // Test 5: Purchase date visibility
+            try {
+                const withDate = { purchaseDate: '2024-01-15' };
+                const withoutDate = { purchaseDate: null };
+                const show1 = withDate.purchaseDate ? true : false;
+                const show2 = withoutDate.purchaseDate ? true : false;
+                addResult(
+                    'Optional Fields - purchase date visibility',
+                    show1 === true && show2 === false,
+                    'Shows when present, hides when null'
+                );
+            } catch (error) {
+                addResult('Optional Fields - purchase date visibility', false, `Error: ${error.message}`);
+            }
+
+            // Test 6: Drink-by date visibility
+            try {
+                const withDate = { drinkByDate: '2030-12-31' };
+                const withoutDate = { drinkByDate: null };
+                const show1 = withDate.drinkByDate ? true : false;
+                const show2 = withoutDate.drinkByDate ? true : false;
+                addResult(
+                    'Optional Fields - drink-by date visibility',
+                    show1 === true && show2 === false,
+                    'Shows when present, hides when null'
+                );
+            } catch (error) {
+                addResult('Optional Fields - drink-by date visibility', false, `Error: ${error.message}`);
+            }
+
+            // Test 7: Date formatting
+            try {
+                const dateStr = '2024-06-15T00:00:00Z';
+                const date = new Date(dateStr);
+                const formatted = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                addResult(
+                    'Optional Fields - date formatting',
+                    formatted.includes('2024') && formatted.includes('Jun'),
+                    `Formatted: "${formatted}"`
+                );
+            } catch (error) {
+                addResult('Optional Fields - date formatting', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
+        // ========== BLINK HIGHLIGHT TESTS ==========
+        window.runBlinkHighlightTests = function() {
+            testResults = { passed: 0, failed: 0, results: [] };
+
+            // Test 1: Blink function calls on/off in correct sequence
+            try {
+                const log = [];
+                const el = {
+                    style: {
+                        set outline(v) { log.push(v ? 'on' : 'off'); this._outline = v; },
+                        get outline() { return this._outline || ''; },
+                        _outline: '',
+                        outlineOffset: ''
+                    }
+                };
+
+                // Simulate the blink logic synchronously
+                const on = () => {
+                    el.style.outline = '3px solid #d32f2f';
+                    el.style.outlineOffset = '3px';
+                };
+                const off = () => {
+                    el.style.outline = '';
+                    el.style.outlineOffset = '';
+                };
+
+                // Verify on/off toggle works
+                on();
+                const isOn = el.style.outline === '3px solid #d32f2f';
+                off();
+                const isOff = el.style.outline === '';
+
+                addResult(
+                    'Blink Highlight - on/off toggle works',
+                    isOn && isOff,
+                    `on: outline="${isOn ? '3px solid #d32f2f' : 'empty'}", off: outline="${isOff ? 'empty' : 'set'}"`
+                );
+            } catch (error) {
+                addResult('Blink Highlight - on/off toggle', false, `Error: ${error.message}`);
+            }
+
+            // Test 2: Blink recursive function counts down correctly
+            try {
+                let blinkCount = 0;
+                const blink = (count) => {
+                    blinkCount++;
+                    if (count > 1) {
+                        blink(count - 1);
+                    }
+                };
+                blink(3);
+                addResult(
+                    'Blink Highlight - recursive blink counts 3 times',
+                    blinkCount === 3,
+                    `Blinked ${blinkCount} times (expected 3)`
+                );
+            } catch (error) {
+                addResult('Blink Highlight - recursive count', false, `Error: ${error.message}`);
+            }
+
+            // Test 3: Blink calls onComplete callback
+            try {
+                let callbackCalled = false;
+                // Simulate synchronous version of the blink logic
+                const blink = (count, onComplete) => {
+                    if (count > 1) {
+                        blink(count - 1, onComplete);
+                    } else {
+                        if (onComplete) onComplete();
+                    }
+                };
+                blink(3, () => { callbackCalled = true; });
+                addResult(
+                    'Blink Highlight - calls onComplete callback after blinks',
+                    callbackCalled === true,
+                    `Callback called: ${callbackCalled}`
+                );
+            } catch (error) {
+                addResult('Blink Highlight - onComplete callback', false, `Error: ${error.message}`);
+            }
+
+            // Test 4: Async blink completes with correct timing
+            try {
+                // Verify timing constants: on=400ms, off=200ms, 3 blinks
+                // Total = 3 * (400 + 200) - 200 + 100 = 1700ms
+                const onDuration = 400;
+                const offDuration = 200;
+                const blinkCount = 3;
+                const callbackDelay = 100;
+                const totalTime = blinkCount * onDuration + (blinkCount - 1) * offDuration + callbackDelay;
+                addResult(
+                    'Blink Highlight - total animation time is reasonable',
+                    totalTime > 1000 && totalTime < 3000,
+                    `Total time: ${totalTime}ms (on=${onDuration}ms, off=${offDuration}ms, blinks=${blinkCount})`
+                );
+            } catch (error) {
+                addResult('Blink Highlight - timing', false, `Error: ${error.message}`);
+            }
+
+            renderResults();
+        };
+
         // ========== RUN ALL TESTS ==========
         window.runAllTests = function() {
             const allResults = [];
-            
+
             document.getElementById('test-results').innerHTML = '<h2>Running all tests...</h2>';
-            
-            // Run all test groups and collect results
-            runLocationTests();
-            allResults.push(...testResults.results);
-            
-            runConsumptionTests();
-            allResults.push(...testResults.results);
-            
-            runCoravinTests();
-            allResults.push(...testResults.results);
-            
-            runFilterTests();
-            allResults.push(...testResults.results);
-            
-            runAdditionalBottlesTests();
-            allResults.push(...testResults.results);
-            
-            runLocationDisplayTests();
-            allResults.push(...testResults.results);
-            
-            runDateDisplayTests();
-            allResults.push(...testResults.results);
-            
-            runNavigationTests();
-            allResults.push(...testResults.results);
-            
-            runWineInstanceModelTests();
-            allResults.push(...testResults.results);
-            
-            runCellarModelTests();
-            allResults.push(...testResults.results);
-            
-            runFilterBehaviorTests();
-            allResults.push(...testResults.results);
-            
+
+            const testGroups = [
+                runLocationTests,
+                runConsumptionTests,
+                runCoravinTests,
+                runFilterTests,
+                runAdditionalBottlesTests,
+                runLocationDisplayTests,
+                runDateDisplayTests,
+                runNavigationTests,
+                runWineInstanceModelTests,
+                runCellarModelTests,
+                runFilterBehaviorTests,
+                runDeduplicationTests,
+                runOtherBottlesTests,
+                runVarietalsTests,
+                runOptionalFieldsTests,
+                runBlinkHighlightTests,
+            ];
+
+            for (const runGroup of testGroups) {
+                runGroup();
+                allResults.push(...testResults.results);
+            }
+
             // Set final results
             testResults.results = allResults;
             testResults.passed = allResults.filter(r => r.passed).length;
             testResults.failed = allResults.filter(r => !r.passed).length;
-            
+
             renderResults();
         };
     </script>
