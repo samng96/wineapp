@@ -139,6 +139,18 @@ class WineDetailView {
             }
         }
 
+        // Varietals
+        const varietalsItemEl = document.getElementById('wine-detail-varietals-item');
+        const varietalsEl = document.getElementById('wine-detail-varietals');
+        if (varietalsItemEl && varietalsEl) {
+            if (ref.varietals && ref.varietals.length > 0) {
+                varietalsEl.textContent = ref.varietals.join(', ');
+                varietalsItemEl.style.display = 'flex';
+            } else {
+                varietalsItemEl.style.display = 'none';
+            }
+        }
+
         // Rating stars
         this.renderRatingStars();
 
