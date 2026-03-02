@@ -731,20 +731,19 @@ class WineDetailView {
             el.style.outlineOffset = '';
         };
 
-        // Blink: on 400ms, off 200ms, on 400ms, off — then callback
-        on();
-        setTimeout(() => {
-            off();
+        // Blink 3 times: on 400ms, off 200ms, repeat — then callback
+        const blink = (count) => {
+            on();
             setTimeout(() => {
-                on();
-                setTimeout(() => {
-                    off();
-                    setTimeout(() => {
-                        if (onComplete) onComplete();
-                    }, 100);
-                }, 400);
-            }, 200);
-        }, 400);
+                off();
+                if (count > 1) {
+                    setTimeout(() => blink(count - 1), 200);
+                } else {
+                    setTimeout(() => { if (onComplete) onComplete(); }, 100);
+                }
+            }, 400);
+        };
+        blink(3);
     }
 
     formatStoredDate(storedDate) {
