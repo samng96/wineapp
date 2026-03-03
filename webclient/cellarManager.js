@@ -612,6 +612,33 @@ class CellarManager {
         const breakdown = this.getUnshelvedWineBreakdown(unshelvedWines);
         const labelImages = this.getUnshelvedLabelImages(unshelvedWines);
 
+        // Find newest unshelved wine
+        const newestWine = this.getNewestUnshelvedWine(unshelvedWines);
+        let lastBottleDateHtml = '';
+        let lastBottleInfoHtml = '';
+        
+        if (newestWine) {
+            const storedDate = newestWine.storedDate || newestWine.createdAt;
+            if (storedDate) {
+                const date = new Date(storedDate);
+                const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                lastBottleDateHtml = `<div class="preview-info-item"><strong>Last bottle added date:</strong> ${this.escapeHtml(formattedDate)}</div>`;
+            }
+            
+            // Get wine reference info
+            if (newestWine.referenceId && this.wineReferences) {
+                const globalRefId = this.userRefToGlobalRefId ? this.userRefToGlobalRefId[newestWine.referenceId] : newestWine.referenceId;
+                const reference = this.wineReferences.find(ref => ref.id === globalRefId);
+                if (reference) {
+                    const flag = this.getCountryFlag(reference.country);
+                    const flagDisplay = flag ? `${flag} ` : '';
+                    const vintage = reference.vintage ? `${flagDisplay}${reference.vintage} ` : '';
+                    const name = reference.name || 'Unknown';
+                    lastBottleInfoHtml = `<div class="preview-info-item"><strong>Last bottle added:</strong> ${this.escapeHtml(vintage + name)}</div>`;
+                }
+            }
+        }
+
         // Build stacked image container (same as cellar cards)
         let imagesHtml = '';
         if (labelImages.length > 0) {
@@ -636,6 +663,8 @@ class CellarManager {
                         <div class="preview-info-item">
                             <strong>Contents:</strong> ${this.formatBreakdown(breakdown) || 'Empty'}
                         </div>
+                        ${lastBottleDateHtml}
+                        ${lastBottleInfoHtml}
                         <div class="unshelved-instructions">
                             <p>To move unshelved wines into a cellar, go to a cellar and tap an empty slot and select the bottle to be moved.</p>
                         </div>
@@ -651,6 +680,81 @@ class CellarManager {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Get the newest unshelved wine instance (by storedDate or createdAt)
+     * @param {Array} unshelvedWines - Array of unshelved wine instances
+     * @returns {Object|null} Newest wine instance or null
+     */
+    getNewestUnshelvedWine(unshelvedWines) {
+        if (!unshelvedWines || unshelvedWines.length === 0) return null;
+
+        let newest = null;
+        let newestTime = 0;
+
+        unshelvedWines.forEach(instance => {
+            const dateStr = instance.storedDate || instance.createdAt;
+            if (dateStr) {
+                const time = new Date(dateStr).getTime();
+                if (time > newestTime) {
+                    newestTime = time;
+                    newest = instance;
+                }
+            }
+        });
+
+        return newest;
+    }
+
+    /**
+     * Get country flag emoji from country name
+     * @param {string} country - Country name
+     * @returns {string} Flag emoji or empty string
+     */
+    getCountryFlag(country) {
+        if (!country) return '';
+        
+        const countryMap = {
+            'United States': '🇺🇸',
+            'US': '🇺🇸',
+            'USA': '🇺🇸',
+            'U.S.A.': '🇺🇸',
+            'France': '🇫🇷',
+            'Italy': '🇮🇹',
+            'Spain': '🇪🇸',
+            'Australia': '🇦🇺',
+            'Chile': '🇨🇱',
+            'Argentina': '🇦🇷',
+            'Germany': '🇩🇪',
+            'Portugal': '🇵🇹',
+            'South Africa': '🇿🇦',
+            'New Zealand': '🇳🇿',
+            'Canada': '🇨🇦',
+            'Greece': '🇬🇷',
+            'Austria': '🇦🇹',
+            'Hungary': '🇭🇺',
+            'Romania': '🇷🇴',
+            'Bulgaria': '🇧🇬',
+            'Croatia': '🇭🇷',
+            'Slovenia': '🇸🇮',
+            'Georgia': '🇬🇪',
+            'Lebanon': '🇱🇧',
+            'Israel': '🇮🇱',
+            'Turkey': '🇹🇷',
+            'Brazil': '🇧🇷',
+            'Uruguay': '🇺🇾',
+            'Mexico': '🇲🇽',
+            'Japan': '🇯🇵',
+            'China': '🇨🇳',
+            'India': '🇮🇳',
+            'United Kingdom': '🇬🇧',
+            'UK': '🇬🇧',
+            'England': '🇬🇧'
+        };
+        
+        const normalizedCountry = country.trim();
+        return countryMap[normalizedCountry] || '';
     }
 
     renderBottlePreview(cellar) {
