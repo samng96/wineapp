@@ -207,11 +207,21 @@ class CellarManager {
                 return;
             }
 
+            // Check if clicking on the "Move bottles to shelves" button
+            const moveBtn = e.target.closest('.unshelved-move-btn');
+            if (moveBtn) {
+                e.stopPropagation();
+                e.preventDefault();
+                this.handleMoveUnshelvedWines();
+                return;
+            }
+
             // Otherwise, navigate to cellar detail when clicking on panel
             const panel = e.target.closest('.cellar-panel');
             if (panel) {
                 const cellarId = panel.getAttribute('data-cellar-id');
-                if (cellarId) {
+                // Skip navigation for the unshelved wines panel
+                if (cellarId && cellarId !== 'unshelved') {
                     this.showCellarDetail(cellarId);
                 }
             }
@@ -357,12 +367,16 @@ class CellarManager {
         const container = document.getElementById('cellar-list');
         if (!container) return;
 
-        if (this.cellars.length === 0) {
+        // Check for unshelved wines
+        const unshelvedWines = this.getUnshelvedWines();
+        const unshelvedHtml = this.renderUnshelvedPanel(unshelvedWines);
+
+        if (this.cellars.length === 0 && !unshelvedHtml) {
             container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px; vertical-align: bottom;">No cellars yet. Click the + button to create one.</p>';
             return;
         }
 
-        container.innerHTML = this.cellars.map(cellar => {
+        const cellarCardsHtml = this.cellars.map(cellar => {
             // Calculate wine breakdown for display
             const breakdown = this.getWineBreakdown(cellar);
 
@@ -396,6 +410,8 @@ class CellarManager {
                 </div>
             `;
         }).join('');
+
+        container.innerHTML = unshelvedHtml + cellarCardsHtml;
         
         // Setup panel click listeners for navigation
         // Use setTimeout to ensure DOM is updated
@@ -460,6 +476,88 @@ class CellarManager {
         return labelImages;
     }
 
+    /**
+     * Get all unshelved, non-consumed wine instances
+     * @returns {Array} Array of unshelved wine instance objects
+     */
+    getUnshelvedWines() {
+        if (!this.wineInstances) return [];
+
+        // Collect all wine instance IDs that are in any cellar
+        const shelvedIds = new Set();
+        for (const cellar of this.cellars) {
+            if (!cellar.winePositions) continue;
+            for (const shelfIndex in cellar.winePositions) {
+                const shelfPositions = cellar.winePositions[shelfIndex];
+                for (const side of ['front', 'back', 'single']) {
+                    if (shelfPositions[side]) {
+                        shelfPositions[side].forEach(id => {
+                            if (id) shelvedIds.add(id);
+                        });
+                    }
+                }
+            }
+        }
+
+        // Return instances that are not shelved and not consumed
+        return this.wineInstances.filter(inst => !shelvedIds.has(inst.id) && !inst.consumed);
+    }
+
+    /**
+     * Calculate wine breakdown by type for unshelved wines
+     * @param {Array} unshelvedWines - Array of unshelved wine instances
+     * @returns {Object} Object with wine type counts
+     */
+    getUnshelvedWineBreakdown(unshelvedWines) {
+        if (!unshelvedWines || !this.wineReferences) return {};
+
+        const referenceTypeMap = {};
+        this.wineReferences.forEach(ref => {
+            referenceTypeMap[ref.id] = ref.type || 'Unknown';
+        });
+
+        const breakdown = {};
+        unshelvedWines.forEach(instance => {
+            if (instance.referenceId) {
+                const globalRefId = this.userRefToGlobalRefId ? this.userRefToGlobalRefId[instance.referenceId] : instance.referenceId;
+                const wineType = referenceTypeMap[globalRefId] || 'Unknown';
+                breakdown[wineType] = (breakdown[wineType] || 0) + 1;
+            }
+        });
+
+        return breakdown;
+    }
+
+    /**
+     * Get unique label images for unshelved wines
+     * @param {Array} unshelvedWines - Array of unshelved wine instances
+     * @returns {Array} Array of label image URLs
+     */
+    getUnshelvedLabelImages(unshelvedWines) {
+        if (!unshelvedWines || !this.wineReferences) return [];
+
+        const referenceMap = {};
+        this.wineReferences.forEach(ref => {
+            referenceMap[ref.id] = ref;
+        });
+
+        const labelImages = [];
+        const seenImages = new Set();
+
+        unshelvedWines.forEach(instance => {
+            if (instance.referenceId) {
+                const globalRefId = this.userRefToGlobalRefId ? this.userRefToGlobalRefId[instance.referenceId] : instance.referenceId;
+                const reference = referenceMap[globalRefId];
+                if (reference && reference.labelImageUrl && !seenImages.has(reference.labelImageUrl)) {
+                    labelImages.push(reference.labelImageUrl);
+                    seenImages.add(reference.labelImageUrl);
+                }
+            }
+        });
+
+        return labelImages;
+    }
+
     renderCellarPreview(cellar, labelImages, breakdown) {
         // Render small bottle visualization
         const bottlePreview = this.renderBottlePreview(cellar);
@@ -506,6 +604,55 @@ class CellarManager {
                         <div class="preview-bottles">
                             ${bottlePreview}
                         </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render the unshelved wines panel card
+     * @param {Array} unshelvedWines - Array of unshelved wine instances
+     * @returns {string} HTML string for the unshelved wines panel, or empty string if none
+     */
+    renderUnshelvedPanel(unshelvedWines) {
+        if (!unshelvedWines || unshelvedWines.length === 0) return '';
+
+        const breakdown = this.getUnshelvedWineBreakdown(unshelvedWines);
+        const labelImages = this.getUnshelvedLabelImages(unshelvedWines);
+
+        // Build stacked image container (same as cellar cards)
+        let imagesHtml = '';
+        if (labelImages.length > 0) {
+            const numToShow = 3;
+            for (let i = 0; i < numToShow; i++) {
+                const imgUrl = labelImages[i % labelImages.length];
+                imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(imgUrl)}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
+            }
+        } else {
+            imagesHtml = '<div class="no-labels-message">No wine labels</div>';
+        }
+
+        return `
+            <div class="cellar-panel unshelved-panel" data-cellar-id="unshelved">
+                <div class="cellar-panel-preview">
+                    <div class="preview-image-column">
+                        <div class="rotating-images-container">
+                            ${imagesHtml}
+                        </div>
+                    </div>
+                    <div class="preview-info-column">
+                        <div class="preview-info-item">
+                            <strong>Contents:</strong> ${this.formatBreakdown(breakdown) || 'Empty'}
+                        </div>
+                        <div class="unshelved-move-btn-container">
+                            <button class="btn-primary unshelved-move-btn" type="button">Move bottles to shelves</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="cellar-panel-info">
+                    <div class="cellar-panel-header">
+                        <h3 class="cellar-panel-name">UNSHELVED WINES</h3>
                     </div>
                 </div>
             </div>
@@ -950,6 +1097,11 @@ class CellarManager {
         }
     }
 
+
+    handleMoveUnshelvedWines() {
+        // TODO: Implement the move-to-shelves flow
+        console.log('Move unshelved wines to shelves - not yet implemented');
+    }
 
     async showCellarDetail(cellarId) {
         try {
