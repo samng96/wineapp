@@ -9,6 +9,7 @@ class CellarManager {
         this.cellars = [];
         this.wineInstances = []; // Cache wine instances for breakdown calculation
         this.wineReferences = []; // Cache wine references for breakdown calculation
+        this.userRefToGlobalRefId = {}; // Map user wine reference IDs to global reference IDs
         this.showLabels = true; // Toggle state for labels vs vintage view
         this.currentCellar = null; // Store current cellar data for re-rendering
         this.currentInstanceMap = null;
@@ -1355,6 +1356,9 @@ class CellarManager {
         
         // Set up wine card hover handlers
         this.setupWineCardHovers(referenceMap, instanceMap, cellar);
+        
+        // Set up empty position click handlers
+        this.setupEmptyPositionHandlers(cellar);
     }
 
     setupWineCardHovers(referenceMap, instanceMap, cellar) {
@@ -1452,6 +1456,183 @@ class CellarManager {
         }
     }
 
+    setupEmptyPositionHandlers(cellar) {
+        const emptyPositions = document.querySelectorAll('.wine-position.empty[data-empty="true"]');
+        emptyPositions.forEach(position => {
+            position.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const shelfIndex = parseInt(position.getAttribute('data-shelf-index'));
+                const side = position.getAttribute('data-side');
+                const pos = parseInt(position.getAttribute('data-position'));
+                this.showUnshelvedBottlesModal(cellar.id, shelfIndex, side, pos);
+            });
+        });
+    }
+
+    async showUnshelvedBottlesModal(cellarId, shelfIndex, side, position) {
+        const modal = document.getElementById('unshelved-bottles-modal');
+        if (!modal) return;
+
+        // Load fresh wine instances, cellars, and references to get current unshelved wines
+        try {
+            const [wineInstances, cellars, wineReferences, userWineReferences] = await Promise.all([
+                API.get('/wine-instances'),
+                API.get('/cellars'),
+                API.get('/wine-references'),
+                API.get('/user-wine-references')
+            ]);
+            
+            // Temporarily update for getUnshelvedWines to work
+            const oldInstances = this.wineInstances;
+            const oldCellars = this.cellars;
+            const oldReferences = this.wineReferences;
+            const oldUserRefToGlobalRefId = this.userRefToGlobalRefId;
+            
+            this.wineInstances = wineInstances;
+            this.cellars = cellars;
+            this.wineReferences = wineReferences;
+            
+            // Build userRefToGlobalRefId mapping
+            this.userRefToGlobalRefId = {};
+            userWineReferences.forEach(userRef => {
+                this.userRefToGlobalRefId[userRef.id] = userRef.globalReferenceId;
+            });
+            
+            // Get unshelved wines
+            const unshelvedWines = this.getUnshelvedWines();
+            
+            if (unshelvedWines.length === 0) {
+                // Restore old values before returning
+                this.wineInstances = oldInstances;
+                this.cellars = oldCellars;
+                this.wineReferences = oldReferences;
+                this.userRefToGlobalRefId = oldUserRefToGlobalRefId;
+                alert('No unshelved wines available to place.');
+                return;
+            }
+
+            // Sort by most recently added (storedDate or createdAt)
+            const sortedWines = [...unshelvedWines].sort((a, b) => {
+                const dateA = a.storedDate || a.createdAt || '';
+                const dateB = b.storedDate || b.createdAt || '';
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+            });
+
+            // Build userRefToGlobalRefId mapping for use in rendering
+            const userRefToGlobalRefIdMap = {};
+            userWineReferences.forEach(userRef => {
+                userRefToGlobalRefIdMap[userRef.id] = userRef.globalReferenceId;
+            });
+
+            // Render the list
+            const listContainer = document.getElementById('unshelved-bottles-list');
+            if (!listContainer) {
+                // Restore old values before returning
+                this.wineInstances = oldInstances;
+                this.cellars = oldCellars;
+                this.wineReferences = oldReferences;
+                this.userRefToGlobalRefId = oldUserRefToGlobalRefId;
+                return;
+            }
+
+            let html = '';
+            sortedWines.forEach(instance => {
+                const globalRefId = userRefToGlobalRefIdMap[instance.referenceId] || instance.referenceId;
+                const reference = wineReferences.find(ref => ref.id === globalRefId);
+                
+                if (reference) {
+                    const flag = this.getCountryFlag(reference.country);
+                    const flagDisplay = flag ? `${flag} ` : '';
+                    const vintage = reference.vintage ? `${flagDisplay}${reference.vintage} ` : '';
+                    const name = reference.name || 'Unknown Wine';
+                    const storedDate = instance.storedDate || instance.createdAt;
+                    const dateStr = storedDate ? new Date(storedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+                    
+                    html += `
+                        <div class="unshelved-bottle-item" data-instance-id="${instance.id}">
+                            ${reference.labelImageUrl ? `
+                                <img src="${this.escapeHtml(reference.labelImageUrl)}" alt="${this.escapeHtml(name)}" class="unshelved-bottle-image" />
+                            ` : `
+                                <div class="unshelved-bottle-placeholder">🍷</div>
+                            `}
+                            <div class="unshelved-bottle-info">
+                                <div class="unshelved-bottle-name">${this.escapeHtml(vintage + name)}</div>
+                                ${dateStr ? `<div class="unshelved-bottle-date">Added: ${this.escapeHtml(dateStr)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            listContainer.innerHTML = html;
+
+            // Set up click handlers for each bottle
+            const bottleItems = listContainer.querySelectorAll('.unshelved-bottle-item');
+            bottleItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const instanceId = item.getAttribute('data-instance-id');
+                    this.placeBottleInSlot(cellarId, shelfIndex, side, position, instanceId);
+                    this.hideUnshelvedBottlesModal();
+                });
+            });
+
+            // Show modal
+            modal.classList.remove('hidden');
+
+            // Set up close handlers
+            const closeBtn = document.getElementById('unshelved-bottles-close');
+            if (closeBtn) {
+                closeBtn.onclick = () => this.hideUnshelvedBottlesModal();
+            }
+
+            const overlay = modal.querySelector('.wine-detail-overlay');
+            if (overlay) {
+                overlay.onclick = () => this.hideUnshelvedBottlesModal();
+            }
+            
+            // Restore old values after everything is set up
+            this.wineInstances = oldInstances;
+            this.cellars = oldCellars;
+            this.wineReferences = oldReferences;
+            this.userRefToGlobalRefId = oldUserRefToGlobalRefId;
+        } catch (error) {
+            console.error('Error loading unshelved bottles:', error);
+            alert(`Failed to load unshelved bottles: ${error.message || 'Unknown error'}`);
+            
+            // Restore old values on error
+            if (oldInstances !== undefined) this.wineInstances = oldInstances;
+            if (oldCellars !== undefined) this.cellars = oldCellars;
+            if (oldReferences !== undefined) this.wineReferences = oldReferences;
+            if (oldUserRefToGlobalRefId !== undefined) this.userRefToGlobalRefId = oldUserRefToGlobalRefId;
+        }
+    }
+
+    hideUnshelvedBottlesModal() {
+        const modal = document.getElementById('unshelved-bottles-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    async placeBottleInSlot(cellarId, shelfIndex, side, position, instanceId) {
+        try {
+            // Update wine instance location
+            await API.updateWineInstanceLocation(instanceId, {
+                oldCellarId: null, // Was unshelved
+                newCellarId: cellarId,
+                shelfIndex: shelfIndex,
+                side: side,
+                position: position
+            });
+
+            // Reload cellar detail to show updated position
+            await this.showCellarDetail(cellarId);
+        } catch (error) {
+            console.error('Error placing bottle:', error);
+            alert(`Failed to place bottle: ${error.message || 'Unknown error'}`);
+        }
+    }
+
     recalculateBarWidths(container, cellar) {
         const fridgeContainer = container.querySelector('.fridge-container');
         if (!fridgeContainer) return;
@@ -1545,7 +1726,8 @@ class CellarManager {
                 `;
             } else {
                 return `
-                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="${wineName || 'Empty position'}">
+                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="Empty position"
+                         data-shelf-index="${shelfIndex}" data-side="single" data-position="${position}" data-empty="true">
                         <div class="empty-circle"></div>
                     </div>
                 `;
@@ -1562,7 +1744,8 @@ class CellarManager {
                 `;
             } else {
                 return `
-                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="${wineName || 'Empty position'}">
+                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="Empty position"
+                         data-shelf-index="${shelfIndex}" data-side="single" data-position="${position}" data-empty="true">
                         <div class="empty-circle"></div>
                     </div>
                 `;
@@ -1641,7 +1824,8 @@ class CellarManager {
                             <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
                         </div>
                     ` : `
-                        <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;">
+                        <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;"
+                             data-shelf-index="${shelfIndex}" data-side="front" data-position="${position}" data-empty="true">
                             <div class="empty-circle"></div>
                         </div>
                     `}
@@ -1651,7 +1835,8 @@ class CellarManager {
                             <img src="${backImage}" alt="${backName}" class="wine-label-image" />
                         </div>
                     ` : `
-                        <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;">
+                        <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;"
+                             data-shelf-index="${shelfIndex}" data-side="back" data-position="${position}" data-empty="true">
                             <div class="empty-circle"></div>
                         </div>
                     `}
@@ -1670,7 +1855,8 @@ class CellarManager {
                             <span class="vintage-text">${frontVintage}</span>
                         </div>
                     ` : `
-                        <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;">
+                        <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;"
+                             data-shelf-index="${shelfIndex}" data-side="front" data-position="${position}" data-empty="true">
                             <div class="empty-circle"></div>
                         </div>
                     `}
@@ -1680,7 +1866,8 @@ class CellarManager {
                             <span class="vintage-text">${backVintage}</span>
                         </div>
                     ` : `
-                        <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;">
+                        <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;"
+                             data-shelf-index="${shelfIndex}" data-side="back" data-position="${position}" data-empty="true">
                             <div class="empty-circle"></div>
                         </div>
                     `}
