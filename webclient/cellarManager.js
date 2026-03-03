@@ -207,16 +207,7 @@ class CellarManager {
                 return;
             }
 
-            // Check if clicking on the "Move bottles to shelves" button
-            const moveBtn = e.target.closest('.unshelved-move-btn');
-            if (moveBtn) {
-                e.stopPropagation();
-                e.preventDefault();
-                this.handleMoveUnshelvedWines();
-                return;
-            }
-
-            // Otherwise, navigate to cellar detail when clicking on panel
+            // Navigate to cellar detail when clicking on panel
             const panel = e.target.closest('.cellar-panel');
             if (panel) {
                 const cellarId = panel.getAttribute('data-cellar-id');
@@ -645,8 +636,8 @@ class CellarManager {
                         <div class="preview-info-item">
                             <strong>Contents:</strong> ${this.formatBreakdown(breakdown) || 'Empty'}
                         </div>
-                        <div class="unshelved-move-btn-container">
-                            <button class="btn-primary unshelved-move-btn" type="button">Move bottles to shelves</button>
+                        <div class="unshelved-instructions">
+                            <p>To move unshelved wines into a cellar, go to a cellar and tap an empty slot and select the bottle to be moved.</p>
                         </div>
                     </div>
                 </div>
@@ -1100,11 +1091,6 @@ class CellarManager {
         }
     }
 
-
-    handleMoveUnshelvedWines() {
-        // TODO: Implement the move-to-shelves flow
-        console.log('Move unshelved wines to shelves - not yet implemented');
-    }
 
     async showCellarDetail(cellarId) {
         try {

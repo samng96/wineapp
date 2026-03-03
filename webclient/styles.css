@@ -932,18 +932,16 @@ body {
 
 /* Unshelved wines panel - now styled like regular cellar panels */
 
-.unshelved-move-btn-container {
+.unshelved-instructions {
     margin-top: auto;
     padding-top: 12px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
 }
 
-.unshelved-move-btn {
-    width: 100%;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 4px;
-    cursor: pointer;
+.unshelved-instructions p {
+    margin: 0;
 }
 
 .list-item {
