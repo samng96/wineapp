@@ -220,18 +220,13 @@ class WineSearchDetailCard {
             }
 
             // 3. Create WineInstances (one per bottle)
-            const createdInstances = [];
             for (let i = 0; i < quantity; i++) {
                 const instanceData = { referenceId: userRef.id };
                 if (priceValue !== null) instanceData.price = priceValue;
-                const instance = await API.createWineInstance(instanceData);
-                createdInstances.push(instance);
+                await API.createWineInstance(instanceData);
             }
 
-            // 4. Store pending instances for placement flow
-            window.app.pendingWineInstances = createdInstances;
-
-            // 5. Hide detail card and navigate to wines view showing unshelved, sorted by stored date
+            // 4. Hide detail card and navigate to wines view showing unshelved, sorted by stored date
             this.hide();
             if (window.app && window.app.showView) {
                 window.app.showView('wines', {
