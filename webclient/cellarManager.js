@@ -1256,6 +1256,17 @@ class CellarManager {
             this.currentCellar = cellar;
             this.currentInstanceMap = instanceMap;
             this.currentReferenceMap = referenceMap;
+            
+            // Update the cellars array with the updated cellar data
+            // This ensures wine detail view and other components see the latest location data
+            const cellarIndex = this.cellars.findIndex(c => c.id === cellar.id);
+            if (cellarIndex !== -1) {
+                // Replace the cellar in the array with the updated one
+                this.cellars[cellarIndex] = Cellar.fromDict(cellar);
+            } else {
+                // If not found, add it (shouldn't happen, but handle gracefully)
+                this.cellars.push(Cellar.fromDict(cellar));
+            }
 
             // Set up labels toggle after view is shown
             this.setupLabelsToggle();

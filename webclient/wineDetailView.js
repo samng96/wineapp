@@ -85,6 +85,30 @@ class WineDetailView {
             fullReference.rating = wineReference.rating;
             fullReference.tastingNotes = wineReference.tastingNotes;
             this.currentReference = fullReference;
+            
+            // Reload instance data to get latest location if we have an instance ID
+            if (wineInstance && wineInstance.id) {
+                try {
+                    const updatedInstance = await API.get(`/wine-instances/${wineInstance.id}`);
+                    this.currentInstance = updatedInstance;
+                } catch (error) {
+                    console.error('Error reloading instance data:', error);
+                    // Continue with passed instance if reload fails
+                }
+            }
+            
+            // Reload cellars to ensure we have latest location data
+            // Location is stored in cellar winePositions, not on the instance
+            if (window.cellarManager) {
+                try {
+                    const cellars = await API.get('/cellars');
+                    window.cellarManager.cellars = cellars;
+                } catch (error) {
+                    console.error('Error reloading cellars:', error);
+                    // Continue with existing cellars if reload fails
+                }
+            }
+            
             this.render();
         } catch (error) {
             console.error('Error loading wine details:', error);
