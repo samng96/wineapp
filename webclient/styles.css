@@ -942,6 +942,10 @@ body {
     cursor: default;
 }
 
+.unshelved-panel .cellar-panel-header {
+    min-height: 28px;
+}
+
 .unshelved-move-btn-container {
     margin-top: auto;
     padding-top: 12px;
