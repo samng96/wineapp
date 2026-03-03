@@ -1239,6 +1239,7 @@ body {
     width: 18px;
     height: 18px;
     cursor: pointer;
+    accent-color: #6200ea;
 }
 
 /* Shelf Input Styles */
@@ -2029,6 +2030,7 @@ body {
     width: 18px;
     height: 18px;
     cursor: pointer;
+    accent-color: #6200ea;
 }
 
 .filter-checkbox-item label {
@@ -2058,6 +2060,7 @@ body {
     width: 18px;
     height: 18px;
     cursor: pointer;
+    accent-color: #6200ea;
 }
 
 .filter-checkbox-label.filter-disabled input[type="checkbox"] {
