@@ -634,7 +634,7 @@ class CellarManager {
         }
 
         return `
-            <div class="cellar-panel unshelved-panel" data-cellar-id="unshelved">
+            <div class="cellar-panel" data-cellar-id="unshelved">
                 <div class="cellar-panel-preview">
                     <div class="preview-image-column">
                         <div class="rotating-images-container">
@@ -653,6 +653,9 @@ class CellarManager {
                 <div class="cellar-panel-info">
                     <div class="cellar-panel-header">
                         <h3 class="cellar-panel-name">UNSHELVED WINES</h3>
+                        <div class="cellar-panel-menu">
+                            <div style="width: 28px; height: 28px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
