@@ -387,7 +387,22 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
     - `400 Bad Request` if location format is invalid, position is invalid, or position is occupied
     - `404 Not Found` if wine instance or cellar doesn't exist
 
-#### 3.4 Unshelved Wines
+#### 3.5 Vivino Wine Search
+- `GET /vivino/search`
+  - Query Parameters:
+    - `name` (str, required): Wine name to search for
+    - `limit` (int, optional): Maximum number of results (default 10, max 25)
+  - Returns: Array of wine data from Vivino search results
+  - Each result includes: `name, type, producer?, varietals?, region?, country?, rating?, labelImageUrl?`
+  - Response: `200 OK` with JSON array of wine objects
+  - Error: `400 Bad Request` if `name` parameter is missing
+  - Notes:
+    - Wine names are returned year-agnostic (vintage year stripped from name)
+    - Results are deduplicated by name
+    - Falls back to sample results if Vivino fetch fails
+    - Varietals are extracted from Vivino grape data when available
+
+#### 3.6 Unshelved Wines
 - `GET /unshelved`
   - Returns: List of all unshelved wine instances (where `location` is `None` and `consumed` is `false`)
   - Response: `200 OK` with JSON array of wine instance objects
@@ -469,6 +484,7 @@ server/
 ├── wine_references.py     # Global wine reference management endpoints and logic
 ├── user_wine_references.py # User wine reference management endpoints and logic
 ├── wine_instances.py      # Wine instance management endpoints and logic
+├── vivino_search.py       # Vivino wine search functionality (scrapes Vivino search results)
 ├── utils.py               # Utility functions (ID generation, timestamps, file paths)
 ├── data/                  # JSON data files
 │   ├── cellars.json
@@ -478,9 +494,13 @@ server/
 └── tests/                 # Test suite
     ├── conftest.py
     ├── test_cellars.py
+    ├── test_models.py
+    ├── test_model_consistency.py
     ├── test_wine_references.py
     ├── test_user_wine_references.py
-    └── test_wine_instances.py
+    ├── test_wine_instances.py
+    ├── test_vivino_search.py
+    └── test_dynamodb_storage.py
 ```
 
 #### 6.2 Naming Conventions
