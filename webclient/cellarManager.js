@@ -212,8 +212,16 @@ class CellarManager {
             const panel = e.target.closest('.cellar-panel');
             if (panel) {
                 const cellarId = panel.getAttribute('data-cellar-id');
-                // Skip navigation for the unshelved wines panel
-                if (cellarId && cellarId !== 'unshelved') {
+                if (cellarId === 'unshelved') {
+                    // Navigate to wines view with unshelved filter enabled and sorted by most recently added
+                    if (window.app && window.app.showView) {
+                        window.app.showView('wines', {
+                            showUnshelvedOnly: true,
+                            sortBy: 'stored',
+                            sortOrder: 'desc'
+                        });
+                    }
+                } else if (cellarId) {
                     this.showCellarDetail(cellarId);
                 }
             }
