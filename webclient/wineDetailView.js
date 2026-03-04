@@ -3,6 +3,7 @@
  */
 import { API } from './api.js';
 import { findInstanceLocation } from './utils/locationUtils.js';
+import { getNotificationOverlay } from './notificationOverlay.js';
 
 class WineDetailView {
     constructor() {
@@ -476,8 +477,12 @@ class WineDetailView {
     async openWithCoravin() {
         if (!this.currentInstance) return;
 
-        // Show confirmation dialog
-        const confirmed = confirm('Are you sure you want to open this wine with a Coravin?');
+        // Show confirmation via notification overlay
+        const ref = this.currentReference;
+        const confirmed = await getNotificationOverlay().confirm(
+            'Are you sure you want to open this wine with a Coravin?',
+            { imageUrl: ref?.labelImageUrl || null }
+        );
         if (!confirmed) return;
 
         const coravinBtn = document.getElementById('wine-detail-coravin-btn');

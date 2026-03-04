@@ -6,11 +6,33 @@ class NotificationOverlay {
         this.container = document.getElementById('notification-overlay');
         this.messageEl = document.getElementById('notification-message');
         this.imageEl = document.getElementById('notification-image');
+        this.buttonsEl = document.getElementById('notification-buttons');
+        this.yesBtn = document.getElementById('notification-yes-btn');
+        this.noBtn = document.getElementById('notification-no-btn');
         this.dismissTimer = null;
+        this.confirmResolve = null;
 
-        // Click to dismiss
+        // Click to dismiss (only when not in confirm mode)
         if (this.container) {
-            this.container.addEventListener('click', () => this.hide());
+            this.container.addEventListener('click', (e) => {
+                // Don't dismiss on click when buttons are showing, unless clicking a button
+                if (this.confirmResolve) return;
+                this.hide();
+            });
+        }
+
+        // Yes/No button handlers
+        if (this.yesBtn) {
+            this.yesBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.resolveConfirm(true);
+            });
+        }
+        if (this.noBtn) {
+            this.noBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.resolveConfirm(false);
+            });
         }
     }
 
@@ -56,6 +78,12 @@ class NotificationOverlay {
             this.dismissTimer = null;
         }
 
+        // Hide buttons
+        if (this.buttonsEl) {
+            this.buttonsEl.classList.add('hidden');
+        }
+        this.confirmResolve = null;
+
         this.container.classList.remove('visible');
 
         // After the slide-out transition completes, hide entirely
@@ -64,6 +92,28 @@ class NotificationOverlay {
                 this.container.classList.add('hidden');
             }
         }, 300);
+    }
+
+    confirm(message, { imageUrl = null } = {}) {
+        return new Promise((resolve) => {
+            this.confirmResolve = resolve;
+
+            // Show buttons
+            if (this.buttonsEl) {
+                this.buttonsEl.classList.remove('hidden');
+            }
+
+            // Show with no auto-dismiss (durationMs = 0)
+            this.show(message, { durationMs: 0, imageUrl });
+        });
+    }
+
+    resolveConfirm(value) {
+        const resolve = this.confirmResolve;
+        this.hide();
+        if (resolve) {
+            resolve(value);
+        }
     }
 }
 
