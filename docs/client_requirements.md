@@ -281,5 +281,7 @@ Include confirmation to prevent accidental deletion
 
 *Note: Delete functionality is planned but not yet implemented in the UI.*
 
+#### 9 Future Work: Image Caching
+Wine label images (from Vivino CDN) are currently loaded directly from external URLs every time they are displayed. We should add app-level image caching so that label images are downloaded once and served from local storage on subsequent views. This would improve performance, reduce network usage, and ensure images are available offline.
 
 ### 9. Offline mode
