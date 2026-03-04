@@ -227,7 +227,7 @@ class WineSearchDetailCard {
                 await API.createWineInstance(instanceData);
             }
 
-            // 4. Hide detail card, show notification, and navigate to wines view
+            // 4. Hide detail card and show notification
             const wineName = reference.name || 'Unknown Wine';
             const vintageText = vintageValue ? `${vintageValue} ` : '';
             const bottleWord = quantity === 1 ? 'bottle' : 'bottles';
@@ -237,13 +237,6 @@ class WineSearchDetailCard {
             getNotificationOverlay().show(notifMessage, {
                 imageUrl: reference.labelImageUrl || null
             });
-            if (window.app && window.app.showView) {
-                window.app.showView('wines', {
-                    showUnshelvedOnly: true,
-                    sortBy: 'stored',
-                    sortOrder: 'desc'
-                });
-            }
         } catch (error) {
             console.error('Error adding to collection:', error);
             alert('Error adding wine to collection: ' + error.message);
