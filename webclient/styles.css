@@ -2461,6 +2461,39 @@ body {
     color: #666;
 }
 
+/* Notification Overlay */
+.notification-overlay {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(calc(100% + 90px));
+    z-index: 1003;
+    pointer-events: auto;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+}
+
+.notification-overlay.hidden {
+    display: none;
+}
+
+.notification-overlay.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.notification-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    padding: 16px 24px;
+    font-size: 15px;
+    color: #333;
+    cursor: pointer;
+    min-width: 200px;
+    text-align: center;
+}
+
 .wine-detail-modal:not(.hidden) .wine-detail-content {
     transform: translateY(0);
 }

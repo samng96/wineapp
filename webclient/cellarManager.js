@@ -3,6 +3,7 @@ import { Cellar } from './models/Cellar.js';
 import { API } from './api.js';
 import { getWineCard } from './WineCard.js';
 import { findInstanceLocationInCellar } from './utils/locationUtils.js';
+import { getNotificationOverlay } from './notificationOverlay.js';
 
 class CellarManager {
     constructor() {
@@ -205,6 +206,14 @@ class CellarManager {
             // Check if clicking inside menu container but not on buttons
             if (e.target.closest('.cellar-panel-menu')) {
                 e.stopPropagation();
+                return;
+            }
+
+            // Test notification button on unshelved panel
+            if (e.target.closest('.unshelved-test-notify-btn')) {
+                e.stopPropagation();
+                e.preventDefault();
+                getNotificationOverlay().show('Hello Wine App!');
                 return;
             }
 
@@ -677,6 +686,7 @@ class CellarManager {
                         <div class="unshelved-instructions">
                             <p>To move unshelved wines into a cellar, go to a cellar and tap an empty slot and select the bottle to be moved.</p>
                         </div>
+                        <button class="btn-secondary unshelved-test-notify-btn" type="button">Test Notification</button>
                     </div>
                 </div>
                 <div class="cellar-panel-info">
