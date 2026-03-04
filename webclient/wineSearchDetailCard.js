@@ -2,6 +2,7 @@
  * WineSearchDetailCard - Bottom sheet detail card for Vivino search results
  */
 import { API } from './api.js';
+import { getNotificationOverlay } from './notificationOverlay.js';
 
 class WineSearchDetailCard {
     constructor() {
@@ -226,8 +227,16 @@ class WineSearchDetailCard {
                 await API.createWineInstance(instanceData);
             }
 
-            // 4. Hide detail card and navigate to wines view showing unshelved, sorted by stored date
+            // 4. Hide detail card, show notification, and navigate to wines view
+            const wineName = reference.name || 'Unknown Wine';
+            const vintageText = vintageValue ? `${vintageValue} ` : '';
+            const bottleWord = quantity === 1 ? 'bottle' : 'bottles';
+            const notifMessage = `${quantity} ${bottleWord} of ${vintageText}${wineName} added to your unshelved wines`;
+
             this.hide();
+            getNotificationOverlay().show(notifMessage, {
+                imageUrl: reference.labelImageUrl || null
+            });
             if (window.app && window.app.showView) {
                 window.app.showView('wines', {
                     showUnshelvedOnly: true,
