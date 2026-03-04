@@ -1600,7 +1600,10 @@ class CellarManager {
             bottleItems.forEach(item => {
                 item.addEventListener('click', () => {
                     const instanceId = item.getAttribute('data-instance-id');
-                    this.placeBottleInSlot(cellarId, shelfIndex, side, position, instanceId);
+                    const instance = sortedWines.find(w => w.id === instanceId);
+                    const globalRefId = instance ? (userRefToGlobalRefIdMap[instance.referenceId] || instance.referenceId) : null;
+                    const reference = globalRefId ? wineReferences.find(ref => ref.id === globalRefId) : null;
+                    this.placeBottleInSlot(cellarId, shelfIndex, side, position, instanceId, reference);
                     this.hideUnshelvedBottlesModal();
                 });
             });
@@ -1643,7 +1646,7 @@ class CellarManager {
         }
     }
 
-    async placeBottleInSlot(cellarId, shelfIndex, side, position, instanceId) {
+    async placeBottleInSlot(cellarId, shelfIndex, side, position, instanceId, reference) {
         try {
             // Update wine instance location
             await API.updateWineInstanceLocation(instanceId, {
@@ -1652,6 +1655,17 @@ class CellarManager {
                 shelfIndex: shelfIndex,
                 side: side,
                 position: position
+            });
+
+            // Show notification
+            const cellar = this.cellars?.find(c => c.id === cellarId);
+            const cellarName = cellar?.name || 'cellar';
+            const vintage = reference?.vintage ? `${reference.vintage} ` : '';
+            const wineName = reference?.name || 'Unknown Wine';
+            const sideDisplay = side === 'single' ? '' : side === 'front' ? ', Front' : ', Back';
+            const locationStr = `${cellarName}, Shelf ${shelfIndex + 1}${sideDisplay}, Position ${position + 1}`;
+            getNotificationOverlay().show(`${vintage}${wineName} moved to ${locationStr}`, {
+                imageUrl: reference?.labelImageUrl || null
             });
 
             // Reload cellar detail to show updated position
