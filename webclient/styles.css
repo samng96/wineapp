@@ -2466,6 +2466,7 @@ body {
     position: fixed;
     bottom: 90px;
     left: 50%;
+    width: 80%;
     transform: translateX(-50%) translateY(calc(100% + 90px));
     z-index: 1003;
     pointer-events: auto;
@@ -2486,12 +2487,36 @@ body {
     background: white;
     border-radius: 16px;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-    padding: 16px 24px;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    cursor: pointer;
+    min-height: 80px;
+}
+
+.notification-image {
+    width: 80px;
+    min-width: 80px;
+    background-color: #f0f0f0;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-image.has-image {
+    background-color: #fff;
+}
+
+.notification-text {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
     font-size: 15px;
     color: #333;
-    cursor: pointer;
-    min-width: 200px;
-    text-align: center;
 }
 
 .wine-detail-modal:not(.hidden) .wine-detail-content {
