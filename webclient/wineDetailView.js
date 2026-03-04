@@ -261,8 +261,15 @@ class WineDetailView {
         const saveBtn = document.getElementById('wine-detail-save-notes');
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.textContent = 'Saving...';
         }
+
+        // Show saving notification
+        const ref = this.currentReference;
+        const notification = getNotificationOverlay();
+        notification.show('Saving...', {
+            durationMs: 0, // Don't auto-dismiss - we'll hide it manually
+            imageUrl: ref?.labelImageUrl || null
+        });
 
         try {
             // Update via UserWineReference API
@@ -277,20 +284,20 @@ class WineDetailView {
             this.currentReference.tastingNotes = newNotes;
             this.originalTastingNotes = newNotes;
 
+            // Update notification message to success (keep same window)
+            notification.updateMessage('Notes saved!', { durationMs: 2000 });
+
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.textContent = 'Saved!';
-                setTimeout(() => {
-                    saveBtn.textContent = 'Save Notes';
-                }, 2000);
             }
         } catch (error) {
             console.error('Error saving tasting notes:', error);
-            alert(`Failed to save tasting notes: ${error.message || 'Unknown error'}`);
+            
+            // Update notification message to error (keep same window)
+            notification.updateMessage(`Failed to save: ${error.message || 'Unknown error'}`, { durationMs: 3000 });
             
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.textContent = 'Save Notes';
             }
         }
     }
@@ -516,8 +523,12 @@ class WineDetailView {
     async drinkWine() {
         if (!this.currentInstance) return;
 
-        // Show confirmation dialog
-        const confirmed = confirm('Are you sure you want to mark this wine as consumed?');
+        // Show confirmation via notification overlay
+        const ref = this.currentReference;
+        const confirmed = await getNotificationOverlay().confirm(
+            'Are you sure you want to mark this wine as consumed?',
+            { imageUrl: ref?.labelImageUrl || null }
+        );
         if (!confirmed) return;
 
         const drinkBtn = document.getElementById('wine-detail-drink-btn');

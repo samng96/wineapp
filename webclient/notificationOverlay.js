@@ -115,6 +115,24 @@ class NotificationOverlay {
             resolve(value);
         }
     }
+
+    updateMessage(message, { durationMs = 3000 } = {}) {
+        if (!this.messageEl) return;
+
+        // Clear any existing timer
+        if (this.dismissTimer) {
+            clearTimeout(this.dismissTimer);
+            this.dismissTimer = null;
+        }
+
+        // Update message text
+        this.messageEl.textContent = message;
+
+        // Set new auto-dismiss timer if duration is provided
+        if (durationMs > 0) {
+            this.dismissTimer = setTimeout(() => this.hide(), durationMs);
+        }
+    }
 }
 
 let notificationInstance = null;
