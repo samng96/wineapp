@@ -2702,7 +2702,7 @@ body {
 
 .wine-detail-save-btn {
     align-self: flex-start;
-    padding: 8px 16px;
+    padding: 12px 24px;
     background: #6200ea;
     color: white;
     border: none;
@@ -2714,7 +2714,7 @@ body {
 }
 
 .wine-detail-save-btn:hover {
-    background: #3700b3;
+    background: #7c3aed;
 }
 
 .wine-detail-save-btn:disabled {
@@ -2723,8 +2723,8 @@ body {
 }
 
 .wine-detail-coravin-btn {
-    padding: 8px 16px;
-    background: #1976d2;
+    padding: 12px 24px;
+    background: #6200ea;
     color: white;
     border: none;
     border-radius: 4px;
@@ -2735,7 +2735,7 @@ body {
 }
 
 .wine-detail-coravin-btn:hover {
-    background: #1565c0;
+    background: #7c3aed;
 }
 
 .wine-detail-coravin-btn:disabled {
@@ -2756,8 +2756,8 @@ body {
 }
 
 .wine-detail-drink-btn {
-    padding: 8px 16px;
-    background: #d32f2f;
+    padding: 12px 24px;
+    background: #6200ea;
     color: white;
     border: none;
     border-radius: 4px;
@@ -2768,7 +2768,7 @@ body {
 }
 
 .wine-detail-drink-btn:hover {
-    background: #c62828;
+    background: #7c3aed;
 }
 
 .wine-detail-drink-btn:disabled {
