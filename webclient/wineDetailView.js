@@ -81,10 +81,27 @@ class WineDetailView {
         // Load full global wine reference data, merge with user-specific fields
         try {
             const fullReference = await API.get(`/wine-references/${wineReference.id}`);
-            // Preserve user-specific fields from the passed-in reference
+            // Preserve userReferenceId from the passed-in reference
             fullReference.userReferenceId = wineReference.userReferenceId;
-            fullReference.rating = wineReference.rating;
-            fullReference.tastingNotes = wineReference.tastingNotes;
+            
+            // Load user-specific fields (rating, tastingNotes) from UserWineReference if available
+            if (fullReference.userReferenceId) {
+                try {
+                    const userRef = await API.get(`/user-wine-references/${fullReference.userReferenceId}`);
+                    fullReference.rating = userRef.rating;
+                    fullReference.tastingNotes = userRef.tastingNotes;
+                } catch (error) {
+                    console.error('Error loading user wine reference:', error);
+                    // Fall back to passed-in reference values if API call fails
+                    fullReference.rating = wineReference.rating;
+                    fullReference.tastingNotes = wineReference.tastingNotes;
+                }
+            } else {
+                // No user reference, use passed-in values
+                fullReference.rating = wineReference.rating;
+                fullReference.tastingNotes = wineReference.tastingNotes;
+            }
+            
             this.currentReference = fullReference;
             
             // Reload instance data to get latest location if we have an instance ID
