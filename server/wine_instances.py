@@ -243,10 +243,10 @@ Update wine instance location
 
 Expected PUT Parameters:
     'oldCellarId': str (optional - if not provided, this is unshelved),
-    'newCellarId': str (required),
-    'shelfIndex': int (required),
-    'side': 'front'|'back'|'single' (required),
-    'position': int (required)
+    'newCellarId': str (optional - if None, wine will be unshelved),
+    'shelfIndex': int (required if newCellarId is provided),
+    'side': 'front'|'back'|'single' (required if newCellarId is provided),
+    'position': int (required if newCellarId is provided)
 """
 @wine_instances_bp.route('/wine-instances/<instance_id>/location', methods=['PUT'])
 def _update_wine_instance_location(instance_id: str):
@@ -258,20 +258,52 @@ def _update_wine_instance_location(instance_id: str):
     side = data.get('side')
     position = data.get('position')
 
-    # old_cellar_id can be None if this was unshelved.
-    if new_cellar_id is None:
-        return jsonify({'error': 'New cellar ID is required'}), 400
+    instance = find_wine_instance_by_id(instance_id)
+    if not instance:
+        return jsonify({'error': 'Wine instance not found'}), 404
+    
+    # Case 1: Both old and new cellars are None -> Error
+    if old_cellar_id is None and new_cellar_id is None:
+        return jsonify({'error': 'At least one of oldCellarId or newCellarId must be provided'}), 400
+    
+    # Case 2: Old is not None but new is None -> Unshelving
+    if old_cellar_id is not None and new_cellar_id is None:
+        old_cellar = find_cellar_by_id(old_cellar_id)
+        if not old_cellar:
+            return jsonify({'error': 'Old cellar not found'}), 404
+        if not old_cellar.is_wine_instance_in_cellar(instance):
+            return jsonify({'error': 'Wine instance is not in the old cellar'}), 400
+        
+        # Remove wine from cellar (unshelve)
+        old_cellar.remove_wine_from_cellar(instance)
+        update_and_save_cellar(old_cellar)
+        
+        # Update version and timestamp
+        instance.version += 1
+        instance.updated_at = get_current_timestamp()
+        _update_and_save_wine_instance(instance)
+        return jsonify(serialize_wine_instance(instance))
+    
+    # Case 3 & 4: New is not None -> Moving (either from unshelved or from another cellar)
+    # Validate required fields for moving
     if shelf_index is None:
         return jsonify({'error': 'Shelf index is required'}), 400
     if side is None:
         return jsonify({'error': 'Side is required'}), 400
     if position is None:
         return jsonify({'error': 'Position is required'}), 400
-
-    instance = find_wine_instance_by_id(instance_id)
-    if not instance:
-        return jsonify({'error': 'Wine instance not found'}), 404
     
+    # Find and validate new cellar
+    new_cellar = find_cellar_by_id(new_cellar_id)
+    if not new_cellar:
+        return jsonify({'error': 'New cellar not found'}), 404
+    if not new_cellar.is_position_valid(shelf_index, side, position):
+        return jsonify({'error': f'Invalid position: shelf_index={shelf_index}, side={side}, position={position}'}), 400
+    if not new_cellar.is_position_available(shelf_index, side, position):
+        return jsonify({'error': f'Position is already occupied: shelf_index={shelf_index}, side={side}, position={position}'}), 400
+    
+    # Case 3: New is not None but old is None -> Moving from unshelved
+    # Case 4: Both are not None -> Moving from one cellar to another
     old_cellar = None
     if old_cellar_id is not None:
         old_cellar = find_cellar_by_id(old_cellar_id)
@@ -279,28 +311,18 @@ def _update_wine_instance_location(instance_id: str):
             return jsonify({'error': 'Old cellar not found'}), 404
         if not old_cellar.is_wine_instance_in_cellar(instance):
             return jsonify({'error': 'Wine instance is not in the old cellar'}), 400
-
-    new_cellar = find_cellar_by_id(new_cellar_id)
-    if not new_cellar:
-        return jsonify({'error': 'New cellar not found'}), 404
-
-    # Okay we've found the wine in the old cellar, so we're good to actually do the move.
-    # Validate position before making changes
-    if not new_cellar.is_position_valid(shelf_index, side, position):
-        return jsonify({'error': f'Invalid position: shelf_index={shelf_index}, side={side}, position={position}'}), 400
-    if not new_cellar.is_position_available(shelf_index, side, position):
-        return jsonify({'error': f'Position is already occupied: shelf_index={shelf_index}, side={side}, position={position}'}), 400
-
-    if old_cellar is not None:
+        
+        # Remove wine from old cellar
         old_cellar.remove_wine_from_cellar(instance)
         update_and_save_cellar(old_cellar)
+    
+    # Assign wine to new cellar position
     new_cellar.assign_wine_to_position(shelf_index, side, position, instance)
     update_and_save_cellar(new_cellar)
     
     # Update version and timestamp
     instance.version += 1
     instance.updated_at = get_current_timestamp()
-    
     _update_and_save_wine_instance(instance)
     
     return jsonify(serialize_wine_instance(instance))

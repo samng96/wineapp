@@ -11,16 +11,24 @@ DYNAMODB_REGION = os.environ.get('DYNAMODB_REGION', 'us-east-1')
 
 def get_dynamodb_client():
     """Get DynamoDB client"""
+    from botocore.config import Config
+    # Configure shorter timeouts to prevent hanging when DynamoDB isn't available
+    config = Config(
+        connect_timeout=2,
+        read_timeout=2,
+        retries={'max_attempts': 1}
+    )
     if DYNAMODB_ENDPOINT:
         return boto3.client(
             'dynamodb',
             endpoint_url=DYNAMODB_ENDPOINT,
             region_name=DYNAMODB_REGION,
             aws_access_key_id='dummy',
-            aws_secret_access_key='dummy'
+            aws_secret_access_key='dummy',
+            config=config
         )
     else:
-        return boto3.client('dynamodb', region_name=DYNAMODB_REGION)
+        return boto3.client('dynamodb', region_name=DYNAMODB_REGION, config=config)
 
 
 def create_table(table_name, key_schema, attribute_definitions):

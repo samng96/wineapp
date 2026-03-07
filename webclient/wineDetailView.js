@@ -45,6 +45,12 @@ class WineDetailView {
             coravinBtn.addEventListener('click', () => this.openWithCoravin());
         }
 
+        // Move wine button
+        const moveBtn = document.getElementById('wine-detail-move-btn');
+        if (moveBtn) {
+            moveBtn.addEventListener('click', () => this.moveWine());
+        }
+
         // Drink wine button
         const drinkBtn = document.getElementById('wine-detail-drink-btn');
         if (drinkBtn) {
@@ -458,6 +464,26 @@ class WineDetailView {
         const coravinedDateEl = document.getElementById('wine-detail-coravined-date');
         const actionButtonsEl = document.getElementById('wine-detail-action-buttons');
         const coravinBtn = document.getElementById('wine-detail-coravin-btn');
+        const moveBtn = document.getElementById('wine-detail-move-btn');
+        
+        // Check if wine is shelved (has location)
+        let isShelved = false;
+        if (instance && !instance.consumed) {
+            let cellars = null;
+            if (window.cellarManager && window.cellarManager.cellars && window.cellarManager.cellars.length > 0) {
+                cellars = window.cellarManager.cellars;
+            } else if (window.wineManager && window.wineManager.cellars && window.wineManager.cellars.length > 0) {
+                cellars = window.wineManager.cellars;
+            }
+            if (cellars) {
+                try {
+                    const locationInfo = findInstanceLocation(instance, cellars);
+                    isShelved = locationInfo !== null;
+                } catch (error) {
+                    console.error('Error finding instance location:', error);
+                }
+            }
+        }
         
         if (instance && !instance.consumed) {
             if (instance.coravined && instance.coravinedDate) {
@@ -468,12 +494,16 @@ class WineDetailView {
                 if (coravinedDateEl) {
                     coravinedDateEl.textContent = this.formatStoredDate(instance.coravinedDate);
                 }
-                // Hide coravin button but show action buttons container for drink button
+                // Hide coravin button but show action buttons container for drink/move buttons
                 if (coravinBtn) {
                     coravinBtn.style.display = 'none';
                 }
                 if (actionButtonsEl) {
                     actionButtonsEl.style.display = 'flex';
+                }
+                // Show move button only if shelved
+                if (moveBtn) {
+                    moveBtn.style.display = isShelved ? 'inline-block' : 'none';
                 }
             } else {
                 // Show both buttons
@@ -485,6 +515,10 @@ class WineDetailView {
                 }
                 if (coravinedItemEl) {
                     coravinedItemEl.style.display = 'none';
+                }
+                // Show move button only if shelved
+                if (moveBtn) {
+                    moveBtn.style.display = isShelved ? 'inline-block' : 'none';
                 }
             }
         } else {
@@ -533,6 +567,95 @@ class WineDetailView {
             if (coravinBtn) {
                 coravinBtn.disabled = false;
                 coravinBtn.textContent = 'Open with a Coravin';
+            }
+        }
+    }
+
+    async moveWine() {
+        if (!this.currentInstance) return;
+
+        // Find the wine's current location in cellars
+        let cellarLocation = null;
+        if (window.cellarManager && window.cellarManager.cellars) {
+            const locationInfo = findInstanceLocation(this.currentInstance, window.cellarManager.cellars);
+            if (locationInfo) {
+                cellarLocation = {
+                    cellarId: locationInfo.cellar.id,
+                    shelfIndex: locationInfo.shelfIndex,
+                    side: locationInfo.side,
+                    position: locationInfo.position
+                };
+            }
+        }
+
+        // If not shelved, nothing to do
+        if (!cellarLocation) {
+            return;
+        }
+
+        const moveBtn = document.getElementById('wine-detail-move-btn');
+        if (moveBtn) {
+            moveBtn.disabled = true;
+        }
+
+        try {
+            // Remove from cellar location (unshelve) - now supported by API
+            await API.updateWineInstanceLocation(this.currentInstance.id, {
+                oldCellarId: cellarLocation.cellarId,
+                newCellarId: null,  // Remove from cellar (unshelve)
+                shelfIndex: null,
+                side: null,
+                position: null
+            });
+
+            // Update local cellar data structure
+            if (window.cellarManager && window.cellarManager.cellars) {
+                const cellar = window.cellarManager.cellars.find(c => c.id === cellarLocation.cellarId);
+                if (cellar) {
+                    // Remove instance from cellar's winePositions
+                    const shelfKey = String(cellarLocation.shelfIndex);
+                    if (cellar.winePositions && cellar.winePositions[shelfKey]) {
+                        const shelfPositions = cellar.winePositions[shelfKey];
+                        const sideArray = shelfPositions[cellarLocation.side];
+                        if (sideArray) {
+                            const posIndex = sideArray.indexOf(this.currentInstance.id);
+                            if (posIndex !== -1) {
+                                sideArray[posIndex] = null;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Reload cellars to ensure we have latest location data
+            if (window.cellarManager) {
+                try {
+                    const cellars = await API.get('/cellars');
+                    window.cellarManager.cellars = cellars;
+                } catch (error) {
+                    console.error('Error reloading cellars:', error);
+                }
+            }
+
+            // Re-render storage info to update location and hide move button
+            this.renderStorageInfo();
+
+            // Show success notification
+            const ref = this.currentReference;
+            getNotificationOverlay().show('Wine is now unshelved. Click on an empty shelf to place the wine there.', {
+                durationMs: 4000,
+                imageUrl: ref?.labelImageUrl || null
+            });
+
+            if (moveBtn) {
+                moveBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error moving wine:', error);
+            alert(`Failed to move wine: ${error.message || 'Unknown error'}`);
+            
+            if (moveBtn) {
+                moveBtn.disabled = false;
             }
         }
     }

@@ -17,14 +17,24 @@ app.register_blueprint(user_wine_references_bp)
 app.register_blueprint(wine_instances_bp)
 
 # Initialize DynamoDB tables on startup (checks if they exist)
-init_dynamodb_tables()
+print("Initializing DynamoDB tables...")
+try:
+    init_dynamodb_tables()
+    print("DynamoDB initialization complete.")
+except Exception as e:
+    print(f"Warning: DynamoDB initialization failed: {e}")
+    print("Server will continue, but DynamoDB operations may fail.")
 
 # Load wine references into the global registry on startup
 # This must happen before loading wine instances, which reference wine references
 # The deserialize_wine_reference function automatically registers references
 print("Loading wine references into registry on startup...")
-loaded_refs = get_all_wine_references()
-print(f"Loaded {len(loaded_refs)} wine references into registry")
+try:
+    loaded_refs = get_all_wine_references()
+    print(f"Loaded {len(loaded_refs)} wine references into registry")
+except Exception as e:
+    print(f"Warning: Could not load wine references on startup: {e}")
+    print("Server will continue, but wine references will be loaded on-demand.")
 
 if __name__ == '__main__':
     import os
