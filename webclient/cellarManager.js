@@ -209,14 +209,6 @@ class CellarManager {
                 return;
             }
 
-            // Test notification button on unshelved panel
-            if (e.target.closest('.unshelved-test-notify-btn')) {
-                e.stopPropagation();
-                e.preventDefault();
-                getNotificationOverlay().show('Hello Wine App!');
-                return;
-            }
-
             // Navigate to cellar detail when clicking on panel
             const panel = e.target.closest('.cellar-panel');
             if (panel) {
@@ -686,7 +678,6 @@ class CellarManager {
                         <div class="unshelved-instructions">
                             <p>To move unshelved wines into a cellar, go to a cellar and tap an empty slot and select the bottle to be moved.</p>
                         </div>
-                        <button class="btn-secondary unshelved-test-notify-btn" type="button">Test Notification</button>
                     </div>
                 </div>
                 <div class="cellar-panel-info">
