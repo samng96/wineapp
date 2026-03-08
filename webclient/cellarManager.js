@@ -1661,6 +1661,9 @@ class CellarManager {
 
             // Reload cellar detail to show updated position
             await this.showCellarDetail(cellarId);
+
+            // Refresh wine list so shelved/unshelved status stays accurate
+            if (window.wineManager) window.wineManager.loadWines();
         } catch (error) {
             console.error('Error placing bottle:', error);
             alert(`Failed to place bottle: ${error.message || 'Unknown error'}`);

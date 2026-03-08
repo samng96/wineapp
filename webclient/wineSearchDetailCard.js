@@ -237,6 +237,10 @@ class WineSearchDetailCard {
             getNotificationOverlay().show(notifMessage, {
                 imageUrl: reference.labelImageUrl || null
             });
+
+            // Refresh caches so new bottles appear in wine list and cellar unshelved counts
+            if (window.wineManager) window.wineManager.loadWines();
+            if (window.cellarManager) window.cellarManager.loadCellars();
         } catch (error) {
             console.error('Error adding to collection:', error);
             alert('Error adding wine to collection: ' + error.message);
