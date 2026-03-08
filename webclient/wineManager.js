@@ -905,6 +905,7 @@ class WineManager {
                             <span class="wine-item-storage-label">Stored: </span><span>${instance.storedDate ? this.formatStoredDate(instance.storedDate) : 'N/A'}${otherBottlesCount > 0 ? ',' : ''}</span>
                             ${otherBottlesCount > 0 ? `<span>${otherBottlesCount} additional bottle${otherBottlesCount !== 1 ? 's' : ''} owned</span>` : ''}
                         </div>
+                        ${instance.drinkByDate ? `<div class="wine-item-drink-by"><span class="wine-item-storage-label">Drink by: </span><span>${this.formatStoredDate(instance.drinkByDate)}</span></div>` : ''}
                         ${instance.coravined && instance.coravinedDate ? `<div class="wine-item-coravined"><span class="wine-item-storage-label">Coravined: </span><span>${this.formatStoredDate(instance.coravinedDate)}</span></div>` : ''}
                         ${instance.consumed && instance.consumedDate ? `<div class="wine-item-consumed"><span class="wine-item-storage-label">Consumed: </span><span>${this.formatStoredDate(instance.consumedDate)}</span></div>` : ''}
                         ${!instance.consumed ? `<div class="wine-item-location">

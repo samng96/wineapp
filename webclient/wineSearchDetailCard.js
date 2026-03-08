@@ -121,6 +121,12 @@ class WineSearchDetailCard {
             priceInput.value = '';
         }
 
+        // Reset drink by date
+        const drinkByInput = document.getElementById('wine-search-detail-drink-by');
+        if (drinkByInput) {
+            drinkByInput.value = '';
+        }
+
         // Reset quantity
         this.quantity = 1;
         const qtyEl = document.getElementById('wine-search-detail-qty-value');
@@ -189,10 +195,12 @@ class WineSearchDetailCard {
     async handleAddToCollection() {
         const vintageSelect = document.getElementById('wine-search-detail-vintage');
         const priceInput = document.getElementById('wine-search-detail-price');
+        const drinkByInput = document.getElementById('wine-search-detail-drink-by');
 
         const vintageValue = vintageSelect ? parseInt(vintageSelect.value) : null;
         const priceText = priceInput ? priceInput.value.trim() : '';
         const priceValue = priceText ? parseFloat(priceText) : null;
+        const drinkByValue = drinkByInput ? drinkByInput.value || null : null;
         const quantity = this.quantity;
         const reference = this.currentReference;
 
@@ -224,6 +232,7 @@ class WineSearchDetailCard {
             for (let i = 0; i < quantity; i++) {
                 const instanceData = { referenceId: userRef.id };
                 if (priceValue !== null) instanceData.price = priceValue;
+                if (drinkByValue) instanceData.drinkByDate = drinkByValue;
                 await API.createWineInstance(instanceData);
             }
 
