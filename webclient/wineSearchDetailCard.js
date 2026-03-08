@@ -238,9 +238,13 @@ class WineSearchDetailCard {
                 imageUrl: reference.labelImageUrl || null
             });
 
-            // Refresh caches so new bottles appear in wine list and cellar unshelved counts
-            if (window.wineManager) window.wineManager.loadWines();
-            if (window.cellarManager) window.cellarManager.loadCellars();
+            // Refresh the active view's cache so new bottles appear immediately.
+            // Only refresh if that view is currently visible — loading inactive views
+            // triggers DOM side effects that interfere with the search UI.
+            // Other views refresh automatically on next navigation via app.js.
+            const currentView = window.app?.currentView;
+            if (window.wineManager && currentView === 'wines') window.wineManager.loadWines();
+            if (window.cellarManager && currentView === 'cellar') window.cellarManager.loadCellars();
         } catch (error) {
             console.error('Error adding to collection:', error);
             alert('Error adding wine to collection: ' + error.message);
