@@ -95,7 +95,13 @@ export class WineSearchManager {
                         result.country,
                         result.rating,
                         result.tastingNotes,
-                        result.labelImageUrl
+                        result.labelImageUrl,
+                        1,    // version
+                        null, // createdAt
+                        null, // updatedAt
+                        null, // userReferenceId
+                        result.drinkByDate || null,
+                        result.drinkByYearsOffset != null ? result.drinkByYearsOffset : null
                     );
                 }
             });

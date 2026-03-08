@@ -41,6 +41,34 @@ class WineSearchDetailCard {
         if (addBtn) {
             addBtn.addEventListener('click', () => this.handleAddToCollection());
         }
+
+        // Vintage change: recalculate drink-by date if we have an offset
+        const vintageSelect = document.getElementById('wine-search-detail-vintage');
+        if (vintageSelect) {
+            vintageSelect.addEventListener('change', () => this.onVintageChanged());
+        }
+    }
+
+    onVintageChanged() {
+        if (!this.currentReference) return;
+        const offset = this.currentReference.drinkByYearsOffset;
+        if (offset == null) return;
+
+        const vintageSelect = document.getElementById('wine-search-detail-vintage');
+        const newVintage = vintageSelect ? parseInt(vintageSelect.value) : null;
+        if (!newVintage) return;
+
+        const newYear = newVintage + offset;
+        const newDrinkByDate = `${newYear}-12-31`;
+        this.currentReference.drinkByDate = newDrinkByDate;
+
+        const drinkByRow = document.getElementById('wine-search-detail-drink-by-row');
+        const drinkByEl = document.getElementById('wine-search-detail-drink-by');
+        if (drinkByRow && drinkByEl) {
+            const date = new Date(newDrinkByDate);
+            drinkByEl.textContent = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            drinkByRow.style.display = '';
+        }
     }
 
     populateVintageSelect() {
@@ -121,10 +149,17 @@ class WineSearchDetailCard {
             priceInput.value = '';
         }
 
-        // Reset drink by date
-        const drinkByInput = document.getElementById('wine-search-detail-drink-by');
-        if (drinkByInput) {
-            drinkByInput.value = '';
+        // Show drink-by date if available (read-only display)
+        const drinkByRow = document.getElementById('wine-search-detail-drink-by-row');
+        const drinkByEl = document.getElementById('wine-search-detail-drink-by');
+        if (drinkByRow && drinkByEl) {
+            if (reference.drinkByDate) {
+                const date = new Date(reference.drinkByDate);
+                drinkByEl.textContent = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                drinkByRow.style.display = '';
+            } else {
+                drinkByRow.style.display = 'none';
+            }
         }
 
         // Reset quantity
@@ -195,14 +230,13 @@ class WineSearchDetailCard {
     async handleAddToCollection() {
         const vintageSelect = document.getElementById('wine-search-detail-vintage');
         const priceInput = document.getElementById('wine-search-detail-price');
-        const drinkByInput = document.getElementById('wine-search-detail-drink-by');
 
         const vintageValue = vintageSelect ? parseInt(vintageSelect.value) : null;
         const priceText = priceInput ? priceInput.value.trim() : '';
         const priceValue = priceText ? parseFloat(priceText) : null;
-        const drinkByValue = drinkByInput ? drinkByInput.value || null : null;
         const quantity = this.quantity;
         const reference = this.currentReference;
+        const drinkByValue = reference ? reference.drinkByDate || null : null;
 
         if (!reference) return;
 

@@ -84,6 +84,39 @@ def search_vivino(query: str, limit: int = 10) -> List[Dict]:
         return _get_fallback_results(query, limit)
 
 
+def _estimate_drink_by_year(vintage_year: int, type_id: int, style: Dict) -> tuple:
+    """
+    Estimate drink-by year based on vintage year, wine type, and structural
+    characteristics (body, tannin) available from Vivino's style data.
+
+    Returns:
+        Tuple of (drink_by_year, offset_years) or (None, None) if no vintage
+    """
+    if not vintage_year:
+        return None, None
+
+    # Base aging window in years from vintage by wine type
+    base_years = {
+        1: 8,   # Red
+        2: 5,   # White
+        3: 3,   # Sparkling
+        4: 3,   # Rosé
+        7: 15,  # Dessert
+        24: 20, # Fortified
+    }.get(type_id, 5)
+
+    # For reds, extend by body and tannin level (both scored 1–5 by Vivino)
+    if type_id == 1 and style:
+        body = style.get('body') or 0
+        tannin = (style.get('baseline_structure') or {}).get('tannin') or 0
+        if body >= 4:
+            base_years += 2
+        if tannin >= 4:
+            base_years += 2
+
+    return vintage_year + base_years, base_years
+
+
 def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
     """
     Parse a match from Vivino's preloaded search results.
@@ -102,6 +135,8 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         country = region.get('country', {})
         stats = vintage.get('statistics', {})
         image = vintage.get('image', {})
+        style = wine_data.get('style', {})
+        vintage_year = vintage.get('year')
 
         # Prefer wine_data.name (wine-only name without winery prefix)
         # over vintage.name (which includes "Winery WineName Year")
@@ -148,15 +183,26 @@ def _parse_vivino_match(match: Dict[str, Any]) -> Optional[Dict]:
         if rating is not None:
             rating = round(float(rating), 1)
 
+        # Estimate drink-by date from vintage year + wine structure
+        drink_by_date = None
+        drink_by_years_offset = None
+        drink_by_year, offset = _estimate_drink_by_year(vintage_year, type_id, style)
+        if drink_by_year:
+            drink_by_date = f'{drink_by_year}-12-31'
+            drink_by_years_offset = offset
+
         return {
             'name': name,
             'type': wine_type,
+            'vintage': vintage_year,
             'producer': producer_name,
             'varietals': varietals if varietals else [],
             'region': region.get('name'),
             'country': country.get('name'),
             'rating': rating,
             'labelImageUrl': label_image_url,
+            'drinkByDate': drink_by_date,
+            'drinkByYearsOffset': drink_by_years_offset,
         }
 
     except Exception as e:

@@ -21,7 +21,7 @@ export class WineReference {
     constructor(id, name, type, vintage = null, producer = null, varietals = null,
                 region = null, country = null, rating = null, tastingNotes = null,
                 labelImageUrl = null, version = 1, createdAt = null, updatedAt = null,
-                userReferenceId = null) {
+                userReferenceId = null, drinkByDate = null, drinkByYearsOffset = null) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -37,7 +37,9 @@ export class WineReference {
         this.version = version;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.userReferenceId = userReferenceId; // ID of the associated UserWineReference
+        this.userReferenceId = userReferenceId;
+        this.drinkByDate = drinkByDate;
+        this.drinkByYearsOffset = drinkByYearsOffset;
     }
 
     /**
@@ -69,7 +71,9 @@ export class WineReference {
             dict.version || 1,
             dict.createdAt,
             dict.updatedAt,
-            dict.userReferenceId || null
+            dict.userReferenceId || null,
+            dict.drinkByDate || null,
+            dict.drinkByYearsOffset != null ? dict.drinkByYearsOffset : null
         );
     }
 }

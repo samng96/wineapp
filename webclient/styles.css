@@ -3308,6 +3308,11 @@ body {
     max-width: none;
 }
 
+.wine-search-detail-static-value {
+    font-size: 14px;
+    color: #333;
+}
+
 .wine-search-detail-quantity {
     display: flex;
     align-items: center;
