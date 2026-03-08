@@ -374,7 +374,7 @@ class WineDetailView {
         const drinkByEl = document.getElementById('wine-detail-drink-by-date');
         if (drinkByItemEl && drinkByEl) {
             if (instance && instance.drinkByDate) {
-                drinkByEl.textContent = this.formatStoredDate(instance.drinkByDate);
+                drinkByEl.textContent = new Date(instance.drinkByDate).getFullYear();
                 drinkByItemEl.style.display = 'flex';
             } else {
                 drinkByItemEl.style.display = 'none';
