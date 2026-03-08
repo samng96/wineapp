@@ -132,7 +132,14 @@ class WineDetailView {
                     // Continue with existing cellars if reload fails
                 }
             }
-            
+
+            // Fetch fresh instances so renderOtherBottles shows newly added bottles
+            try {
+                this.freshInstances = await API.get('/wine-instances');
+            } catch (error) {
+                this.freshInstances = null;
+            }
+
             this.render();
         } catch (error) {
             console.error('Error loading wine details:', error);
@@ -805,60 +812,59 @@ class WineDetailView {
             return;
         }
 
-        // Find all instances of the same wine from wineManager or cellarManager
-        let allInstances = [];
+        let siblings = [];
         let cellars = [];
-        
-        // Check cellarManager first (has currentInstanceMap from cellar detail view)
-        if (window.cellarManager) {
-            if (window.cellarManager.currentInstanceMap) {
-                // Use currentInstanceMap from cellar detail view
-                allInstances = Object.values(window.cellarManager.currentInstanceMap);
-            } else if (window.cellarManager.wineInstances) {
-                // Fall back to wineInstances cache
-                allInstances = window.cellarManager.wineInstances;
-            }
-            if (window.cellarManager.cellars && window.cellarManager.cellars.length > 0) {
+
+        // Use freshInstances fetched in show() — ensures newly added bottles appear
+        if (this.freshInstances && ref.userReferenceId) {
+            if (window.cellarManager && window.cellarManager.cellars) {
                 cellars = window.cellarManager.cellars;
+            } else if (window.wineManager) {
+                cellars = window.wineManager.cellars || [];
             }
+            siblings = this.freshInstances
+                .filter(inst => inst && inst.referenceId === ref.userReferenceId && inst.id !== instance.id && !inst.consumed)
+                .map(inst => ({ ...inst, reference: ref }));
+        } else {
+            // Fall back to cached instances from cellarManager / wineManager
+            let allInstances = [];
+            if (window.cellarManager) {
+                if (window.cellarManager.currentInstanceMap) {
+                    allInstances = Object.values(window.cellarManager.currentInstanceMap);
+                } else if (window.cellarManager.wineInstances) {
+                    allInstances = window.cellarManager.wineInstances;
+                }
+                if (window.cellarManager.cellars && window.cellarManager.cellars.length > 0) {
+                    cellars = window.cellarManager.cellars;
+                }
+            }
+            if (allInstances.length === 0 && window.wineManager) {
+                allInstances = window.wineManager.wineInstances || [];
+            }
+            if (cellars.length === 0 && window.wineManager) {
+                cellars = window.wineManager.cellars || [];
+            }
+
+            const getGlobalRefId = (inst) => {
+                if (!inst) return null;
+                if (inst.reference && inst.reference.id) return inst.reference.id;
+                if (!inst.referenceId) return null;
+                if (window.cellarManager && window.cellarManager.userRefToGlobalRefId) {
+                    return window.cellarManager.userRefToGlobalRefId[inst.referenceId] || inst.referenceId;
+                }
+                if (window.wineManager && window.wineManager.userRefToGlobalRefId) {
+                    return window.wineManager.userRefToGlobalRefId[inst.referenceId] || inst.referenceId;
+                }
+                return inst.referenceId;
+            };
+
+            const refGlobalId = ref.id;
+            siblings = allInstances.filter(inst => {
+                if (!inst) return false;
+                const instGlobalRefId = getGlobalRefId(inst);
+                return instGlobalRefId === refGlobalId && inst.id !== instance.id && !inst.consumed;
+            });
         }
-        
-        // Fall back to wineManager if cellarManager doesn't have instances
-        if (allInstances.length === 0 && window.wineManager) {
-            allInstances = window.wineManager.wineInstances || [];
-        }
-        if (cellars.length === 0 && window.wineManager) {
-            cellars = window.wineManager.cellars || [];
-        }
-        
-        // Filter siblings - need to match by referenceId (which could be UserWineRef ID)
-        // Convert to global reference ID for comparison
-        const getGlobalRefId = (inst) => {
-            if (!inst) return null;
-            // If instance has a reference object with id, use that (wineManager format)
-            if (inst.reference && inst.reference.id) {
-                return inst.reference.id;
-            }
-            // Otherwise, instance has referenceId (API format - could be UserWineRef ID)
-            if (!inst.referenceId) return null;
-            // If we have a mapping, use it; otherwise assume it's already a global ref ID
-            if (window.cellarManager && window.cellarManager.userRefToGlobalRefId) {
-                return window.cellarManager.userRefToGlobalRefId[inst.referenceId] || inst.referenceId;
-            }
-            // Try wineManager's mapping if available
-            if (window.wineManager && window.wineManager.userRefToGlobalRefId) {
-                return window.wineManager.userRefToGlobalRefId[inst.referenceId] || inst.referenceId;
-            }
-            return inst.referenceId;
-        };
-        
-        const refGlobalId = ref.id; // ref.id is the global reference ID
-        
-        const siblings = allInstances.filter(inst => {
-            if (!inst) return false;
-            const instGlobalRefId = getGlobalRefId(inst);
-            return instGlobalRefId === refGlobalId && inst.id !== instance.id && !inst.consumed;
-        });
 
         if (siblings.length === 0) {
             container.style.display = 'none';
