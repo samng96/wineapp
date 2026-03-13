@@ -877,43 +877,78 @@ class WineDetailView {
             });
         }
 
-        if (siblings.length === 0) {
+        // Find other-vintage instances (same name+producer, different vintage)
+        const allManagerInstances = window.wineManager ? (window.wineManager.wineInstances || []) : [];
+        const otherVintages = allManagerInstances.filter(inst => {
+            if (!inst || inst.consumed || inst.id === instance.id) return false;
+            const iRef = inst.reference;
+            if (!iRef) return false;
+            return iRef.name === ref.name &&
+                   iRef.producer === ref.producer &&
+                   iRef.vintage !== ref.vintage;
+        });
+
+        if (siblings.length === 0 && otherVintages.length === 0) {
             container.style.display = 'none';
             return;
         }
 
-        const links = siblings.map(sib => {
-            const loc = findInstanceLocation(sib, cellars);
-            let locText = 'Unshelved';
-            if (loc) {
-                const { cellar, shelfIndex, side, position } = loc;
-                const sideDisplay = side === 'single' ? '' : side === 'front' ? 'Front' : 'Back';
-                const sideText = sideDisplay ? `, ${sideDisplay}` : '';
-                locText = `${cellar.name}, Shelf ${shelfIndex + 1}${sideText}, Pos ${position + 1}`;
-            }
-            return `<a class="wine-detail-other-bottle-link wine-detail-location-link" data-instance-id="${sib.id}">${locText}</a>`;
-        }).join('');
+        const makeLocText = (inst) => {
+            const loc = findInstanceLocation(inst, cellars);
+            if (!loc) return 'Unshelved';
+            const { cellar, shelfIndex, side, position } = loc;
+            const sideDisplay = side === 'single' ? '' : side === 'front' ? 'Front' : 'Back';
+            const sideText = sideDisplay ? `, ${sideDisplay}` : '';
+            return `${cellar.name}, Shelf ${shelfIndex + 1}${sideText}, Pos ${position + 1}`;
+        };
 
-        container.innerHTML = `<div class="wine-detail-info-item">
-            <span class="wine-detail-storage-label">Other bottles:</span>
-            <div class="wine-detail-other-bottles-links">${links}</div>
-        </div>`;
+        let html = '';
+
+        if (siblings.length > 0) {
+            const links = siblings.map(sib =>
+                `<a class="wine-detail-other-bottle-link wine-detail-location-link" data-instance-id="${sib.id}">${makeLocText(sib)}</a>`
+            ).join('');
+            html += `<div class="wine-detail-info-item">
+                <span class="wine-detail-storage-label">Other bottles:</span>
+                <div class="wine-detail-other-bottles-links">${links}</div>
+            </div>`;
+        }
+
+        if (otherVintages.length > 0) {
+            // Group by vintage year
+            const byVintage = {};
+            otherVintages.forEach(inst => {
+                const v = inst.reference.vintage || 'NV';
+                if (!byVintage[v]) byVintage[v] = [];
+                byVintage[v].push(inst);
+            });
+            const vintageRows = Object.keys(byVintage).sort((a, b) => b - a).map(v => {
+                const links = byVintage[v].map(inst =>
+                    `<a class="wine-detail-other-bottle-link wine-detail-location-link" data-instance-id="${inst.id}">${makeLocText(inst)}</a>`
+                ).join('');
+                return `<div class="wine-detail-other-vintage-row"><span class="wine-detail-other-vintage-year">${v}</span>${links}</div>`;
+            }).join('');
+            html += `<div class="wine-detail-info-item">
+                <span class="wine-detail-storage-label">Other vintages:</span>
+                <div class="wine-detail-other-bottles-links">${vintageRows}</div>
+            </div>`;
+        }
+
+        container.innerHTML = html;
         container.style.display = '';
 
-        // Click handlers
+        // Click handlers (covers both same-vintage siblings and other-vintage instances)
+        const allClickable = [...siblings, ...otherVintages];
         container.querySelectorAll('.wine-detail-other-bottle-link').forEach(el => {
             el.addEventListener('click', () => {
                 const sibId = el.getAttribute('data-instance-id');
-                const sib = siblings.find(s => s.id === sibId);
+                const sib = allClickable.find(s => s.id === sibId);
                 if (!sib) return;
 
-                // Check if the sibling has a cellar location
                 const loc = findInstanceLocation(sib, cellars);
                 if (loc && window.cellarManager) {
-                    // Navigate to cellar, highlight position, then reopen card for this bottle
                     this.navigateToOtherBottle(sib, loc);
                 } else {
-                    // Unshelved — just swap the card content
                     this.swapToInstance(sib);
                 }
             });

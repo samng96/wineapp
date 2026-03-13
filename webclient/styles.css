@@ -2755,6 +2755,20 @@ body {
     gap: 2px;
 }
 
+.wine-detail-other-vintage-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.wine-detail-other-vintage-year {
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    min-width: 32px;
+}
+
 .wine-detail-action-buttons {
     display: flex;
     gap: 8px;
