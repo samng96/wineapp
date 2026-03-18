@@ -1752,41 +1752,30 @@ class CellarManager {
         const positionId = `wine-pos-${shelfIndex}-single-${position}`;
         const wineRefId = wine ? wine.id : '';
         
-        if (this.showLabels) {
-            // Labels mode - show wine label image
-            if (wineImage) {
-                return `
-                    <div class="wine-position circle single" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName}" 
-                         data-wine-reference-id="${wineRefId}" data-wine-instance-id="${instanceId || ''}">
-                        <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
-                    </div>
-                `;
-            } else {
-                return `
-                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="Empty position"
-                         data-shelf-index="${shelfIndex}" data-side="single" data-position="${position}" data-empty="true">
-                        <div class="empty-circle"></div>
-                    </div>
-                `;
-            }
+        if (this.showLabels && wineImage) {
+            // Labels mode with image
+            return `
+                <div class="wine-position circle single" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName}"
+                     data-wine-reference-id="${wineRefId}" data-wine-instance-id="${instanceId || ''}">
+                    <img src="${wineImage}" alt="${wineName}" class="wine-label-image" />
+                </div>
+            `;
+        } else if (wine && vintage) {
+            // Vintage mode (or labels mode fallback when no image)
+            const wineTypeClass = this.getWineTypeClass(wineType);
+            return `
+                <div class="wine-position circle single vintage-mode ${wineTypeClass}" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName} (${vintage})"
+                     data-wine-reference-id="${wineRefId}" data-wine-instance-id="${instanceId || ''}">
+                    <span class="vintage-text">${vintage}</span>
+                </div>
+            `;
         } else {
-            // Vintage mode - show vintage text with wine type color
-            if (wine && vintage) {
-                const wineTypeClass = this.getWineTypeClass(wineType);
-                return `
-                    <div class="wine-position circle single vintage-mode ${wineTypeClass}" id="${positionId}" style="left: ${leftEdge}px;" title="${wineName} (${vintage})"
-                         data-wine-reference-id="${wineRefId}" data-wine-instance-id="${instanceId || ''}">
-                        <span class="vintage-text">${vintage}</span>
-                    </div>
-                `;
-            } else {
-                return `
-                    <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="Empty position"
-                         data-shelf-index="${shelfIndex}" data-side="single" data-position="${position}" data-empty="true">
-                        <div class="empty-circle"></div>
-                    </div>
-                `;
-            }
+            return `
+                <div class="wine-position circle empty single" style="left: ${leftEdge}px;" title="Empty position"
+                     data-shelf-index="${shelfIndex}" data-side="single" data-position="${position}" data-empty="true">
+                    <div class="empty-circle"></div>
+                </div>
+            `;
         }
     }
 
@@ -1851,14 +1840,21 @@ class CellarManager {
         const frontPositionId = `wine-pos-${shelfIndex}-front-${position}`;
         const backPositionId = `wine-pos-${shelfIndex}-back-${position}`;
         
-        if (this.showLabels) {
-            // Labels mode - show wine label images
+        if (this.showLabels && (frontImage || backImage)) {
+            // Labels mode with at least one image - render image-based layout
+            const frontTypeClass = frontWine ? this.getWineTypeClass(frontType) : '';
+            const backTypeClass = backWine ? this.getWineTypeClass(backType) : '';
             return `
                 <div class="wine-position-container staggered" data-position="${position}" title="${title}">
                     ${frontImage ? `
                         <div class="wine-position circle stagger-front" id="${frontPositionId}" style="left: ${frontCenterX - radius}px;"
                              data-wine-reference-id="${frontWine ? frontWine.id : ''}" data-wine-instance-id="${frontInstanceId || ''}">
                             <img src="${frontImage}" alt="${frontName}" class="wine-label-image" />
+                        </div>
+                    ` : frontWine && frontVintage ? `
+                        <div class="wine-position circle stagger-front vintage-mode ${frontTypeClass}" id="${frontPositionId}" style="left: ${frontCenterX - radius}px;"
+                             data-wine-reference-id="${frontWine.id}" data-wine-instance-id="${frontInstanceId || ''}">
+                            <span class="vintage-text">${frontVintage}</span>
                         </div>
                     ` : `
                         <div class="wine-position circle empty stagger-front" style="left: ${frontCenterX - radius}px;"
@@ -1870,6 +1866,11 @@ class CellarManager {
                         <div class="wine-position circle stagger-back" id="${backPositionId}" style="left: ${backCenterX - radius}px;"
                              data-wine-reference-id="${backWine ? backWine.id : ''}" data-wine-instance-id="${backInstanceId || ''}">
                             <img src="${backImage}" alt="${backName}" class="wine-label-image" />
+                        </div>
+                    ` : backWine && backVintage ? `
+                        <div class="wine-position circle stagger-back vintage-mode ${backTypeClass}" id="${backPositionId}" style="left: ${backCenterX - radius}px;"
+                             data-wine-reference-id="${backWine.id}" data-wine-instance-id="${backInstanceId || ''}">
+                            <span class="vintage-text">${backVintage}</span>
                         </div>
                     ` : `
                         <div class="wine-position circle empty stagger-back" style="left: ${backCenterX - radius}px;"
