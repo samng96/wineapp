@@ -1043,8 +1043,12 @@ class WineDetailView {
         setTimeout(() => {
             this.currentReference = newInstance.reference;
             this.currentInstance = newInstance;
-            this.render();
-            // Force reflow then slide up
+            try {
+                this.render();
+            } catch (e) {
+                console.error('Error rendering swapped instance:', e);
+            }
+            // Force reflow then slide up (must always run so transform doesn't get stuck)
             content.offsetHeight;
             content.style.transform = '';
         }, 300);
@@ -1111,6 +1115,16 @@ class WineDetailView {
         } catch (e) {
             return storedDate;
         }
+    }
+
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
 }
