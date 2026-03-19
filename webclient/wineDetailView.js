@@ -215,6 +215,9 @@ class WineDetailView {
         // Other bottles of the same wine
         this.renderOtherBottles();
 
+        // Historical data
+        this.renderHistoricalData();
+
         // Tasting notes
         const notesEl = document.getElementById('wine-detail-tasting-notes');
         if (notesEl) {
@@ -670,6 +673,62 @@ class WineDetailView {
                 moveBtn.disabled = false;
             }
         }
+    }
+
+    renderHistoricalData() {
+        const container = document.getElementById('wine-detail-historical-list');
+        const section = document.getElementById('wine-detail-historical-section');
+        if (!container || !section) return;
+
+        const ref = this.currentReference;
+        if (!ref || !this.freshInstances) {
+            section.style.display = 'none';
+            return;
+        }
+
+        // Build reference lookup maps
+        const userRefToGlobalId = (window.cellarManager && window.cellarManager.userRefToGlobalRefId) || {};
+        const globalRefMap = {};
+        if (window.cellarManager && window.cellarManager.wineReferences) {
+            window.cellarManager.wineReferences.forEach(r => { globalRefMap[r.id] = r; });
+        }
+
+        // Collect all events across all vintages of this wine (same name + producer)
+        const events = [];
+        this.freshInstances.forEach(inst => {
+            const globalRefId = userRefToGlobalId[inst.referenceId] || inst.referenceId;
+            const iRef = globalRefMap[globalRefId];
+            if (!iRef) return;
+            if (iRef.name !== ref.name || iRef.producer !== ref.producer) return;
+
+            const label = `${iRef.vintage ? iRef.vintage + ' ' : ''}${iRef.name}`;
+
+            if (inst.storedDate) {
+                events.push({ date: inst.storedDate, text: `${label} added to cellar` });
+            }
+            if (inst.coravined && inst.coravinedDate) {
+                events.push({ date: inst.coravinedDate, text: `${label} coravined` });
+            }
+            if (inst.consumed && inst.consumedDate) {
+                events.push({ date: inst.consumedDate, text: `${label} consumed` });
+            }
+        });
+
+        if (events.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        container.innerHTML = events.map(e => `
+            <div class="wine-detail-history-row">
+                <span class="wine-detail-history-text">${this.escapeHtml(e.text)}</span>
+                <span class="wine-detail-history-date">${this.formatStoredDate(e.date)}</span>
+            </div>
+        `).join('');
+
+        section.style.display = '';
     }
 
     async drinkWine() {

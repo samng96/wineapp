@@ -2755,6 +2755,43 @@ body {
     gap: 8px;
 }
 
+.wine-detail-divider {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: 16px 0 12px;
+}
+
+.wine-detail-historical-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    margin: 0 0 10px;
+}
+
+.wine-detail-historical-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.wine-detail-history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.wine-detail-history-text {
+    color: #333;
+}
+
+.wine-detail-history-date {
+    color: #888;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
 .wine-detail-other-bottles-links {
     display: flex;
     flex-direction: column;
