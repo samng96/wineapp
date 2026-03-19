@@ -872,17 +872,26 @@ class WineDetailView {
         // Prefer freshInstances to avoid stale wineManager data when opening from cellar view
         let otherVintages = [];
         if (this.freshInstances) {
-            const refMap = (window.cellarManager && window.cellarManager.currentReferenceMap) || {};
+            // Build a full global reference map so we can match across all cellars/unshelved wines
+            const userRefToGlobalId = (window.cellarManager && window.cellarManager.userRefToGlobalRefId) || {};
+            const globalRefMap = {};
+            if (window.cellarManager && window.cellarManager.wineReferences) {
+                window.cellarManager.wineReferences.forEach(r => { globalRefMap[r.id] = r; });
+            }
             otherVintages = this.freshInstances
                 .filter(inst => {
                     if (!inst || inst.consumed || inst.id === instance.id) return false;
-                    const iRef = refMap[inst.referenceId];
+                    const globalRefId = userRefToGlobalId[inst.referenceId] || inst.referenceId;
+                    const iRef = globalRefMap[globalRefId];
                     if (!iRef) return false;
                     return iRef.name === ref.name &&
                            iRef.producer === ref.producer &&
                            iRef.vintage !== ref.vintage;
                 })
-                .map(inst => ({ ...inst, reference: refMap[inst.referenceId] }));
+                .map(inst => {
+                    const globalRefId = userRefToGlobalId[inst.referenceId] || inst.referenceId;
+                    return { ...inst, reference: globalRefMap[globalRefId] };
+                });
         } else {
             const allManagerInstances = window.wineManager ? (window.wineManager.wineInstances || []) : [];
             otherVintages = allManagerInstances.filter(inst => {
@@ -929,16 +938,18 @@ class WineDetailView {
                 if (!byVintage[v]) byVintage[v] = [];
                 byVintage[v].push(inst);
             });
-            const vintageRows = Object.keys(byVintage).sort((a, b) => b - a).map(v => {
+            html += `<div class="wine-detail-info-item">
+                <span class="wine-detail-storage-label">Other vintages:</span>
+            </div>`;
+            Object.keys(byVintage).sort((a, b) => b - a).forEach(v => {
                 const links = byVintage[v].map(inst =>
                     `<a class="wine-detail-other-bottle-link wine-detail-location-link" data-instance-id="${inst.id}">${makeLocText(inst)}</a>`
                 ).join('');
-                return `<div class="wine-detail-other-vintage-row"><span class="wine-detail-other-vintage-year">${v}</span>${links}</div>`;
-            }).join('');
-            html += `<div class="wine-detail-info-item">
-                <span class="wine-detail-storage-label">Other vintages:</span>
-                <div class="wine-detail-other-bottles-links">${vintageRows}</div>
-            </div>`;
+                html += `<div class="wine-detail-info-item">
+                    <span class="wine-detail-storage-label">${v}:</span>
+                    <div class="wine-detail-other-bottles-links">${links}</div>
+                </div>`;
+            });
         }
 
         container.innerHTML = html;

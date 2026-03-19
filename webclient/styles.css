@@ -2749,6 +2749,12 @@ body {
     cursor: not-allowed;
 }
 
+.wine-detail-other-bottles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .wine-detail-other-bottles-links {
     display: flex;
     flex-direction: column;
