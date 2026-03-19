@@ -734,18 +734,9 @@ class WineDetailView {
                 }
             }
 
-            // Update local instance
-            this.currentInstance.consumed = true;
-            this.currentInstance.consumedDate = new Date().toISOString();
-
-            // Update freshInstances so this bottle no longer appears in sibling "other bottles"
-            if (this.freshInstances) {
-                const idx = this.freshInstances.findIndex(i => i.id === this.currentInstance.id);
-                if (idx !== -1) this.freshInstances[idx].consumed = true;
-            }
-
-            // Re-render storage info to show consumed date instead of buttons
-            this.renderStorageInfo();
+            // Close the modal immediately so any concurrent show() async work
+            // can't re-render and re-show the "Marking..." button
+            this.hide();
 
             // Trigger a reload of both cellar and wine views
             if (window.cellarManager) {
