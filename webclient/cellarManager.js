@@ -572,12 +572,10 @@ class CellarManager {
         // Create stacked image container with multiple square images
         let imagesHtml = '';
         if (labelImages.length > 0) {
-            // Show exactly 3 images stacked on top of each other, rotating through all images
-            // This ensures consistent card height
-            const numToShow = 3;
+            // Show up to 3 images stacked; only show as many as are available (no duplicates)
+            const numToShow = Math.min(3, labelImages.length);
             for (let i = 0; i < numToShow; i++) {
-                const imgUrl = labelImages[i % labelImages.length];
-                imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(imgUrl)}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
+                imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(labelImages[i])}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
             }
         } else {
             imagesHtml = '<div class="no-labels-message">No wine labels</div>';
