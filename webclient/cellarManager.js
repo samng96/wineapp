@@ -650,10 +650,9 @@ class CellarManager {
         // Build stacked image container (same as cellar cards)
         let imagesHtml = '';
         if (labelImages.length > 0) {
-            const numToShow = 3;
+            const numToShow = Math.min(3, labelImages.length);
             for (let i = 0; i < numToShow; i++) {
-                const imgUrl = labelImages[i % labelImages.length];
-                imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(imgUrl)}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
+                imagesHtml += `<div class="stacked-image-wrapper"><img src="${this.escapeHtml(labelImages[i])}" alt="Wine label" class="rotating-label-image" data-image-index="${i}" /></div>`;
             }
         } else {
             imagesHtml = '<div class="no-labels-message">No wine labels</div>';
