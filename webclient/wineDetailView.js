@@ -869,15 +869,31 @@ class WineDetailView {
         }
 
         // Find other-vintage instances (same name+producer, different vintage)
-        const allManagerInstances = window.wineManager ? (window.wineManager.wineInstances || []) : [];
-        const otherVintages = allManagerInstances.filter(inst => {
-            if (!inst || inst.consumed || inst.id === instance.id) return false;
-            const iRef = inst.reference;
-            if (!iRef) return false;
-            return iRef.name === ref.name &&
-                   iRef.producer === ref.producer &&
-                   iRef.vintage !== ref.vintage;
-        });
+        // Prefer freshInstances to avoid stale wineManager data when opening from cellar view
+        let otherVintages = [];
+        if (this.freshInstances) {
+            const refMap = (window.cellarManager && window.cellarManager.currentReferenceMap) || {};
+            otherVintages = this.freshInstances
+                .filter(inst => {
+                    if (!inst || inst.consumed || inst.id === instance.id) return false;
+                    const iRef = refMap[inst.referenceId];
+                    if (!iRef) return false;
+                    return iRef.name === ref.name &&
+                           iRef.producer === ref.producer &&
+                           iRef.vintage !== ref.vintage;
+                })
+                .map(inst => ({ ...inst, reference: refMap[inst.referenceId] }));
+        } else {
+            const allManagerInstances = window.wineManager ? (window.wineManager.wineInstances || []) : [];
+            otherVintages = allManagerInstances.filter(inst => {
+                if (!inst || inst.consumed || inst.id === instance.id) return false;
+                const iRef = inst.reference;
+                if (!iRef) return false;
+                return iRef.name === ref.name &&
+                       iRef.producer === ref.producer &&
+                       iRef.vintage !== ref.vintage;
+            });
+        }
 
         if (siblings.length === 0 && otherVintages.length === 0) {
             container.style.display = 'none';
