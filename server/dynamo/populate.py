@@ -3,6 +3,7 @@ import random
 import time
 import requests
 import re
+from datetime import date, timedelta
 from urllib.parse import quote
 from server.utils import generate_id, get_current_timestamp
 from server.models import Shelf, Cellar, GlobalWineReference, UserWineReference, WineInstance
@@ -131,6 +132,14 @@ WHITE_WINES = [
     {"name": "Viognier", "vintage": 2018, "producer": "Condrieu", "region": "Rhône Valley", "country": "France", "varietals": ["Viognier"]},
     {"name": "Albariño", "vintage": 2019, "producer": "Bodegas Martín Códax", "region": "Rías Baixas", "country": "Spain", "varietals": ["Albariño"]},
 ]
+
+
+def random_purchase_date():
+    """Generate a random purchase date within the past 3 years"""
+    end = date.today()
+    start = end - timedelta(days=3 * 365)
+    delta = end - start
+    return (start + timedelta(days=random.randint(0, delta.days))).isoformat()
 
 
 def create_cellars():
@@ -407,7 +416,7 @@ def create_wine_instances(references, user_references, cellars):
                 id=generate_id(),
                 reference=reference,
                 price=round(50.0 + (instance_count * 2.5), 2),  # Varying prices
-                purchase_date="2024-01-15",
+                purchase_date=random_purchase_date(),
                 drink_by_date="2030-01-15",
                 consumed=False,
                 consumed_date=None,
@@ -443,7 +452,7 @@ def create_wine_instances(references, user_references, cellars):
             id=generate_id(),
             reference=reference,
             price=round(30.0 + (instance_count * 2.5), 2),  # Varying prices for white wines
-            purchase_date="2024-01-15",
+            purchase_date=random_purchase_date(),
             drink_by_date="2030-01-15",
             consumed=False,
             consumed_date=None,
@@ -474,7 +483,7 @@ def create_wine_instances(references, user_references, cellars):
             id=generate_id(),
             reference=reference,
             price=round(40.0 + (unshelved_count * 3.0), 2),  # Varying prices for unshelved wines
-            purchase_date="2024-01-15",
+            purchase_date=random_purchase_date(),
             drink_by_date="2030-01-15",
             consumed=False,
             consumed_date=None,
