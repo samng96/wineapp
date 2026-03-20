@@ -192,6 +192,7 @@ Users should be able to add new wines to their inventory. They should be able to
   - **GlobalWineReference**: Shared wine information across all users (name, type, vintage, producer, etc.)
   - **UserWineReference**: Per-user personal data (rating, tasting notes) linked to a GlobalWineReference
   - **WineInstance**: Physical bottle instances that reference UserWineReference
+- **Purchase date**: When adding bottles via the wine search detail card, `purchaseDate` is automatically set to today's date (ISO 8601).
 
 #### 3.5 View Wines - Instances and References
 Users should be able to view all wines in their inventory. When viewing a wine, the user should be able to:
@@ -224,6 +225,11 @@ Clicking on a wine in the wine list or hovering over a wine in the cellar view o
   - Clicking a shelved sibling's location: closes the detail card, navigates to that cellar, scrolls to the position, blinks a red outline highlight 3 times (on 400ms / off 200ms), then reopens the detail card for that bottle
   - Clicking an unshelved sibling: swaps the detail card content in place with a slide-down/slide-up animation
 - Tasting notes textarea with save button
+- **Historical data section**: chronological log of events for the wine, including:
+  - Stored date, consumed date, coravined date (from the instance)
+  - User rating events (shown when a rating exists, timestamped by `updatedAt` of the UserWineReference)
+  - Tasting notes saved events (shown when tasting notes exist, same timestamp)
+  - Historical data updates live immediately after the user saves tasting notes, changes rating, or marks the wine as coravined/consumed — no reload required
 
 **Actions for Non-Consumed Wines:**
 - **"Open with a Coravin" button** - marks wine as coravined with current date/time
@@ -262,7 +268,25 @@ When a wine is marked as consumed:
 7. Wine appears in "consumed" filter if that's checked
 8. Action buttons (Coravin, Drink) are hidden in detail view
 
-#### 3.9 Assigning a wine to a new location
+#### 3.9 Vivino Wine Search
+
+**Search Results List:**
+- Each result shows: label image, vintage + name, producer, country flag + type + region/country, varietals, Vivino rating (with star icons), and **Last purchased** date
+- **Last purchased**: If the user has previously purchased this wine (matched by name + producer), the most recent `purchaseDate` across all matching instances is displayed below the Vivino rating. This lookup runs at search time.
+- Matching is case-insensitive on name and producer
+
+**Wine Search Detail Card:**
+- Bottom sheet shown when tapping a search result
+- Info rows (same styling as wine detail view): Last purchased, Vivino Rating, Type, Producer, Varietals, Region, Country
+- **Last purchased** row: shown above Vivino Rating if the user has previously purchased the wine; hidden otherwise
+- **Vivino Rating**: displayed with yellow star icon; hidden if no rating available
+- Vintage selector (default 2020, recalculates drink-by date if the wine has a `drinkByYearsOffset`)
+- Quantity selector (default 1)
+- Purchase price input
+- **Drink by date**: shown read-only if the wine reference has a drink-by date; auto-updates when vintage changes if `drinkByYearsOffset` is set
+- "Add to Collection" button: creates GlobalWineReference + UserWineReference (if needed), then creates one WineInstance per bottle with `purchaseDate` set to today
+
+#### 3.10 Assigning a wine to a new location
 There are two ways that a user can assign a wine to a new location. They can:
 
 - Move a wine from one location in a cellar to another
@@ -274,14 +298,14 @@ Whatever the entry method, the flow should be the same. The user is presented wi
 
 This view we create needs to be flexible - when we're in a moving situation, upon completion of the assignment, we need the completion handler to remove the instance from the previous location. When we're in an add situation, we need to be able to multi-add, so we need to be able to do the assignment, and then move to the next bottle to assign until all the bottles have been assigned. 
 
-#### 8 Delete Wine
+#### 3.11 Delete Wine
 Users should be able to remove wines from their inventory. This is different than consuming - this removes the entry altogether (ie a hard delete). 
 
 Include confirmation to prevent accidental deletion
 
 *Note: Delete functionality is planned but not yet implemented in the UI.*
 
-#### 9 Future Work: Image Caching
+#### 3.12 Future Work: Image Caching
 Wine label images (from Vivino CDN) are currently loaded directly from external URLs every time they are displayed. We should add app-level image caching so that label images are downloaded once and served from local storage on subsequent views. This would improve performance, reduce network usage, and ensure images are available offline.
 
 ### 9. Offline mode
