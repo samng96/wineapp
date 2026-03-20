@@ -262,15 +262,20 @@ class WineDetailView {
                     // Update via UserWineReference endpoint
                     const userRefId = this.currentReference ? this.currentReference.userReferenceId : null;
                     if (userRefId) {
-                        await API.updateUserWineReference(userRefId, { rating });
+                        const updated = await API.updateUserWineReference(userRefId, { rating });
+                        if (this.currentReference) {
+                            this.currentReference.userRefUpdatedAt = updated.updatedAt;
+                            this._syncUserRefCache(userRefId, { rating, updatedAt: updated.updatedAt });
+                        }
                     }
 
                     if (this.currentReference) {
                         this.currentReference.rating = rating;
                     }
 
-                    // Re-render rating stars
+                    // Re-render rating stars and historical data
                     this.renderRatingStars();
+                    this.renderHistoricalData();
                 } catch (error) {
                     console.error('Error updating rating:', error);
                     alert(`Failed to update rating: ${error.message || 'Unknown error'}`);
@@ -309,14 +314,19 @@ class WineDetailView {
             // Update via UserWineReference API
             const userRefId = this.currentReference.userReferenceId;
             if (userRefId) {
-                await API.updateUserWineReference(userRefId, {
+                const updated = await API.updateUserWineReference(userRefId, {
                     tastingNotes: newNotes
                 });
+                this.currentReference.userRefUpdatedAt = updated.updatedAt;
+                this._syncUserRefCache(userRefId, { tastingNotes: newNotes, updatedAt: updated.updatedAt });
             }
 
             // Update local reference
             this.currentReference.tastingNotes = newNotes;
             this.originalTastingNotes = newNotes;
+
+            // Refresh historical data to show the updated notes entry
+            this.renderHistoricalData();
 
             // Update notification message to success (keep same window)
             notification.updateMessage('Notes saved!', { durationMs: 2000 });
@@ -568,8 +578,12 @@ class WineDetailView {
             this.currentInstance.coravined = true;
             this.currentInstance.coravinedDate = new Date().toISOString();
 
-            // Re-render storage info to show date instead of button
+            // Keep freshInstances in sync so renderHistoricalData picks up the change
+            this._syncFreshInstance(this.currentInstance);
+
+            // Re-render storage info and historical data
             this.renderStorageInfo();
+            this.renderHistoricalData();
         } catch (error) {
             console.error('Error marking wine as coravined:', error);
             alert(`Failed to mark wine as coravined: ${error.message || 'Unknown error'}`);
@@ -1149,6 +1163,20 @@ class WineDetailView {
             }, 400);
         };
         blink(3);
+    }
+
+    // Update the cached user wine reference in cellarManager so renderHistoricalData sees fresh data
+    _syncUserRefCache(userRefId, fields) {
+        if (!window.cellarManager || !window.cellarManager.userWineReferences) return;
+        const ur = window.cellarManager.userWineReferences.find(r => r.id === userRefId);
+        if (ur) Object.assign(ur, fields);
+    }
+
+    // Update the matching entry in freshInstances so renderHistoricalData sees the latest state
+    _syncFreshInstance(instance) {
+        if (!this.freshInstances || !instance) return;
+        const idx = this.freshInstances.findIndex(i => i.id === instance.id);
+        if (idx !== -1) Object.assign(this.freshInstances[idx], instance);
     }
 
     formatStoredDate(storedDate) {
