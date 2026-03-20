@@ -2626,7 +2626,8 @@ body {
     gap: 24px;
 }
 
-.wine-search-detail-info-section {
+.wine-search-detail-info-section,
+.wine-cellar-detail-info-section {
     gap: 12px;
 }
 
