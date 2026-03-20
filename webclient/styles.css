@@ -2626,6 +2626,10 @@ body {
     gap: 24px;
 }
 
+.wine-search-detail-info-section {
+    gap: 12px;
+}
+
 .wine-detail-name-section h3 {
     margin: 0 0 8px 0;
     font-size: 28px;
@@ -3302,7 +3306,7 @@ body {
    ============================================ */
 
 .wine-search-detail-rating-value {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
     color: #ffc107;
 }
