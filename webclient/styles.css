@@ -2263,11 +2263,12 @@ body {
 }
 
 .wine-item-rating {
-    font-size: 12px;
+    font-size: 13px;
     color: #666;
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-top: 4px;
 }
 
 .wine-item-rating-label {
@@ -2278,6 +2279,12 @@ body {
     display: flex;
     gap: 2px;
     align-items: center;
+}
+
+.wine-item-last-purchased {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
 }
 
 .rating-star {

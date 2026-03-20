@@ -7,6 +7,7 @@ import { WineReference } from './models/WineReference.js';
 export class WineSearchManager {
     constructor() {
         this.searchResults = [];
+        this.lastPurchasedMap = {}; // "name|producer" -> Date
         this.init();
     }
 
@@ -106,6 +107,9 @@ export class WineSearchManager {
                 }
             });
 
+            // Build last-purchased map from local cache or API
+            await this.buildLastPurchasedMap();
+
             // Render results
             this.renderResults();
         } catch (error) {
@@ -126,6 +130,12 @@ export class WineSearchManager {
 
         // Render results similar to wine list but without Location and Stored date
         this.resultsContainer.innerHTML = this.searchResults.map(reference => {
+            const lastPurchasedKey = `${(reference.name || '').toLowerCase().trim()}|${(reference.producer || '').toLowerCase().trim()}`;
+            const lastPurchasedDate = this.lastPurchasedMap[lastPurchasedKey];
+            const lastPurchasedHtml = lastPurchasedDate
+                ? `<div class="wine-item-last-purchased"><span class="wine-item-rating-label">Last purchased: </span>${lastPurchasedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>`
+                : '';
+
             // Get country flag (reuse logic from wineManager)
             const flag = this.getCountryFlag(reference.country);
             
@@ -169,6 +179,7 @@ export class WineSearchManager {
                                 ).join('')}
                             </span>
                         </div>` : ''}
+                        ${lastPurchasedHtml}
                     </div>
                 </div>
             `;
@@ -239,6 +250,55 @@ export class WineSearchManager {
             } else {
                 alert('Error creating wine reference: ' + error.message);
             }
+        }
+    }
+
+    async buildLastPurchasedMap() {
+        this.lastPurchasedMap = {};
+        try {
+            const cm = window.cellarManager;
+            let wineReferences, wineInstances, userRefToGlobalRefId;
+
+            if (cm && cm.wineReferences && cm.wineReferences.length > 0) {
+                wineReferences = cm.wineReferences;
+                wineInstances = cm.wineInstances;
+                userRefToGlobalRefId = cm.userRefToGlobalRefId;
+            } else {
+                [wineReferences, wineInstances] = await Promise.all([
+                    API.get('/wine-references'),
+                    API.get('/wine-instances'),
+                ]);
+                const userRefs = await API.getUserWineReferences();
+                userRefToGlobalRefId = {};
+                for (const ur of userRefs) {
+                    userRefToGlobalRefId[ur.id] = ur.globalReferenceId;
+                }
+            }
+
+            // Build map from globalRefId -> "name|producer" key
+            const globalRefKey = {};
+            for (const gr of wineReferences) {
+                const key = `${(gr.name || '').toLowerCase().trim()}|${(gr.producer || '').toLowerCase().trim()}`;
+                globalRefKey[gr.id] = key;
+            }
+
+            // Build map from userRefId -> key
+            const userRefKey = {};
+            for (const [userRefId, globalRefId] of Object.entries(userRefToGlobalRefId)) {
+                if (globalRefKey[globalRefId]) userRefKey[userRefId] = globalRefKey[globalRefId];
+            }
+
+            // Find most recent purchaseDate per key
+            for (const inst of wineInstances) {
+                if (!inst.purchaseDate || !userRefKey[inst.referenceId]) continue;
+                const key = userRefKey[inst.referenceId];
+                const d = new Date(inst.purchaseDate);
+                if (!this.lastPurchasedMap[key] || d > this.lastPurchasedMap[key]) {
+                    this.lastPurchasedMap[key] = d;
+                }
+            }
+        } catch (e) {
+            // Non-critical — search still works without it
         }
     }
 

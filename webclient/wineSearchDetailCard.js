@@ -149,6 +149,19 @@ class WineSearchDetailCard {
             priceInput.value = '';
         }
 
+        // Show last purchased date if user has bought this wine before (async, updates after render)
+        const lastPurchasedRow = document.getElementById('wine-search-detail-last-purchased-row');
+        const lastPurchasedEl = document.getElementById('wine-search-detail-last-purchased');
+        if (lastPurchasedRow) lastPurchasedRow.style.display = 'none';
+        if (lastPurchasedRow && lastPurchasedEl) {
+            this.findLastPurchasedDate(reference).then(lastPurchased => {
+                if (lastPurchased) {
+                    lastPurchasedEl.textContent = lastPurchased.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    lastPurchasedRow.style.display = '';
+                }
+            }).catch(() => {});
+        }
+
         // Show drink-by date if available (read-only display)
         const drinkByRow = document.getElementById('wine-search-detail-drink-by-row');
         const drinkByEl = document.getElementById('wine-search-detail-drink-by');
@@ -263,8 +276,9 @@ class WineSearchDetailCard {
             }
 
             // 3. Create WineInstances (one per bottle)
+            const today = new Date().toISOString().split('T')[0];
             for (let i = 0; i < quantity; i++) {
-                const instanceData = { referenceId: userRef.id };
+                const instanceData = { referenceId: userRef.id, purchaseDate: today };
                 if (priceValue !== null) instanceData.price = priceValue;
                 if (drinkByValue) instanceData.drinkByDate = drinkByValue;
                 await API.createWineInstance(instanceData);
@@ -292,6 +306,62 @@ class WineSearchDetailCard {
             console.error('Error adding to collection:', error);
             alert('Error adding wine to collection: ' + error.message);
         }
+    }
+
+    async findLastPurchasedDate(reference) {
+        const refName = (reference.name || '').toLowerCase().trim();
+        const refProducer = (reference.producer || '').toLowerCase().trim();
+
+        // Use cellarManager cache if populated, otherwise fetch from API
+        const cm = window.cellarManager;
+        let wineReferences, wineInstances, userRefToGlobalRefId;
+
+        if (cm && cm.wineReferences && cm.wineReferences.length > 0) {
+            wineReferences = cm.wineReferences;
+            wineInstances = cm.wineInstances;
+            userRefToGlobalRefId = cm.userRefToGlobalRefId;
+        } else {
+            [wineReferences, wineInstances] = await Promise.all([
+                API.get('/wine-references'),
+                API.get('/wine-instances'),
+            ]);
+            const userRefs = await API.getUserWineReferences();
+            userRefToGlobalRefId = {};
+            for (const ur of userRefs) {
+                userRefToGlobalRefId[ur.id] = ur.globalReferenceId;
+            }
+        }
+
+        // Find global reference IDs that match by name + producer
+        const matchingGlobalRefIds = new Set(
+            wineReferences
+                .filter(gr => {
+                    const nameMatch = (gr.name || '').toLowerCase().trim() === refName;
+                    const producerMatch = (gr.producer || '').toLowerCase().trim() === refProducer;
+                    return nameMatch && (!refProducer || producerMatch);
+                })
+                .map(gr => gr.id)
+        );
+
+        if (matchingGlobalRefIds.size === 0) return null;
+
+        // Find user ref IDs that point to those global refs
+        const matchingUserRefIds = new Set();
+        for (const [userRefId, globalRefId] of Object.entries(userRefToGlobalRefId)) {
+            if (matchingGlobalRefIds.has(globalRefId)) matchingUserRefIds.add(userRefId);
+        }
+
+        if (matchingUserRefIds.size === 0) return null;
+
+        // Find the most recent purchaseDate among matching instances
+        let latestDate = null;
+        for (const inst of wineInstances) {
+            if (!matchingUserRefIds.has(inst.referenceId)) continue;
+            if (!inst.purchaseDate) continue;
+            const d = new Date(inst.purchaseDate);
+            if (!latestDate || d > latestDate) latestDate = d;
+        }
+        return latestDate;
     }
 
     getCountryFlag(country) {
