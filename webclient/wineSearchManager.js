@@ -172,7 +172,7 @@ export class WineSearchManager {
                         </div>
                         ${varietalsText ? `<div class="wine-item-varietals">${this.escapeHtml(varietalsText)}</div>` : ''}
                         ${reference.rating ? `<div class="wine-item-rating">
-                            <span class="wine-item-rating-label">Rating: </span>
+                            <span class="wine-item-rating-label">Vivino rating: </span>
                             <span class="wine-item-rating-stars">
                                 ${[1, 2, 3, 4, 5].map(star => 
                                     `<span class="rating-star ${star <= reference.rating ? 'filled' : ''}" title="${star} star${star !== 1 ? 's' : ''}">★</span>`
