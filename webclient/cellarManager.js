@@ -10,6 +10,7 @@ class CellarManager {
         this.cellars = [];
         this.wineInstances = []; // Cache wine instances for breakdown calculation
         this.wineReferences = []; // Cache wine references for breakdown calculation
+        this.userWineReferences = []; // Cache full user wine reference objects (with rating, tastingNotes, updatedAt)
         this.userRefToGlobalRefId = {}; // Map user wine reference IDs to global reference IDs
         this.showLabels = true; // Toggle state for labels vs vintage view
         this.currentCellar = null; // Store current cellar data for re-rendering
@@ -261,6 +262,7 @@ class CellarManager {
                 ]);
                 this.wineInstances = wineInstances;
                 this.wineReferences = wineReferences;
+                this.userWineReferences = userWineReferences;
                 // Build mapping from UserWineReference ID → GlobalWineReference ID
                 this.userRefToGlobalRefId = {};
                 userWineReferences.forEach(userRef => {
@@ -1508,7 +1510,8 @@ class CellarManager {
             this.wineInstances = wineInstances;
             this.cellars = cellars;
             this.wineReferences = wineReferences;
-            
+            this.userWineReferences = userWineReferences;
+
             // Build userRefToGlobalRefId mapping
             this.userRefToGlobalRefId = {};
             userWineReferences.forEach(userRef => {

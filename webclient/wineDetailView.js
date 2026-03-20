@@ -96,6 +96,7 @@ class WineDetailView {
                     const userRef = await API.get(`/user-wine-references/${fullReference.userReferenceId}`);
                     fullReference.rating = userRef.rating;
                     fullReference.tastingNotes = userRef.tastingNotes;
+                    fullReference.userRefUpdatedAt = userRef.updatedAt;
                 } catch (error) {
                     console.error('Error loading user wine reference:', error);
                     // Fall back to passed-in reference values if API call fails
@@ -693,8 +694,19 @@ class WineDetailView {
             window.cellarManager.wineReferences.forEach(r => { globalRefMap[r.id] = r; });
         }
 
+        // Build user ref map (userRefId → full user ref object with rating, tastingNotes, updatedAt)
+        const userRefMap = {};
+        if (window.cellarManager && window.cellarManager.userWineReferences) {
+            window.cellarManager.userWineReferences.forEach(ur => { userRefMap[ur.id] = ur; });
+        }
+
         // Collect all events across all vintages of this wine (same name + producer)
         const events = [];
+
+        // Track which user ref IDs we've already added rating/notes events for (avoid duplicates
+        // across multiple instances of the same wine)
+        const processedUserRefIds = new Set();
+
         this.freshInstances.forEach(inst => {
             const globalRefId = userRefToGlobalId[inst.referenceId] || inst.referenceId;
             const iRef = globalRefMap[globalRefId];
@@ -711,6 +723,38 @@ class WineDetailView {
             }
             if (inst.consumed && inst.consumedDate) {
                 events.push({ date: inst.consumedDate, text: `${label} consumed` });
+            }
+
+            // Add rating/notes events (once per user wine reference)
+            const userRefId = inst.referenceId;
+            if (userRefId && !processedUserRefIds.has(userRefId)) {
+                processedUserRefIds.add(userRefId);
+
+                let rating, tastingNotes, updatedAt;
+                if (userRefId === ref.userReferenceId) {
+                    // Current wine: use fresh data fetched in show()
+                    rating = ref.rating;
+                    tastingNotes = ref.tastingNotes;
+                    updatedAt = ref.userRefUpdatedAt;
+                } else {
+                    // Other vintage: use cached data from cellarManager
+                    const ur = userRefMap[userRefId];
+                    if (ur) {
+                        rating = ur.rating;
+                        tastingNotes = ur.tastingNotes;
+                        updatedAt = ur.updatedAt;
+                    }
+                }
+
+                if (updatedAt) {
+                    if (rating) {
+                        const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+                        events.push({ date: updatedAt, text: `${label} rated ${stars}` });
+                    }
+                    if (tastingNotes) {
+                        events.push({ date: updatedAt, text: `${label} tasting notes saved` });
+                    }
+                }
             }
         });
 
