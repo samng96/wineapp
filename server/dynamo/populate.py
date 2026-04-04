@@ -1,4 +1,5 @@
 """Script to populate DynamoDB with sample data"""
+import os
 import random
 import time
 import requests
@@ -325,9 +326,23 @@ def search_vivino_images_scrape(query):
         return None
 
 
+WINE_IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'wine_images')
+
+
+def _slugify(text):
+    """Convert text to a filesystem-safe slug"""
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[\s_]+', '-', text)
+    text = re.sub(r'-+', '-', text)
+    return text.strip('-')
+
+
 def get_wine_label_url(wine_name, producer, vintage):
-    """Get a wine label image URL by searching Vivino directly"""
+    """Fetch wine label from Vivino, save locally, return local path"""
     from server.vivino_search import search_vivino
+    import os
+
     query_parts = []
     if producer:
         query_parts.append(producer)
@@ -336,10 +351,39 @@ def get_wine_label_url(wine_name, producer, vintage):
     if vintage:
         query_parts.append(str(vintage))
     query = ' '.join(query_parts)
+
     results = search_vivino(query, limit=1)
-    if results and results[0].get('labelImageUrl'):
-        return results[0]['labelImageUrl']
-    return None
+    remote_url = results[0].get('labelImageUrl') if results else None
+    if not remote_url:
+        return None
+
+    # Build a stable filename from producer + name + vintage
+    slug_parts = []
+    if producer:
+        slug_parts.append(producer)
+    if wine_name:
+        slug_parts.append(wine_name)
+    if vintage:
+        slug_parts.append(str(vintage))
+    slug = _slugify(' '.join(slug_parts))
+    ext = '.jpg'
+    for candidate in ['.png', '.webp', '.jpeg']:
+        if candidate in remote_url.lower():
+            ext = candidate
+            break
+    filename = slug + ext
+    local_path = os.path.join(WINE_IMAGES_DIR, filename)
+
+    try:
+        os.makedirs(WINE_IMAGES_DIR, exist_ok=True)
+        img_response = requests.get(remote_url, timeout=15)
+        img_response.raise_for_status()
+        with open(local_path, 'wb') as f:
+            f.write(img_response.content)
+        return f'/wine-images/{filename}'
+    except Exception as e:
+        print(f"  Warning: could not download image: {e}")
+        return None
 
 
 def create_wine_instances(references, user_references, cellars):
