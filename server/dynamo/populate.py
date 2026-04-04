@@ -326,26 +326,19 @@ def search_vivino_images_scrape(query):
 
 
 def get_wine_label_url(wine_name, producer, vintage):
-    """Get a wine label image URL from Vivino via Google Images search"""
-    # Build search query from wine information
+    """Get a wine label image URL by searching Vivino directly"""
+    from server.vivino_search import search_vivino
     query_parts = []
-    if wine_name:
-        query_parts.append(wine_name)
     if producer:
         query_parts.append(producer)
+    if wine_name:
+        query_parts.append(wine_name)
     if vintage:
         query_parts.append(str(vintage))
-    
     query = ' '.join(query_parts)
-    
-    # Search for Vivino label image
-    image_url = search_vivino_images_scrape(query)
-    
-    if image_url:
-        return image_url
-    
-    # Fallback: if no Vivino image found, return None or a placeholder
-    # The caller should handle None appropriately
+    results = search_vivino(query, limit=1)
+    if results and results[0].get('labelImageUrl'):
+        return results[0]['labelImageUrl']
     return None
 
 
