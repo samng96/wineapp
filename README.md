@@ -8,11 +8,13 @@ A client-server application for managing a personal wine inventory. Track, organ
 - **Wine Tracking**: Track individual wine bottles with purchase dates, prices, and consumption status
 - **Wine References**: Maintain a global database of wine information (name, vintage, producer, varietals, region, country)
 - **Personal Notes**: Add personal ratings and tasting notes to wines
+- **Drink By Date**: Track recommended drink-by years per wine, auto-calculated from Vivino vintage data
 - **Unshelved Wines**: Automatically track wines that haven't been placed in a cellar yet
 - **Search & Filter**: Powerful search and filtering capabilities by type, varietal, country, consumption status, and more
-- **Wine Details**: View detailed information about wines including location, notes, and related bottles
+- **Wine Details**: View detailed information about wines including location, notes, related bottles, and other vintages
 - **Coravin Support**: Track wines opened with Coravin
-- **Vivino Integration**: Search and import wine information from Vivino
+- **Vivino Integration**: Search and import wine information from Vivino, including label images
+- **Local Label Images**: Wine label images are downloaded at populate time and served locally
 
 ## Project Structure
 
@@ -27,10 +29,11 @@ WineApp/
 │   ├── api.js             # API communication layer
 │   ├── cellarManager.js   # Cellar management logic
 │   ├── wineManager.js     # Wine instance management
-│   ├── wineSearchManager.js # Wine search and filtering
+│   ├── wineSearchManager.js     # Wine search and filtering
+│   ├── wineSearchDetailCard.js  # Search result detail card (add to collection)
 │   ├── wineDetailView.js  # Wine detail modal/view
 │   ├── addWineManager.js  # Add wine functionality
-│   ├── notificationOverlay.js # Notification system
+│   ├── notificationOverlay.js   # Notification system
 │   ├── styles.css         # Application styles
 │   └── index.html         # Main HTML file
 │
@@ -47,9 +50,12 @@ WineApp/
 │   │   ├── setup_tables.py    # Table creation scripts
 │   │   ├── storage.py         # DynamoDB storage operations
 │   │   ├── init_tables.py     # Table initialization
+│   │   ├── populate.py        # Sample data population with Vivino image fetching
+│   │   ├── clear_all_data.py  # Utility to clear all DynamoDB tables
 │   │   └── browse_data.py     # Data browsing utilities
-│   ├── data/              # Data serialization
-│   │   └── storage_serializers.py
+│   ├── data/              # Data serialization and static assets
+│   │   ├── storage_serializers.py
+│   │   └── wine_images/   # Downloaded wine label images (checked into source control)
 │   └── tests/             # Server-side tests
 │       ├── test_cellars.py
 │       ├── test_wine_references.py
@@ -62,7 +68,7 @@ WineApp/
 │   └── client_requirements.md  # Client-side requirements and features
 │
 ├── start_servers.sh       # Script to start both servers
-├── start_dynamodb_local.sh # Script to start DynamoDB Local
+├── start_dynamodb_local.sh # Script to start DynamoDB Local via Docker
 ├── start_dynamodb_ui.sh   # Script to start DynamoDB Admin UI
 └── README.md              # This file
 ```
@@ -84,15 +90,14 @@ WineApp/
 - **Fetch API**: HTTP requests
 
 ### Data Storage
-- **DynamoDB Local**: Local DynamoDB instance for development
+- **DynamoDB Local**: Local DynamoDB instance for development (runs via Docker on port 8001)
 - **DynamoDB**: AWS DynamoDB for production (planned)
 
 ## Prerequisites
 
 - Python 3.9 or higher
 - pip3
-- Java Runtime Environment (JRE) for DynamoDB Local
-- AWS CLI (optional, for DynamoDB operations)
+- Docker Desktop (for DynamoDB Local)
 
 ## Getting Started
 
@@ -103,39 +108,46 @@ cd server
 pip3 install -r requirements.txt
 ```
 
-### 2. Start DynamoDB Local
+### 2. Start Docker Desktop
 
-DynamoDB Local is required for data persistence. Start it using the provided script:
+DynamoDB Local runs in a Docker container. Make sure Docker Desktop is running before proceeding.
+
+### 3. Start DynamoDB Local
 
 ```bash
 ./start_dynamodb_local.sh
 ```
 
-This will start DynamoDB Local on `http://localhost:8000`.
+This starts DynamoDB Local in a Docker container mapped to `http://localhost:8001`.
 
-**Optional**: Start the DynamoDB Admin UI for easier data browsing:
+**Optional**: Start the DynamoDB Admin UI:
 
 ```bash
 ./start_dynamodb_ui.sh
 ```
 
-This will start the admin UI on `http://localhost:8001`.
-
-### 3. Initialize DynamoDB Tables
+### 4. Initialize DynamoDB Tables
 
 Create the required DynamoDB tables:
 
 ```bash
-cd server
-PYTHONPATH=.. python3 dynamo/setup_tables.py
+DYNAMODB_ENDPOINT=http://localhost:8001 PYTHONPATH=. python3 server/dynamo/setup_tables.py
 ```
 
-### 4. Start the Servers
+### 5. Populate Sample Data (optional)
+
+Populate the database with sample wines. The script will use any already-downloaded label images from `server/data/wine_images/` and attempt to download missing ones from Vivino:
+
+```bash
+DYNAMODB_ENDPOINT=http://localhost:8001 PYTHONPATH=. python3 server/dynamo/populate.py
+```
+
+### 6. Start the Servers
 
 #### Option A: Use the convenience script (recommended)
 
 ```bash
-./start_servers.sh
+DYNAMODB_ENDPOINT=http://localhost:8001 ./start_servers.sh
 ```
 
 This script will:
@@ -147,31 +159,18 @@ This script will:
 **Start the Flask backend:**
 
 ```bash
-cd server
-PYTHONPATH=.. python3 app.py
+DYNAMODB_ENDPOINT=http://localhost:8001 PYTHONPATH=. python3 server/app.py
 ```
 
-The server will start on `http://localhost:5001` (port 5001 is used instead of 5000 to avoid conflicts with macOS AirPlay).
+The server will start on `http://localhost:5001`.
 
 **Start the frontend web server:**
 
-In a separate terminal:
-
 ```bash
-cd webclient
-python3 dev_server.py webclient
+python3 webclient/dev_server.py webclient
 ```
 
-Or use Python's built-in server:
-
-```bash
-cd webclient
-python3 -m http.server 8000
-```
-
-### 5. Open the Application
-
-Open your web browser and navigate to:
+### 7. Open the Application
 
 ```
 http://localhost:8000
@@ -184,34 +183,22 @@ http://localhost:8000
 #### Server-side Tests
 
 ```bash
-cd server
-PYTHONPATH=.. pytest tests/
-```
-
-Run specific test files:
-
-```bash
-PYTHONPATH=.. pytest tests/test_cellars.py
-PYTHONPATH=.. pytest tests/test_wine_instances.py
+PYTHONPATH=. pytest server/tests/
 ```
 
 #### Client-side Tests
 
-Open `webclient/tests/test_suite.html` in your browser to run client-side tests.
+Open `webclient/tests/test_suite.html` in your browser.
 
 ### Server Configuration
 
-The server runs in debug mode by default and will automatically reload when code changes are made.
-
 **Environment Variables:**
-- `DYNAMODB_ENDPOINT`: DynamoDB endpoint URL (default: `http://localhost:8000`)
+- `DYNAMODB_ENDPOINT`: DynamoDB endpoint URL (default: `http://localhost:8000`; use `http://localhost:8001` when running via Docker)
 - `DYNAMODB_REGION`: AWS region (default: `us-east-1`)
 - `DEBUGPY`: Enable debugpy debugger (set to `1` to enable)
 - `DEBUGPY_WAIT`: Wait for debugger to attach (set to `1` to enable)
 
 ### API Endpoints
-
-The server provides RESTful API endpoints for:
 
 - **Cellars**: `/cellars` (GET, POST, PUT, DELETE)
 - **Wine References**: `/wine-references` (GET, POST, PUT, DELETE)
@@ -220,7 +207,8 @@ The server provides RESTful API endpoints for:
 - **Wine Instance Location**: `/wine-instances/<id>/location` (PUT)
 - **Wine Instance Coravin**: `/wine-instances/<id>/coravin` (PUT)
 - **Wine Instance Consume**: `/wine-instances/<id>/consume` (PUT)
-- **Vivino Search**: `/vivino-search` (GET)
+- **Vivino Search**: `/vivino/search` (GET)
+- **Wine Images**: `/wine-images/<filename>` (GET) — serves locally stored label images
 
 See [docs/server_requirements.md](docs/server_requirements.md) for complete API documentation.
 
@@ -239,6 +227,8 @@ See [docs/server_requirements.md](docs/server_requirements.md) for complete API 
 - **Location Tracking**: WineInstance location is tracked by storing the instance in a Cellar's Shelf structure, not on the instance itself
 - **Unshelved Wines**: WineInstances not found in any cellar are considered "unshelved"
 - **Version Tracking**: All entities include version numbers for conflict resolution
+- **Drink By Date**: Stored on WineInstance as an ISO 8601 date; only the year is displayed in the UI
+- **Label Images**: Stored locally in `server/data/wine_images/` and served at `/wine-images/<filename>`
 
 See [docs/server_requirements.md](docs/server_requirements.md) for detailed data model specifications.
 
@@ -251,21 +241,21 @@ See [docs/server_requirements.md](docs/server_requirements.md) for detailed data
 
 ### Server won't start
 
-- Ensure DynamoDB Local is running on port 8000
+- Ensure Docker Desktop is running and DynamoDB Local container is started (`./start_dynamodb_local.sh`)
 - Check that all Python dependencies are installed
-- Verify that DynamoDB tables have been created
+- Verify DynamoDB tables have been created with `DYNAMODB_ENDPOINT=http://localhost:8001`
+
+### DynamoDB connection errors
+
+- The DynamoDB Local Docker container maps to port **8001** on the host (not 8000)
+- Always set `DYNAMODB_ENDPOINT=http://localhost:8001` when running locally
+- Verify the container is running: `docker ps | grep dynamodb-local`
 
 ### Connection errors
 
 - Ensure the Flask server is running on port 5001
 - Check browser console for CORS errors
 - Verify the API endpoint URL in `webclient/api.js`
-
-### DynamoDB connection errors
-
-- Ensure DynamoDB Local is running: `./start_dynamodb_local.sh`
-- Check that tables exist: `PYTHONPATH=.. python3 server/dynamo/setup_tables.py`
-- Verify the endpoint URL matches your DynamoDB Local configuration
 
 ## Contributing
 

@@ -177,6 +177,7 @@ A collapsible filter panel is accessible via a filter icon button in the top rig
   - Country flag + wine type + region/country
   - **Stored date** (always shown)
   - **Additional bottles count** (if user owns multiple of this wine)
+  - **Drink by year** (if a drink-by date is set on the instance; year only)
   - **Coravined date** (if wine has been opened with Coravin)
   - **Consumed date** (if wine has been consumed)
   - **Location** (cellar, shelf, side, position - only shown if not consumed)
@@ -215,15 +216,19 @@ Clicking on a wine in the wine list or hovering over a wine in the cellar view o
 - **Stored date** (when the bottle was added to inventory)
 - **Cost** (shown only when a price was entered for the instance)
 - **Purchase date** (shown only when entered)
-- **Drink by date** (shown only when entered)
+- **Drink by year** (shown only when a drink-by date is set; only the year is displayed)
 - **Location** (cellar name, shelf, side, position - clickable to navigate to cellar view)
 - **Consumed date** (if consumed)
 - **Coravined date** (if opened with Coravin)
-- **Other bottles** (shown when other non-consumed instances of the same wine exist)
+- **Other bottles** (shown when other non-consumed instances of the same wine exist — same name, producer, and vintage)
   - Lists the cellar location of each sibling bottle as a clickable link
   - Unshelved siblings show "Unshelved"
   - Clicking a shelved sibling's location: closes the detail card, navigates to that cellar, scrolls to the position, blinks a red outline highlight 3 times (on 400ms / off 200ms), then reopens the detail card for that bottle
   - Clicking an unshelved sibling: swaps the detail card content in place with a slide-down/slide-up animation
+- **Other vintages** (shown when non-consumed instances exist for the same wine name and producer but a different vintage)
+  - Grouped by vintage year, sorted newest first
+  - Each vintage shows clickable location links for each bottle
+  - Clicking navigates the same way as "Other bottles" links
 - Tasting notes textarea with save button
 - **Historical data section**: chronological log of events for the wine, including:
   - Stored date, consumed date, coravined date (from the instance)
@@ -283,7 +288,7 @@ When a wine is marked as consumed:
 - Vintage selector (default 2020, recalculates drink-by date if the wine has a `drinkByYearsOffset`)
 - Quantity selector (default 1)
 - Purchase price input
-- **Drink by date**: shown read-only if the wine reference has a drink-by date; auto-updates when vintage changes if `drinkByYearsOffset` is set
+- **Drink by year**: shown read-only if the wine reference has a drink-by date; auto-updates when vintage changes if `drinkByYearsOffset` is set; only the year is displayed
 - "Add to Collection" button: creates GlobalWineReference + UserWineReference (if needed), then creates one WineInstance per bottle with `purchaseDate` set to today
 
 #### 3.10 Assigning a wine to a new location
@@ -305,7 +310,7 @@ Include confirmation to prevent accidental deletion
 
 *Note: Delete functionality is planned but not yet implemented in the UI.*
 
-#### 3.12 Future Work: Image Caching
-Wine label images (from Vivino CDN) are currently loaded directly from external URLs every time they are displayed. We should add app-level image caching so that label images are downloaded once and served from local storage on subsequent views. This would improve performance, reduce network usage, and ensure images are available offline.
+#### 3.12 Wine Label Image Caching
+Wine label images are downloaded from Vivino at populate time and stored in `server/data/wine_images/`. The server serves them locally at `/wine-images/<filename>`. The `labelImageUrl` field on GlobalWineReference stores the local path. This means images are available offline, load without hitting external CDNs, and are checked into source control so they survive server restarts and re-deploys without re-fetching.
 
 ### 9. Offline mode

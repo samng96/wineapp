@@ -42,7 +42,7 @@ Global Wine References are shared across all users and represent the basic infor
     - Varietal(s)
     - Region
     - Country
-    - Label Image (URL to blob storage location)
+    - Label Image (local path `/wine-images/<filename>` served by Flask, or external URL)
 
 There should be a global registry of all the global wine references that we have loaded into the system. We will try to de-dupe as much as possible based on (name, vintage, producer).
 
@@ -130,7 +130,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
 
 ### 1. Technology Stack
 - **Backend Framework**: Flask (Python)
-- **Data Storage**: JSON files (MVP), with migration path to DynamoDB
+- **Data Storage**: DynamoDB Local (via Docker) for development, AWS DynamoDB for production
 - **API Format**: RESTful JSON API
 - **Version Control**: Git/GitHub
 - **Testing**: pytest
@@ -186,7 +186,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - `varietals: Optional[List[str]]`
   - `region: Optional[str]`
   - `country: Optional[str]`
-  - `label_image_url: Optional[str]` (URL to blob storage)
+  - `label_image_url: Optional[str]` (local path `/wine-images/<filename>` or external URL)
   - `version: int` (for conflict resolution)
   - `created_at: Optional[str]` (ISO 8601 timestamp)
   - `updated_at: Optional[str]` (ISO 8601 timestamp)
@@ -387,7 +387,14 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
     - `400 Bad Request` if location format is invalid, position is invalid, or position is occupied
     - `404 Not Found` if wine instance or cellar doesn't exist
 
-#### 3.5 Vivino Wine Search
+#### 3.5 Wine Images
+- `GET /wine-images/<filename>`
+  - Serves locally stored wine label images from `server/data/wine_images/`
+  - Images are downloaded by `server/dynamo/populate.py` at populate time
+  - Filenames are slugified from `{producer}-{name}-{vintage}.{ext}`
+  - Response: image file with appropriate content type, or `404 Not Found`
+
+#### 3.6 Vivino Wine Search
 - `GET /vivino/search`
   - Query Parameters:
     - `name` (str, required): Wine name to search for
@@ -402,7 +409,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
     - Falls back to sample results if Vivino fetch fails
     - Varietals are extracted from Vivino grape data when available
 
-#### 3.6 Unshelved Wines
+#### 3.7 Unshelved Wines
 - `GET /unshelved`
   - Returns: List of all unshelved wine instances (where `location` is `None` and `consumed` is `false`)
   - Response: `200 OK` with JSON array of wine instance objects
@@ -423,13 +430,22 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
 
 ### 4. Data Persistence
 
-#### 4.1 File Structure
-- `server/data/cellars.json`: Array of cellar objects
-- `server/data/wine-references.json`: Array of global wine reference objects
-- `server/data/user-wine-references.json`: Array of user wine reference objects
-- `server/data/wine-instances.json`: Array of wine instance objects
+#### 4.1 Storage Backend
+Data is stored in DynamoDB. In development, DynamoDB Local runs via Docker on port 8001 (set `DYNAMODB_ENDPOINT=http://localhost:8001`). Tables are created via `server/dynamo/setup_tables.py`.
 
-#### 4.2 Serialization Format
+**DynamoDB Tables:**
+- `wineapp-cellars`
+- `wineapp-wine-references`
+- `wineapp-user-wine-references`
+- `wineapp-wine-instances`
+
+#### 4.2 Static Assets
+- `server/data/wine_images/`: Downloaded wine label images, checked into source control
+  - Populated by `server/dynamo/populate.py`
+  - Served at `/wine-images/<filename>` by Flask
+  - Filenames are slugified: `{producer}-{name}-{vintage}.{ext}`
+
+#### 4.3 Serialization Format
 - All dates/timestamps: ISO 8601 format strings
 - **General Rule**: All `get_*` methods return object instances, not IDs. IDs are extracted from objects when serializing to JSON (e.g., `cellar.id`, `reference.id`, `instance.id`)
 - Location tracking:
@@ -447,7 +463,7 @@ Currently using JSON file storage (`wines.json`), but will eventually move to pe
   - JSON: `referenceId: str` extracted from `reference.id` (UserWineReference ID)
   - UserWineReference contains `globalReferenceId` which links to GlobalWineReference
 
-#### 4.3 Loading Strategy
+#### 4.4 Loading Strategy
 - Load global wine references first
 - Load user wine references (with global reference IDs)
 - Load cellars (without wine instances resolved)
@@ -486,11 +502,16 @@ server/
 ├── wine_instances.py      # Wine instance management endpoints and logic
 ├── vivino_search.py       # Vivino wine search functionality (scrapes Vivino search results)
 ├── utils.py               # Utility functions (ID generation, timestamps, file paths)
-├── data/                  # JSON data files
-│   ├── cellars.json
-│   ├── wine-references.json
-│   ├── user-wine-references.json
-│   └── wine-instances.json
+├── dynamo/                # DynamoDB integration
+│   ├── storage.py         # DynamoDB read/write operations
+│   ├── setup_tables.py    # Creates DynamoDB tables
+│   ├── init_tables.py     # Verifies tables exist on startup
+│   ├── populate.py        # Populates sample data; downloads Vivino label images
+│   ├── clear_all_data.py  # Clears all table data
+│   └── browse_data.py     # CLI utility for browsing stored data
+├── data/                  # Static assets and serialization
+│   ├── storage_serializers.py
+│   └── wine_images/       # Downloaded wine label images (checked into source control)
 └── tests/                 # Test suite
     ├── conftest.py
     ├── test_cellars.py
