@@ -11,6 +11,14 @@ struct WineListView: View {
         NavigationStack {
             ZStack {
                 VStack(spacing: 0) {
+                    if let errorMessage = appState.loadError, appState.filteredWines.isEmpty {
+                        Text(errorMessage)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.red)
+                    }
+
                     FilterPillsRow()
                         .padding(.horizontal)
                         .padding(.vertical, 8)

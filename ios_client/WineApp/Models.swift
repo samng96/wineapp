@@ -63,6 +63,36 @@ struct WineInstance: Codable, Identifiable, Hashable {
     let createdAt: String?
     let updatedAt: String?
 
+    private enum CodingKeys: String, CodingKey {
+        case id, referenceId, price, purchaseDate, drinkByDate
+        case consumed, consumedDate, coravined, coravinedDate
+        case storedDate, version, createdAt, updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        referenceId = try c.decode(String.self, forKey: .referenceId)
+        // price can arrive as a number or a string from the server
+        if let d = try? c.decodeIfPresent(Double.self, forKey: .price) {
+            price = d
+        } else if let s = try? c.decodeIfPresent(String.self, forKey: .price) {
+            price = Double(s)
+        } else {
+            price = nil
+        }
+        purchaseDate = try c.decodeIfPresent(String.self, forKey: .purchaseDate)
+        drinkByDate = try c.decodeIfPresent(String.self, forKey: .drinkByDate)
+        consumed = try c.decode(Bool.self, forKey: .consumed)
+        consumedDate = try c.decodeIfPresent(String.self, forKey: .consumedDate)
+        coravined = try c.decode(Bool.self, forKey: .coravined)
+        coravinedDate = try c.decodeIfPresent(String.self, forKey: .coravinedDate)
+        storedDate = try c.decodeIfPresent(String.self, forKey: .storedDate)
+        version = try c.decode(Int.self, forKey: .version)
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt)
+    }
+
     static func == (lhs: WineInstance, rhs: WineInstance) -> Bool {
         lhs.id == rhs.id
     }
@@ -92,6 +122,11 @@ struct Cellar: Codable, Identifiable, Hashable {
     struct ShelfConfig: Codable, Hashable {
         let positions: Int
         let isDouble: Bool
+
+        init(positions: Int, isDouble: Bool) {
+            self.positions = positions
+            self.isDouble = isDouble
+        }
 
         /// The server serialises each shelf as a 2-element JSON array: [positions, isDouble]
         init(from decoder: Decoder) throws {
@@ -266,4 +301,10 @@ struct CreateWineInstanceRequest: Codable {
 struct UpdateUserWineReferenceRequest: Codable {
     let rating: Int?
     let tastingNotes: String?
+}
+
+struct CreateCellarRequest: Encodable {
+    let name: String
+    let temperature: Int?
+    let shelves: [Cellar.ShelfConfig]
 }

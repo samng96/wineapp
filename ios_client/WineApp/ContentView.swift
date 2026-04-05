@@ -5,19 +5,19 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            WineListView()
-                .tabItem {
-                    Label("My Wines", systemImage: "wineglass")
-                }
-
             CellarsView()
                 .tabItem {
                     Label("Cellars", systemImage: "cabinet")
                 }
 
+            WineListView()
+                .tabItem {
+                    Label("My Wines", systemImage: "wineglass")
+                }
+
             SearchView()
                 .tabItem {
-                    Label("Search", systemImage: "magnifyingglass")
+                    Label("Add Wine", systemImage: "plus.circle")
                 }
         }
     }

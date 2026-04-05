@@ -44,6 +44,10 @@ enum API {
         "/user-wine-references/\(id)"
     }
 
+    static func deleteCellar(_ id: String) -> String {
+        "/cellars/\(id)"
+    }
+
     /// Builds /vivino/search?name=<encoded>&limit=<limit>
     static func vivinoSearch(query: String, limit: Int = 10) -> String {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
@@ -163,6 +167,16 @@ actor APIClient {
         } catch {
             throw APIError.decodingError(error)
         }
+    }
+
+    // MARK: Generic DELETE
+
+    func delete(_ path: String) async throws {
+        let url = baseURL.appendingPath(path)
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response, data: data)
     }
 
     // MARK: postEmpty
