@@ -21,27 +21,44 @@ struct CellarDetailView: View {
     @State private var lastZoomScale: CGFloat = 1.0
     // Natural content size captured from layout
     @State private var naturalSize: CGSize = .zero
+    // Viewport size for fit-to-screen calculation
+    @State private var viewportSize: CGSize = .zero
+    @State private var initialZoomSet = false
 
     var body: some View {
-        ScrollView([.horizontal, .vertical], showsIndicators: true) {
-            cellarContent
-                // Capture natural size on first layout pass
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.onAppear {
-                            if naturalSize == .zero {
-                                naturalSize = geo.size
+        GeometryReader { geo in
+            ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                cellarContent
+                    // Capture natural size on first layout pass
+                    .background(
+                        GeometryReader { contentGeo in
+                            Color.clear.onAppear {
+                                if naturalSize == .zero {
+                                    naturalSize = contentGeo.size
+                                }
                             }
                         }
-                    }
-                )
-                // Scale visually from top-leading, then set the layout frame to match
-                .scaleEffect(zoomScale, anchor: .topLeading)
-                .frame(
-                    width:  naturalSize == .zero ? nil : naturalSize.width  * zoomScale,
-                    height: naturalSize == .zero ? nil : naturalSize.height * zoomScale,
-                    alignment: .topLeading
-                )
+                    )
+                    // Scale visually from top-leading, then set the layout frame to match
+                    .scaleEffect(zoomScale, anchor: .topLeading)
+                    .frame(
+                        width:  naturalSize == .zero ? nil : naturalSize.width  * zoomScale,
+                        height: naturalSize == .zero ? nil : naturalSize.height * zoomScale,
+                        alignment: .topLeading
+                    )
+            }
+            .onAppear {
+                viewportSize = geo.size
+            }
+            .onChange(of: naturalSize) { _, newSize in
+                guard newSize != .zero, viewportSize != .zero, !initialZoomSet else { return }
+                let scaleW = viewportSize.width / newSize.width
+                let scaleH = viewportSize.height / newSize.height
+                let fitScale = min(scaleW, scaleH, 1.0)
+                zoomScale = max(fitScale, 0.3)
+                lastZoomScale = zoomScale
+                initialZoomSet = true
+            }
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(cellar.name)
