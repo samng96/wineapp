@@ -25,9 +25,17 @@ struct CellarDetailView: View {
     @State private var viewportSize: CGSize = .zero
     @State private var initialZoomSet = false
 
+    private var scrollAxes: Axis.Set {
+        guard naturalSize != .zero else { return [.horizontal, .vertical] }
+        var axes: Axis.Set = []
+        if naturalSize.width  * zoomScale > viewportSize.width  { axes.insert(.horizontal) }
+        if naturalSize.height * zoomScale > viewportSize.height { axes.insert(.vertical) }
+        return axes
+    }
+
     var body: some View {
         GeometryReader { geo in
-            ScrollView([.horizontal, .vertical], showsIndicators: true) {
+            ScrollView(scrollAxes, showsIndicators: true) {
                 cellarContent
                     // Capture natural size on first layout pass
                     .background(
