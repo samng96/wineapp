@@ -1,4 +1,5 @@
 """Script to populate DynamoDB with sample data"""
+import os
 import random
 import time
 import requests
@@ -193,12 +194,16 @@ def create_wine_references():
     print("This may take a while due to rate limiting...\n")
 
     def create_ref_pair(wine_data, wine_type, index, total):
-        print(f"[{index}/{total}] Fetching label for: {wine_data['name']} {wine_data['vintage']}")
+        slug = _wine_slug(wine_data["producer"], wine_data["name"], wine_data["vintage"])
+        cached = any(os.path.exists(os.path.join(WINE_IMAGES_DIR, slug + ext))
+                     for ext in ('.png', '.jpg', '.jpeg', '.webp'))
+        print(f"[{index}/{total}] {wine_data['name']} {wine_data['vintage']}" + (" (cached)" if cached else ""))
         label_url = get_wine_label_url(wine_data["name"], wine_data["producer"], wine_data["vintage"])
         if label_url:
-            print(f"  Found: {label_url[:60]}...")
+            if not cached:
+                print(f"  downloaded: {label_url}")
         else:
-            print(f"  No image found - using None")
+            print(f"  No image found")
 
         ref = GlobalWineReference(
             id=generate_id(),
@@ -325,28 +330,73 @@ def search_vivino_images_scrape(query):
         return None
 
 
-def get_wine_label_url(wine_name, producer, vintage):
-    """Get a wine label image URL from Vivino via Google Images search"""
-    # Build search query from wine information
-    query_parts = []
+WINE_IMAGES_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'wine_images')
+
+
+def _slugify(text):
+    """Convert text to a filesystem-safe slug"""
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[\s_]+', '-', text)
+    text = re.sub(r'-+', '-', text)
+    return text.strip('-')
+
+
+def _wine_slug(producer, wine_name, vintage):
+    """Build a stable slug from producer + name + vintage"""
+    parts = []
+    if producer:
+        parts.append(producer)
     if wine_name:
-        query_parts.append(wine_name)
+        parts.append(wine_name)
+    if vintage:
+        parts.append(str(vintage))
+    return _slugify(' '.join(parts))
+
+
+def get_wine_label_url(wine_name, producer, vintage):
+    """Return local image path, using cached file if present, else download from Vivino."""
+    from server.vivino_search import search_vivino
+
+    slug = _wine_slug(producer, wine_name, vintage)
+    os.makedirs(WINE_IMAGES_DIR, exist_ok=True)
+
+    # Check for an already-downloaded image first
+    for ext in ('.png', '.jpg', '.jpeg', '.webp'):
+        candidate = os.path.join(WINE_IMAGES_DIR, slug + ext)
+        if os.path.exists(candidate):
+            return f'/wine-images/{slug}{ext}'
+
+    # Nothing cached — try Vivino
+    query_parts = []
     if producer:
         query_parts.append(producer)
+    if wine_name:
+        query_parts.append(wine_name)
     if vintage:
         query_parts.append(str(vintage))
-    
-    query = ' '.join(query_parts)
-    
-    # Search for Vivino label image
-    image_url = search_vivino_images_scrape(query)
-    
-    if image_url:
-        return image_url
-    
-    # Fallback: if no Vivino image found, return None or a placeholder
-    # The caller should handle None appropriately
-    return None
+    results = search_vivino(' '.join(query_parts), limit=1)
+    remote_url = results[0].get('labelImageUrl') if results else None
+    if not remote_url:
+        return None
+
+    ext = '.jpg'
+    for candidate in ('.png', '.webp', '.jpeg'):
+        if candidate in remote_url.lower():
+            ext = candidate
+            break
+    filename = slug + ext
+    local_path = os.path.join(WINE_IMAGES_DIR, filename)
+
+    try:
+        img_response = requests.get(remote_url, timeout=15)
+        img_response.raise_for_status()
+        with open(local_path, 'wb') as f:
+            f.write(img_response.content)
+        return f'/wine-images/{filename}'
+    except Exception as e:
+        print(f"  Warning: could not download image: {e}")
+        return None
 
 
 def create_wine_instances(references, user_references, cellars):

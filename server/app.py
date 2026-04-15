@@ -1,5 +1,6 @@
 """Main Flask application"""
-from flask import Flask
+import os
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from server.dynamo.init_tables import init_dynamodb_tables
 from server.cellars import cellars_bp
@@ -9,6 +10,12 @@ from server.wine_instances import wine_instances_bp
 
 app = Flask(__name__)
 CORS(app)  # Allows frontend to talk to this server
+
+WINE_IMAGES_DIR = os.path.join(os.path.dirname(__file__), 'data', 'wine_images')
+
+@app.route('/wine-images/<path:filename>')
+def serve_wine_image(filename):
+    return send_from_directory(WINE_IMAGES_DIR, filename)
 
 # Register blueprints
 app.register_blueprint(cellars_bp)
