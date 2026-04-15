@@ -92,6 +92,7 @@ Each cellar that appears shows the name (displayed in ALL CAPS), the number of s
 - Clicking on a wine bottle opens the full wine detail modal
 - Back button to return to cellar list view
 
+
 UI placement:
 - Top bar showing a plus sign on the right side that when clicked pops up a dialog to create a new cellar
 - Main page is just a list view of all the cellars that the user has. Each cellar card has a three-dot menu button that shows options to edit or delete the cellar.
